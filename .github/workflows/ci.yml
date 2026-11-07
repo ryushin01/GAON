@@ -32,3 +32,26 @@ jobs:
         env:
           EXPO_PUBLIC_MEDIA_BASE_URL: http://localhost:8787
       - run: pnpm exec playwright test --project=phone --project=wide --project=dark
+
+  # Windows 코드는 다른 운영체제에서 컴파일되지 않습니다. 러너에 소리 장치가 없어도 충돌하지 않는지 봅니다.
+  native-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: pip install numpy soundfile
+      - name: 시험용 FLAC 생성
+        shell: python
+        run: |
+          import numpy as np, soundfile as sf
+          t = np.arange(96000) / 96000
+          tone = 0.25 * np.sin(2 * np.pi * 440 * t)
+          sf.write('fixture.flac', np.stack([tone, tone], axis=1), 96000, subtype='PCM_24', format='FLAC')
+      - run: node scripts/build-native.mjs
+      - run: node scripts/verify-native-audio.mjs fixture.flac
+      - run: node scripts/smoke-native-audio.mjs fixture.flac

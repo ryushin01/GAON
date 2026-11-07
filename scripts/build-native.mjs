@@ -9,7 +9,7 @@ mkdirSync('native/build', { recursive: true });
 
 const flags = {
   darwin: ['-framework', 'CoreFoundation', '-framework', 'CoreAudio', '-framework', 'AudioToolbox', '-framework', 'AudioUnit'],
-  win32: ['-lole32', '-luser32', '-D_CRT_SECURE_NO_WARNINGS'],
+  win32: ['-lole32', '-luser32', '-lavrt', '-D_CRT_SECURE_NO_WARNINGS'],
   linux: ['-lpthread', '-lm', '-ldl'],
 }[process.platform];
 
