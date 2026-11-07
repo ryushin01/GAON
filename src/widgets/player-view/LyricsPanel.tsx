@@ -21,6 +21,13 @@ export function LyricsPanel({ lines }: { lines: LyricLine[] }) {
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef<number[]>([]);
 
+  const scrollToLine = (y: number) => scroller.current?.scrollTo({ y: Math.max(0, y - LYRIC_TOP_MARGIN), animated: true });
+
+  // 곡이 바뀌면 처음부터 보여 줍니다.
+  useEffect(() => {
+    scroller.current?.scrollTo({ y: 0, animated: false });
+  }, [lines]);
+
   // 지금 부르는 줄이 늘 보이도록 따라갑니다.
   useEffect(() => {
     const y = offsets.current[active];
@@ -43,7 +50,10 @@ export function LyricsPanel({ lines }: { lines: LyricLine[] }) {
           tone={i === active ? 'onStage' : 'onStageMuted'}
           aria-current={i === active || undefined}
           onLayout={(e: LayoutChangeEvent) => {
-            offsets.current[i] = e.nativeEvent.layout.y;
+            const { y } = e.nativeEvent.layout;
+            offsets.current[i] = y;
+            // 현재 줄의 위치가 뒤늦게 측정되면 그때 맞춥니다.
+            if (i === active) scrollToLine(y);
           }}
           style={[styles.line, i === active && styles.lineActive]}
         >

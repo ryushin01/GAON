@@ -52,7 +52,9 @@ export function PlaylistPage() {
         onConfirm={() => {
           setConfirming(false);
           deletePlaylist(playlist.id);
-          router.back();
+          // 주소로 바로 들어오면 돌아갈 화면이 없습니다.
+          if (router.canGoBack()) router.back();
+          else router.replace('/library');
         }}
       />
     </Screen>

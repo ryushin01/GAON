@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -12,8 +12,9 @@ import { useThemeStore } from '@/features/change-theme';
 import { restoreLocalArt } from '@/features/import-local';
 import { SkipLink } from '@/shared/ui';
 
-// 첫 화면이 그려지기 전에 저장한 테마를 적용합니다.
+// 저장한 테마를 읽은 뒤에 첫 화면을 그립니다. 시스템 테마가 잠깐 보이지 않게 합니다.
 void useThemeStore.persist.rehydrate();
+const subscribeThemeHydration = (onChange: () => void) => useThemeStore.persist.onFinishHydration(onChange);
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2 } },
@@ -41,6 +42,7 @@ export function RootLayout() {
   const { rt, theme } = useUnistyles();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  const themeReady = useSyncExternalStore(subscribeThemeHydration, useThemeStore.persist.hasHydrated);
 
   // 웹과 PC 앱에서 화면마다 제목이 달라야 합니다.
   useEffect(() => {
@@ -60,6 +62,8 @@ export function RootLayout() {
     if (useLibraryStore.persist.hasHydrated()) restore();
     return useLibraryStore.persist.onFinishHydration(restore);
   }, []);
+
+  if (!themeReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

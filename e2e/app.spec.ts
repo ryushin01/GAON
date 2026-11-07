@@ -203,6 +203,19 @@ test('화면을 옮기면 초점이 새 본문으로 갑니다', async ({ page }
   await expect(page.locator('#main')).toBeFocused();
 });
 
+test('주소로 바로 연 플레이리스트를 삭제하면 보관함으로 갑니다', async ({ page }) => {
+  await page.goto('/library');
+  await page.getByRole('button', { name: '플레이리스트', exact: true }).click();
+  await page.getByRole('textbox', { name: '새 플레이리스트 이름' }).fill('바로 연 목록');
+  await page.getByRole('button', { name: '만들기' }).click();
+  await page.getByRole('link', { name: '바로 연 목록 0곡' }).click();
+  await expect(page).toHaveURL(/\/playlist\//);
+  await page.goto(page.url());
+  await page.getByRole('button', { name: '삭제', exact: true }).click();
+  await page.getByRole('dialog', { name: '바로 연 목록 삭제' }).getByRole('button', { name: '삭제' }).click();
+  await expect(page).toHaveTitle('보관함 - GAON');
+});
+
 test('플레이리스트는 확인을 거쳐 삭제합니다', async ({ page }) => {
   await page.goto('/library');
   await page.getByRole('button', { name: '플레이리스트', exact: true }).click();
