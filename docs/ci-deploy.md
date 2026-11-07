@@ -6,7 +6,7 @@
 |---|---|---|
 | `ci.yml` | `main` 푸시, PR | lint, 타입 검사, 단위 테스트, 프로덕션 웹 빌드 E2E |
 | `deploy-media.yml` | `main` 푸시(앱·미디어 변경), 수동 | 카탈로그와 FLAC, 웹 데모를 GitHub Pages에 배포 |
-| `desktop.yml` | `v*` 태그, 수동 | Windows·macOS 설치본 빌드, 설치본 실행 검사, 아티팩트 업로드 |
+| `desktop.yml` | `v*` 태그, 수동 | Windows·macOS 설치본 빌드, 설치본 실행 검사, 아티팩트 업로드, 태그일 때 GitHub Release 공개 |
 
 ## 공개 미디어
 
@@ -16,7 +16,25 @@
 
 ## PC 설치본
 
-`desktop.yml`은 먼저 로컬 미디어 주소로 빌드해 실행 검사를 하고, 통과하면 공개 주소로 다시 빌드해 올립니다. 결과물은 실행 화면의 아티팩트에서 30일 동안 받을 수 있습니다. 오래 제공할 버전은 검사를 통과한 아티팩트를 [GitHub Release](https://github.com/ryushin01/GAON/releases)에 올립니다. `v*` 태그를 올리면 이 워크플로가 다시 돌지만, Release에 자동으로 올리지는 않습니다.
+`desktop.yml`은 먼저 로컬 미디어 주소로 빌드해 실행 검사를 하고, 통과하면 공개 주소로 다시 빌드해 올립니다. 결과물은 실행 화면의 아티팩트에서 30일 동안 받을 수 있습니다.
+
+### 새 버전 공개
+
+1. `package.json`의 `version`을 올립니다.
+2. `CHANGELOG.md`에 `## [0.2.0](https://github.com/ryushin01/GAON/releases/tag/v0.2.0) - 날짜` 형식으로 변경 내용을 적고 `main`에 올립니다.
+3. 같은 버전의 태그를 올립니다.
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+Windows와 macOS가 모두 통과하면 [GitHub Release](https://github.com/ryushin01/GAON/releases)가 공개됩니다. 설명은 `CHANGELOG.md`의 해당 버전과 `.github/release-notes.md`로 만듭니다.
+
+- 태그가 `package.json` 버전과 다르거나 버전 기록이 없으면 빌드 전에 멈춥니다.
+- 파일을 초안에 모두 올린 뒤 공개합니다. 중간에 실패하면 **Re-run failed jobs**로 이어서 올립니다.
+- 이미 공개된 Release는 덮어쓰지 않습니다. 고치려면 새 버전을 올립니다.
+- `v1.0.0-rc.1`처럼 하이픈이 있는 태그는 시험판으로 공개하고 최신 버전으로 표시하지 않습니다.
 
 Apple Silicon Mac에서 Windows 설치본(NSIS)을 만들려면 Rosetta가 필요합니다. Windows 환경에서 앱을 실제로 실행해 보는 검사까지 하므로 `desktop.yml`로 만드는 것을 권장합니다. 이 검사는 설치 전 폴더의 앱으로 하며, 설치 마법사는 검사하지 않습니다.
 

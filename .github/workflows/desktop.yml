@@ -1,10 +1,14 @@
 name: PC 설치본
 
 # 태그를 올리거나 직접 실행하면 Windows와 macOS 설치본을 만들고, 만든 앱을 실제로 실행해 검사합니다.
+# 태그에서 실행하면 두 운영체제가 모두 통과했을 때 GitHub Release로 공개합니다.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -28,6 +32,12 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+      - name: 태그와 버전 기록 확인
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: node scripts/release-notes.mjs "$TAG" > /dev/null
+        env:
+          TAG: ${{ github.ref_name }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -52,3 +62,21 @@ jobs:
           name: gaon-${{ matrix.os }}
           path: ${{ matrix.artifact }}
           retention-days: 30
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: GitHub Release 공개
+        run: bash scripts/publish-release.sh "$TAG" assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
