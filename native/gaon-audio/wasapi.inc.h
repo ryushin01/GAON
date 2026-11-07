@@ -27,6 +27,8 @@ static HANDLE g_wasThread = NULL;
 static HANDLE g_wasReady = NULL;
 static HANDLE g_wasStop = NULL;
 static volatile ma_bool32 g_wasRunning = MA_FALSE;
+/* 장치가 끊긴 것을 상태 스레드에 알립니다. 이 스레드는 wasapi_stop이 기다리므로 g_stateLock을 잡지 않습니다. */
+static volatile ma_bool32 g_wasLost = MA_FALSE;
 static const char *g_wasReason = NULL;
 static ma_uint32 g_wasChannels = 0;
 static ma_uint32 g_wasRate = 0;
@@ -152,18 +154,21 @@ static DWORD WINAPI wasapi_thread(LPVOID unused) {
         DWORD result = WaitForMultipleObjects(2, waits, FALSE, 2000);
         if (result == WAIT_OBJECT_0) break;
         if (result != WAIT_OBJECT_0 + 1) {
+            g_wasLost = MA_TRUE;
             emit_error("device_lost");
             break;
         }
         hr = IAudioRenderClient_GetBuffer(render, frames, &data);
         if (hr == AUDCLNT_E_BUFFER_TOO_LARGE) continue;
         if (FAILED(hr)) {
+            g_wasLost = MA_TRUE;
             emit_error("device_lost");
             break;
         }
         fill_output(data, frames, g_wasChannels, g_wasFormat);
         hr = IAudioRenderClient_ReleaseBuffer(render, frames, 0);
         if (FAILED(hr)) {
+            g_wasLost = MA_TRUE;
             emit_error("device_lost");
             break;
         }
@@ -202,6 +207,7 @@ static const char *wasapi_start(ma_uint32 channels, ma_uint32 rate, ma_uint32 bi
     if (!g_wasStop) g_wasStop = CreateEventW(NULL, TRUE, FALSE, NULL);
     ResetEvent(g_wasReady);
     ResetEvent(g_wasStop);
+    g_wasLost = MA_FALSE;
     g_wasChannels = channels;
     g_wasRate = rate;
     g_wasBits = bits;

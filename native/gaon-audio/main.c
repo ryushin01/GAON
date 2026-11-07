@@ -486,6 +486,13 @@ THREAD_FN(status_thread) {
     while (!g_quit) {
         sleep_ms(250);
         ma_mutex_lock(&g_stateLock);
+#ifdef _WIN32
+        if (g_wasLost) {
+            g_wasLost = MA_FALSE;
+            g_playing = MA_FALSE;
+            close_device();
+        }
+#endif
         if (g_flac) {
             double rate = (double)g_flac->sampleRate;
             ma_uint64 frame = g_baseFrame + g_framesPlayed;
