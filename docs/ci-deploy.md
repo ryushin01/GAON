@@ -18,6 +18,6 @@
 
 `desktop.yml`은 먼저 로컬 미디어 주소로 빌드해 실행 검사를 하고, 통과하면 공개 주소로 다시 빌드해 올립니다. 결과물은 실행 화면의 아티팩트에서 30일 동안 받을 수 있습니다. 오래 제공할 버전은 검사를 통과한 아티팩트를 [GitHub Release](https://github.com/ryushin01/GAON/releases)에 올립니다. `v*` 태그를 올리면 이 워크플로가 다시 돌지만, Release에 자동으로 올리지는 않습니다.
 
-Apple Silicon Mac에서 Windows 설치본(NSIS)을 만들려면 Rosetta가 필요합니다. 설치 파일을 Windows에서 실제로 실행해 보는 검사까지 하므로 `desktop.yml`로 만드는 것을 권장합니다.
+Apple Silicon Mac에서 Windows 설치본(NSIS)을 만들려면 Rosetta가 필요합니다. Windows 환경에서 앱을 실제로 실행해 보는 검사까지 하므로 `desktop.yml`로 만드는 것을 권장합니다. 이 검사는 설치 전 폴더의 앱으로 하며, 설치 마법사는 검사하지 않습니다.
 
 설치본에는 코드 서명이 없습니다. 처음 실행할 때 Windows SmartScreen과 macOS Gatekeeper가 경고를 표시합니다.
