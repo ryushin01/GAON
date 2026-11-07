@@ -16,12 +16,14 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest",
-    "desktop": "electron electron/main.cjs",
-    "build:desktop": "pnpm build:web && electron-builder --config electron-builder.json",
+    "desktop": "pnpm build:native && electron electron/main.cjs",
+    "build:desktop": "pnpm build:web && pnpm build:native && electron-builder --config electron-builder.json",
     "test:e2e": "playwright test --project=phone --project=wide --project=dark",
     "test:desktop": "playwright test --project=desktop-app",
     "storybook": "storybook dev -p 6006",
-    "build:storybook": "storybook build"
+    "build:storybook": "storybook build",
+    "build:native": "node scripts/build-native.mjs",
+    "test:native": "node scripts/verify-native-audio.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

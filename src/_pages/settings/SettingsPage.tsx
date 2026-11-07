@@ -3,6 +3,7 @@ import { Linking, Pressable, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { ThemeSelector } from '@/features/change-theme';
+import { OutputModeSelector } from '@/features/player';
 import { AppText, Screen, ScreenHeader, Section } from '@/shared/ui';
 
 const HELP_URL = 'https://github.com/ryushin01/GAON/issues';
@@ -20,7 +21,8 @@ export function SettingsPage() {
       <Section title="음질 안내">
         <View style={styles.body}>
           <AppText tone="muted">가져온 FLAC은 변환 없이 그대로 저장하고, 재생할 때 손실 없이 복원합니다.</AppText>
-          <AppText variant="caption" tone="muted">소리가 나오는 마지막 단계는 기기가 처리합니다. 파일의 샘플레이트가 기기 출력 설정보다 높으면 기기가 낮춰서 내보낼 수 있고, 블루투스로 들으면 전송할 때 다시 압축될 수 있습니다.</AppText>
+          <AppText variant="caption" tone="muted">기본 출력에서는 소리가 나오는 마지막 단계를 기기가 처리합니다. 파일의 샘플레이트가 기기 출력 설정보다 높으면 기기가 낮춰서 내보낼 수 있고, 블루투스로 들으면 전송할 때 다시 압축될 수 있습니다.</AppText>
+          <OutputModeSelector />
         </View>
       </Section>
       <Section title="도움말">

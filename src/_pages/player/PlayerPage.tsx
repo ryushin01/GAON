@@ -5,7 +5,7 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
-import { SeekBar, TransportControls, useCurrentTrack } from '@/features/player';
+import { OutputBadge, SeekBar, TransportControls, useCurrentTrack } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AlbumArt, AppText, IconButton, useMainRegion } from '@/shared/ui';
@@ -54,6 +54,7 @@ export function PlayerPage() {
           <AppText variant="heading" tone="onStage" numberOfLines={2} role="heading" aria-level={1}>{title}</AppText>
           <AppText tone="onStageMuted" numberOfLines={1}>{artistLine(track)} · {track.albumTitle}</AppText>
           <QualityBadge format={track.format} onStage />
+          <OutputBadge />
         </View>
         <LikeButton trackId={track.id} title={title} color={text} size={26} />
       </View>

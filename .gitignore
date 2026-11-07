@@ -54,3 +54,4 @@ yarn-error.*
 /storybook-static/
 /public-media/
 /coverage/
+/native/build/

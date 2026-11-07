@@ -41,16 +41,17 @@
 | TOP 100 | 순위와 변동, 신규 진입 표시, 장르 필터, 전체·선택 재생 |
 | 플레이어 | 셔플, 반복, 재생 위치 이동, 가사 따라가기, 재생 목록 편집, 백그라운드 재생 |
 | 내 FLAC | 기기의 FLAC을 변환 없이 앱 안에 저장, 태그와 음질 분석, 인터넷 없이 재생 |
+| 비트 퍼펙트 출력 | PC 앱 독점 출력 (macOS Core Audio, Windows WASAPI), 곡마다 장치 샘플레이트 전환 |
 | 테마 | 라이트, 다크, 시스템 설정 따르기 |
 | 보관함 | 좋아요, 최근 재생, 플레이리스트 (앱을 다시 켜도 유지) |
 | 카탈로그 | 곡·앨범·가수 상세, 피처링과 작사·작곡·편곡 크레딧, 통합 검색 |
 | 접근성 | 키보드 조작, 본문 바로가기, 스크린 리더 이름, 색과 무관한 순위 변동 표시 |
 
-FLAC은 변환 없이 저장하고 손실 없이 디코딩합니다. 다만 앱이 장치를 독점하는 비트 퍼펙트 출력은 아니어서, 마지막 출력은 운영체제가 기기 설정에 맞춰 처리합니다. 자세한 내용은 [음질](docs/development.md#음질)을 참고하세요.
+FLAC은 변환 없이 저장하고 손실 없이 디코딩합니다. PC 앱은 설정에서 비트 퍼펙트 출력을 켜면 운영체제 믹서를 거치지 않고 장치로 보내고, 실제 출력 상태를 플레이어에 표시합니다. 모바일과 웹의 마지막 출력은 운영체제가 처리합니다. 자세한 내용은 [음질](docs/development.md#음질)을 참고하세요.
 
 ## 기술 스택
 
-![React, TypeScript, Electron, pnpm, Jest, GitHub Actions, Python](https://skillicons.dev/icons?i=react,ts,electron,pnpm,jest,githubactions,python)
+![React, TypeScript, Electron, C, pnpm, Jest, GitHub Actions, Python](https://skillicons.dev/icons?i=react,ts,electron,c,pnpm,jest,githubactions,python)
 
 | 구분 | 사용 기술 |
 |---|---|
@@ -58,7 +59,7 @@ FLAC은 변환 없이 저장하고 손실 없이 디코딩합니다. 다만 앱�
 | 오디오·파일 | expo-audio, expo-document-picker, expo-file-system |
 | 상태·데이터 | TanStack Query v5, Zustand |
 | 스타일 | react-native-unistyles 3 |
-| PC 앱 | Electron 45, electron-builder |
+| PC 앱 | Electron 45, electron-builder, C (miniaudio, Core Audio, WASAPI) |
 | 품질 | ESLint, Jest, Storybook 10, Playwright, axe |
 | 데모 데이터 | Python (numpy, soundfile, Pillow) |
 | 배포 | GitHub Actions, GitHub Pages |
@@ -82,6 +83,7 @@ pnpm web                                          # 또는 pnpm ios, pnpm androi
 |---|---|
 | `pnpm build:web` / `pnpm desktop` | 웹 빌드 / 그 빌드를 PC 앱으로 실행 |
 | `pnpm build:desktop` | PC 설치본 빌드 |
+| `pnpm build:native` / `test:native <FLAC>` | 비트 퍼펙트 재생기 빌드 / 무손실 검사 (clang 필요) |
 | `pnpm lint` / `typecheck` / `test` | ESLint / 타입 검사 / 단위 테스트 |
 | `pnpm test:e2e` | 프로덕션 웹 빌드의 화면·접근성 검사 (먼저 `build:web` 필요) |
 | `pnpm test:desktop` | 설치본 실행 검사 (`GAON_EXECUTABLE` 필요) |
@@ -94,6 +96,7 @@ pnpm web                                          # 또는 pnpm ios, pnpm androi
 ```
 app/             Expo Router 라우트 (_pages를 다시 내보내기만 합니다)
 electron/        PC 앱 셸
+native/          비트 퍼펙트 재생기 (C)
 e2e/             E2E 테스트
 scripts/         데모 미디어 생성과 로컬 서버
 src/

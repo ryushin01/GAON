@@ -4,6 +4,8 @@ const { existsSync, statSync } = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
+const { setupNativeAudio } = require('./native-audio.cjs');
+
 const SCHEME = 'gaon-app';
 const HOST = 'app';
 const ORIGIN = `${SCHEME}://${HOST}`;
@@ -32,7 +34,7 @@ function createWindow() {
     title: 'GAON',
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#081223' : '#FFFFFF',
     autoHideMenuBar: true,
-    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
+    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, preload: path.join(__dirname, 'preload.cjs') },
   });
 
   // 앱 밖의 주소는 앱 창이 아니라 기본 브라우저에서 엽니다.
@@ -64,6 +66,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     protocol.handle(SCHEME, (request) => net.fetch(pathToFileURL(resolveFile(request.url)).toString()));
     if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
+    setupNativeAudio(() => BrowserWindow.getAllWindows()[0]);
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

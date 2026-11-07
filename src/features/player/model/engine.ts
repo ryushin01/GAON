@@ -1,16 +1,17 @@
-import { createAudioPlaylist, setAudioModeAsync, type AudioPlaylist, type AudioPlaylistStatus } from 'expo-audio';
+import { createAudioPlaylist, setAudioModeAsync, type AudioPlaylistStatus } from 'expo-audio';
 
 import { resolveAudioUri, useLibraryStore } from '@/entities/library';
 import { artistLine, displayTitle, type Track } from '@/entities/music';
 import { shuffled } from '@/shared/lib';
 
+import { createNativePlaylist, getAudioBridge, type PlaylistLike } from './nativePlaylist';
 import { usePlayerStore, type RepeatMode } from './playerStore';
 
 /** 이 시간 이상 재생했으면 '이전'은 곡의 처음으로 돌아갑니다. */
 const RESTART_THRESHOLD_SEC = 3;
 const LOOP = { off: 'none', all: 'all', one: 'single' } as const;
 
-let playlist: AudioPlaylist | null = null;
+let playlist: PlaylistLike | null = null;
 /** 셔플을 끌 때 돌아갈 원래 순서입니다. */
 let baseQueue: Track[] = [];
 let lockScreenActive = false;
@@ -55,9 +56,25 @@ function handleTrackChanged(currentIndex: number) {
   }
 }
 
-function ensurePlaylist(): AudioPlaylist {
+function createPlaylist(): PlaylistLike {
+  const { exclusive, repeat } = usePlayerStore.getState();
+  const bridge = getAudioBridge();
+  if (exclusive && bridge) {
+    return createNativePlaylist(
+      bridge,
+      {
+        onOutput: (output) => usePlayerStore.setState({ output }),
+        onError: (error) => usePlayerStore.setState({ error }),
+      },
+      LOOP[repeat],
+    );
+  }
+  return createAudioPlaylist({ updateInterval: 250, loop: LOOP[repeat] }) as unknown as PlaylistLike;
+}
+
+function ensurePlaylist(): PlaylistLike {
   if (!playlist) {
-    playlist = createAudioPlaylist({ updateInterval: 250, loop: LOOP[usePlayerStore.getState().repeat] });
+    playlist = createPlaylist();
     playlist.addListener('playlistStatusUpdate', handleStatus);
     playlist.addListener('trackChanged', ({ currentIndex }) => handleTrackChanged(currentIndex));
   }
@@ -228,4 +245,13 @@ export function stop() {
   }
   baseQueue = [];
   usePlayerStore.setState({ queue: [], index: 0, playing: false, buffering: false, currentTime: 0, duration: 0 });
+}
+
+/** 출력 방식을 바꾸면 다음 재생부터 새 재생기를 씁니다. */
+export function setExclusiveOutput(exclusive: boolean) {
+  if (usePlayerStore.getState().exclusive === exclusive) return;
+  stop();
+  playlist?.destroy?.();
+  playlist = null;
+  usePlayerStore.setState({ exclusive, output: null });
 }
