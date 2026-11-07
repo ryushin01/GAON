@@ -30,14 +30,14 @@ export function TrackActions({ track, extra = [] }: Props) {
     <View style={styles.row}>
       <LikeButton trackId={track.id} title={title} />
       <IconButton icon="ellipsis-vertical" label={`${title} 더보기`} size={20} color={theme.colors.textMuted} onPress={() => setMenu(true)} />
-      <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
+      <Modal aria-label={`${title} 메뉴`} visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
         <View style={styles.backdrop}>
-          <View role="menu" aria-label={`${title} 메뉴`} style={styles.menu}>
+          <View style={styles.menu}>
             <AppText variant="subheading" numberOfLines={1} style={styles.menuTitle}>{title}</AppText>
             {items.map((item) => (
               <Pressable
                 key={item.label}
-                role="menuitem"
+                role="button"
                 style={styles.item}
                 onPress={() => {
                   setMenu(false);
@@ -47,7 +47,7 @@ export function TrackActions({ track, extra = [] }: Props) {
                 <AppText>{item.label}</AppText>
               </Pressable>
             ))}
-            <Pressable role="menuitem" style={styles.item} onPress={() => setMenu(false)}>
+            <Pressable role="button" style={styles.item} onPress={() => setMenu(false)}>
               <AppText tone="muted">닫기</AppText>
             </Pressable>
           </View>
@@ -61,7 +61,7 @@ export function TrackActions({ track, extra = [] }: Props) {
 const styles = StyleSheet.create((theme) => ({
   row: { flexDirection: 'row', alignItems: 'center' },
   backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(3, 12, 30, 0.6)' },
-  menu: { width: '100%', maxWidth: 360, padding: theme.spacing.sm, borderRadius: theme.radius.lg, backgroundColor: theme.colors.bg },
+  menu: { width: '100%', maxWidth: 360, padding: theme.spacing.sm, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
   menuTitle: { padding: theme.spacing.md },
   item: { minHeight: 48, justifyContent: 'center', paddingHorizontal: theme.spacing.md },
 }));

@@ -9,23 +9,24 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm build:storybook
       - run: pip install numpy soundfile pillow
       - run: python scripts/generate-media.py public-media
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build:web
         env:
           EXPO_PUBLIC_MEDIA_BASE_URL: http://localhost:8787
-      - run: pnpm exec playwright test --project=phone --project=wide
+      - run: pnpm exec playwright test --project=phone --project=wide --project=dark

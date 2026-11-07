@@ -26,9 +26,9 @@ jobs:
             artifact: release/*.dmg
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -38,7 +38,7 @@ jobs:
         run: node scripts/release-notes.mjs "$TAG" > /dev/null
         env:
           TAG: ${{ github.ref_name }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - run: pnpm install --frozen-lockfile
@@ -57,7 +57,7 @@ jobs:
         run: |
           pnpm build:web
           pnpm exec electron-builder --config electron-builder.json ${{ matrix.target }} --publish never
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gaon-${{ matrix.os }}
           path: ${{ matrix.artifact }}
@@ -70,8 +70,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: assets
           merge-multiple: true

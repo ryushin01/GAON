@@ -24,6 +24,7 @@ export function TransportControls() {
         icon={shuffle ? 'shuffle' : 'shuffle-outline'}
         label={shuffle ? '셔플 끄기' : '셔플 켜기'}
         color={shuffle ? accent : textMuted}
+        badge={shuffle ? '•' : undefined}
         onPress={() => void toggleShuffle()}
       />
       <IconButton icon="play-skip-back" label="이전 곡" size={30} color={text} onPress={previous} />
@@ -35,6 +36,7 @@ export function TransportControls() {
         icon={repeat === 'one' ? 'repeat' : 'repeat-outline'}
         label={`${REPEAT_LABEL[repeat]}, 눌러서 바꾸기`}
         color={repeat === 'off' ? textMuted : accent}
+        badge={repeat === 'one' ? '1' : repeat === 'all' ? '•' : undefined}
         onPress={cycleRepeat}
       />
     </View>

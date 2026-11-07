@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { FlatList, Pressable, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
@@ -29,7 +30,10 @@ export function QueuePanel() {
             >
               <AlbumArt uri={item.artUri} size={44} />
               <View style={styles.text}>
-                <AppText variant="subheading" tone="onStage" numberOfLines={1}>{title}</AppText>
+                <View style={styles.titleRow}>
+                  {current && <Ionicons aria-hidden name="volume-high" size={16} color={theme.colors.stage.accent} />}
+                  <AppText variant="subheading" tone="onStage" numberOfLines={1} style={styles.title}>{title}</AppText>
+                </View>
                 <AppText variant="caption" tone="onStageMuted" numberOfLines={1}>{artistLine(item)}</AppText>
                 <VisuallyHidden>재생</VisuallyHidden>
               </View>
@@ -47,4 +51,6 @@ const styles = StyleSheet.create((theme) => ({
   current: { backgroundColor: theme.colors.stage.surface },
   main: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, padding: theme.spacing.sm },
   text: { flex: 1, minWidth: 0 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  title: { flexShrink: 1 },
 }));

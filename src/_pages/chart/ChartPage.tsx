@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { chartTracks, genresOf, useCatalog } from '@/entities/music';
-import { AppText, Chip, Screen, ScreenHeader, StateView } from '@/shared/ui';
+import { AppText, Chip, Rail, Screen, ScreenHeader, StateView } from '@/shared/ui';
 import { TrackList } from '@/widgets/track-list';
 
 const ALL = '전체';
@@ -27,11 +27,13 @@ export function ChartPage() {
             <View>
               <ScreenHeader title="TOP 100" />
               <AppText variant="caption" tone="muted" style={styles.note}>모든 순위와 변동은 데모용 가상 데이터입니다.</AppText>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-                {genres.map((g) => (
-                  <Chip key={g} label={g} selected={g === genre} onPress={() => setGenre(g)} />
-                ))}
-              </ScrollView>
+              <View style={styles.chips}>
+                <Rail>
+                  {genres.map((g) => (
+                    <Chip key={g} label={g} selected={g === genre} onPress={() => setGenre(g)} />
+                  ))}
+                </Rail>
+              </View>
             </View>
           }
         />
@@ -42,5 +44,5 @@ export function ChartPage() {
 
 const styles = StyleSheet.create((theme) => ({
   note: { paddingHorizontal: theme.spacing.lg },
-  chips: { gap: theme.spacing.sm, padding: theme.spacing.lg, paddingBottom: theme.spacing.xs },
+  chips: { paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.xs },
 }));

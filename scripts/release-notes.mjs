@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 태그가 package.json 버전과 맞고 CHANGELOG.md에 기록이 있는지 확인한 뒤 Release 설명을 출력합니다.
+// 태그가 package.json, app.json 버전과 맞고 CHANGELOG.md에 기록이 있는지 확인한 뒤 Release 설명을 출력합니다.
 //   node scripts/release-notes.mjs v0.1.0
 import { readFileSync } from 'node:fs';
 
@@ -11,6 +11,9 @@ const fail = (message) => {
 const tag = process.argv[2] ?? '';
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 if (tag !== `v${version}`) fail(`태그 ${tag || '(없음)'}가 package.json 버전 v${version}과 다릅니다.`);
+
+const appVersion = JSON.parse(readFileSync('app.json', 'utf8')).expo.version;
+if (appVersion !== version) fail(`app.json 버전 ${appVersion}이 package.json 버전 ${version}과 다릅니다.`);
 
 const lines = readFileSync('CHANGELOG.md', 'utf8').split('\n');
 const start = lines.findIndex((line) => line === `## ${version}` || line.startsWith(`## ${version} `) || line.startsWith(`## [${version}]`));

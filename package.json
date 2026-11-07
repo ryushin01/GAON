@@ -18,7 +18,7 @@
     "test": "jest",
     "desktop": "electron electron/main.cjs",
     "build:desktop": "pnpm build:web && electron-builder --config electron-builder.json",
-    "test:e2e": "playwright test --project=phone --project=wide",
+    "test:e2e": "playwright test --project=phone --project=wide --project=dark",
     "test:desktop": "playwright test --project=desktop-app",
     "storybook": "storybook dev -p 6006",
     "build:storybook": "storybook build"

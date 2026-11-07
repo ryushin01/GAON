@@ -1,13 +1,13 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { StyleSheet } from 'react-native-unistyles';
 
 import { deleteLocalFile, useLibraryStore, useLocalTracks } from '@/entities/library';
 import type { Track } from '@/entities/music';
 import { ImportFlacButton } from '@/features/import-local';
 import { removeFromQueue } from '@/features/player';
-import { AppButton, AppText, Chip, Screen, ScreenHeader, StateView } from '@/shared/ui';
+import { AppButton, AppText, Chip, ConfirmDialog, IconButton, Screen, ScreenHeader, StateView } from '@/shared/ui';
 import { TrackList, useTrackLookup } from '@/widgets/track-list';
 
 type Tab = 'liked' | 'recent' | 'playlists' | 'local';
@@ -19,7 +19,6 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 function Playlists() {
-  const { theme } = useUnistyles();
   const playlists = useLibraryStore((s) => s.playlists);
   const createPlaylist = useLibraryStore((s) => s.createPlaylist);
   const [name, setName] = useState('');
@@ -35,12 +34,11 @@ function Playlists() {
   };
   return (
     <View style={styles.pane}>
+      <AppText variant="caption">새 플레이리스트 이름</AppText>
       <View style={styles.form}>
         <TextInput
           aria-label="새 플레이리스트 이름"
           aria-invalid={Boolean(error)}
-          placeholder="새 플레이리스트 이름"
-          placeholderTextColor={theme.colors.textMuted}
           value={name}
           maxLength={40}
           onChangeText={(v) => {
@@ -80,6 +78,7 @@ export function LibraryPage() {
   const recentIds = useLibraryStore((s) => s.recentIds);
   const local = useLocalTracks();
   const { resolve } = useTrackLookup();
+  const [deleting, setDeleting] = useState<Track | null>(null);
 
   const tracks = useMemo(() => {
     if (tab === 'liked') return resolve(likedIds);
@@ -89,7 +88,7 @@ export function LibraryPage() {
 
   const tabs = (
     <View>
-      <ScreenHeader title="보관함" />
+      <ScreenHeader title="보관함" trailing={<IconButton icon="settings-outline" label="설정" onPress={() => router.push('/settings')} />} />
       <View style={styles.tabs}>
         {TABS.map((t) => (
           <Chip key={t.id} label={t.label} selected={t.id === tab} onPress={() => setTab(t.id)} />
@@ -116,7 +115,7 @@ export function LibraryPage() {
           key={tab}
           tracks={tracks}
           header={tabs}
-          extraActions={tab === 'local' ? (t) => [{ label: '보관함에서 삭제', onPress: () => deleteLocal(t) }] : undefined}
+          extraActions={tab === 'local' ? (t) => [{ label: '보관함에서 삭제', onPress: () => setDeleting(t) }] : undefined}
           empty={
             <StateView
               title={tab === 'liked' ? '좋아요한 곡이 없습니다' : tab === 'recent' ? '최근 들은 곡이 없습니다' : '가져온 FLAC이 없습니다'}
@@ -125,6 +124,17 @@ export function LibraryPage() {
           }
         />
       )}
+      <ConfirmDialog
+        visible={deleting != null}
+        title={`${deleting?.title ?? ''} 삭제`}
+        description="앱에 저장한 파일을 지웁니다. 기기에 있는 원본 파일은 그대로 남습니다."
+        confirmLabel="삭제"
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => {
+          if (deleting) deleteLocal(deleting);
+          setDeleting(null);
+        }}
+      />
     </Screen>
   );
 }

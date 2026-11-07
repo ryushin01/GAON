@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { AlbumArt, AppText, VisuallyHidden } from '@/shared/ui';
 
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export function TrackRow({ track, rank, active = false, onPress, leading, trailing, showArt = true, listItem = false }: Props) {
+  const { theme } = useUnistyles();
   const title = displayTitle(track);
   const artists = artistLine(track);
   return (
@@ -42,9 +44,13 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
       >
         {showArt && <AlbumArt uri={track.artUri} size={52} />}
         <View style={styles.text}>
-          <AppText variant="subheading" tone={active ? 'primary' : 'default'} numberOfLines={1}>{title}</AppText>
+          <View style={styles.titleRow}>
+            {/* 색만으로 구분하지 않도록 재생 중 표시를 함께 보여 줍니다. */}
+            {active && <Ionicons aria-hidden name="volume-high" size={16} color={theme.colors.primary} />}
+            <AppText variant="subheading" tone={active ? 'primary' : 'default'} numberOfLines={1} style={styles.title}>{title}</AppText>
+          </View>
           <AppText variant="caption" tone="muted" numberOfLines={1}>{artists} · {track.albumTitle}</AppText>
-          <QualityBadge format={track.format} compact />
+          <QualityBadge format={track.format} compact raised={active} />
           <VisuallyHidden>재생</VisuallyHidden>
         </View>
       </Pressable>
@@ -60,5 +66,7 @@ const styles = StyleSheet.create((theme) => ({
   rank: { textAlign: 'center' },
   main: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.xs },
   text: { flex: 1, minWidth: 0, gap: 2 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  title: { flexShrink: 1 },
   pressed: { opacity: 0.6 },
 }));

@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { useLocalTracks } from '@/entities/library';
 import { AlbumCard, matchesQuery, TrackRow, useCatalog } from '@/entities/music';
 import { playTracks, useCurrentTrack } from '@/features/player';
-import { AppText, IconButton, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
+import { AppText, IconButton, Rail, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
 import { TrackActions } from '@/widgets/track-list';
 
 const TRACK_LIMIT = 30;
@@ -57,7 +57,7 @@ export function SearchPage() {
 
       {artists.length > 0 && (
         <Section title="가수">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+          <Rail>
             {artists.map((artist) => (
               <Pressable
                 key={artist.name}
@@ -69,20 +69,21 @@ export function SearchPage() {
                 <AppText variant="caption" tone="muted">{artist.role}</AppText>
               </Pressable>
             ))}
-          </ScrollView>
+          </Rail>
         </Section>
       )}
       {albums.length > 0 && (
         <Section title="앨범">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+          <Rail>
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} size={130} onPress={() => router.push(`/album/${album.id}`)} />
             ))}
-          </ScrollView>
+          </Rail>
         </Section>
       )}
       {tracks.length > 0 && (
         <Section title={`곡 ${tracks.length}개`}>
+          {tracks.length > TRACK_LIMIT && <AppText variant="caption" tone="muted" style={styles.limit}>앞의 {TRACK_LIMIT}곡만 보여 줍니다. 검색어를 더 자세히 입력해 보세요.</AppText>}
           <View role="list">
             {tracks.slice(0, TRACK_LIMIT).map((track) => (
               <TrackRow
@@ -113,6 +114,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   input: { flex: 1, minHeight: 44, fontSize: 16, color: theme.colors.text },
   notice: { padding: theme.spacing.lg },
-  row: { gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
+  limit: { paddingHorizontal: theme.spacing.lg },
   artist: { minHeight: 44, minWidth: 120, justifyContent: 'center', padding: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface },
 }));

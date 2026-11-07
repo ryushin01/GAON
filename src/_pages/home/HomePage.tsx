@@ -1,13 +1,13 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Pressable, View, useWindowDimensions } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { AlbumCard, chartTracks, displayTitle, formatQuality, latestAlbums, TrackRow, useCatalog } from '@/entities/music';
 import { playTracks, useCurrentTrack } from '@/features/player';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatDate } from '@/shared/lib';
-import { AlbumArt, AppButton, AppText, Screen, Section, StateView } from '@/shared/ui';
+import { AlbumArt, AppButton, AppText, IconButton, Rail, Screen, Section, StateView } from '@/shared/ui';
 import { TrackActions } from '@/widgets/track-list';
 
 export function HomePage() {
@@ -20,9 +20,12 @@ export function HomePage() {
   return (
     <Screen>
       <View style={styles.brand}>
-        {/* 넓은 화면에서는 사이드바에 로고가 있습니다. */}
-        {width < WIDE_LAYOUT_MIN_WIDTH && <AppText variant="title" tone="primary" style={styles.logo}>GAON</AppText>}
-        <AppText variant="caption" tone="muted" role="heading" aria-level={1}>Hi-Res FLAC 전용 스트리밍</AppText>
+        <View style={styles.brandText}>
+          {/* 넓은 화면에서는 사이드바에 로고와 설정이 있습니다. */}
+          {width < WIDE_LAYOUT_MIN_WIDTH && <AppText variant="title" tone="primary" style={styles.logo}>GAON</AppText>}
+          <AppText variant="caption" tone="muted" role="heading" aria-level={1}>Hi-Res FLAC 전용 스트리밍</AppText>
+        </View>
+        {width < WIDE_LAYOUT_MIN_WIDTH && <IconButton icon="settings-outline" label="설정" onPress={() => router.push('/settings')} />}
       </View>
 
       {isPending && <StateView loading />}
@@ -58,11 +61,11 @@ export function HomePage() {
           </View>
 
           <Section title="최신 앨범">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.albums}>
+            <Rail>
               {albums.map((album) => (
                 <AlbumCard key={album.id} album={album} onPress={() => router.push(`/album/${album.id}`)} />
               ))}
-            </ScrollView>
+            </Rail>
           </Section>
 
           <Section title="TOP 100" actionLabel="전체 보기" actionHint="TOP 100 전체 보기" onAction={() => router.navigate('/chart')}>
@@ -90,7 +93,8 @@ export function HomePage() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  brand: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
+  brand: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
+  brandText: { flex: 1, minWidth: 0 },
   logo: { letterSpacing: 2, fontWeight: '900' },
   hero: {
     flexDirection: 'row',
@@ -114,6 +118,5 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.stage.text,
   },
   heroButtonLabel: { color: theme.colors.stage.bg },
-  albums: { gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
   more: { alignItems: 'center', paddingVertical: theme.spacing.md },
 }));
