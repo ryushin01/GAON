@@ -2,3 +2,4 @@ nodeLinker: hoisted
 allowBuilds:
   '@parcel/watcher': true
   electron-winstaller: false
+  esbuild: false
