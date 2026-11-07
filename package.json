@@ -1,0 +1,96 @@
+{
+  "name": "gaon",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.16.1",
+  "description": "고해상도 FLAC 전용 음악 스트리밍 앱",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "web": "expo start --web",
+    "media:generate": "python3 scripts/generate-media.py public-media",
+    "media:serve": "node scripts/serve-media.mjs public-media 8787",
+    "build:web": "expo export --platform web --output-dir dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "expo lint",
+    "test": "jest",
+    "desktop": "electron electron/main.cjs",
+    "build:desktop": "pnpm build:web && electron-builder --config electron-builder.json",
+    "test:e2e": "playwright test --project=phone --project=wide",
+    "test:desktop": "playwright test --project=desktop-app",
+    "storybook": "storybook dev -p 6006",
+    "build:storybook": "storybook build"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@tanstack/react-query": "^5.106.1",
+    "expo": "~58.0.23",
+    "expo-audio": "~58.0.11",
+    "expo-constants": "~58.0.15",
+    "expo-dev-client": "~58.0.18",
+    "expo-document-picker": "~58.0.4",
+    "expo-file-system": "~58.0.13",
+    "expo-font": "~58.0.11",
+    "expo-image": "~58.0.18",
+    "expo-linking": "~58.0.16",
+    "expo-router": "~58.0.30",
+    "expo-splash-screen": "~58.0.13",
+    "expo-status-bar": "~58.0.4",
+    "expo-system-ui": "~58.0.7",
+    "expo-web-browser": "~58.0.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-gesture-handler": "~3.3.0",
+    "react-native-nitro-modules": "0.37.2",
+    "react-native-reanimated": "4.7.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
+    "react-native-unistyles": "^3.8.1",
+    "react-native-web": "^0.21.4",
+    "react-native-worklets": "0.13.0",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@storybook/react-native-web-vite": "^10.6.5",
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.6.6",
+    "@types/react": "~19.3.0",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^58.0.4",
+    "jest": "^30.5.2",
+    "jest-expo": "~58.0.14",
+    "prettier": "^3.9.10",
+    "storybook": "^10.6.5",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.6"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "setupFiles": [
+      "react-native-unistyles/mocks",
+      "./src/shared/config/unistyles.ts",
+      "./jest.setup.ts"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/e2e/",
+      "/dist/",
+      "/release/"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|react-native-unistyles|react-native-nitro-modules|zustand|standard-navigation))"
+    ]
+  }
+}

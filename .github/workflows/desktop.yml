@@ -1,0 +1,54 @@
+name: PC 설치본
+
+# 태그를 올리거나 직접 실행하면 Windows와 macOS 설치본을 만들고, 만든 앱을 실제로 실행해 검사합니다.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win nsis --x64
+            executable: release/win-unpacked/GAON.exe
+            artifact: release/*.exe
+          - os: macos-latest
+            target: --mac dmg --arm64
+            executable: release/mac-arm64/GAON.app/Contents/MacOS/GAON
+            artifact: release/*.dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pnpm install --frozen-lockfile
+      - run: pip install numpy soundfile pillow
+      - run: python scripts/generate-media.py public-media
+      - name: 검사용 빌드
+        shell: bash
+        run: |
+          EXPO_PUBLIC_MEDIA_BASE_URL=http://localhost:8787 pnpm build:web
+          pnpm exec electron-builder --config electron-builder.json ${{ matrix.target }} --publish never
+      - name: 설치본 실행 검사
+        run: pnpm exec playwright test --project=desktop-app
+        env:
+          GAON_EXECUTABLE: ${{ matrix.executable }}
+      - name: 배포용 빌드 (공개 미디어 주소)
+        run: |
+          pnpm build:web
+          pnpm exec electron-builder --config electron-builder.json ${{ matrix.target }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gaon-${{ matrix.os }}
+          path: ${{ matrix.artifact }}
+          retention-days: 30
