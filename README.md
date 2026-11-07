@@ -1,7 +1,7 @@
 # GAON - 고해상도 음악 스트리밍
 
 [![CI](https://github.com/ryushin01/GAON/actions/workflows/ci.yml/badge.svg)](https://github.com/ryushin01/GAON/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-0.2.0-0047AB)
+![version](https://img.shields.io/badge/version-0.3.0-0047AB)
 
 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. iOS, Android, Windows, macOS에 설치해 들을 수 있고, 기기에 있는 FLAC 파일도 가져와 재생합니다.
 
