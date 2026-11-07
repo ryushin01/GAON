@@ -21,6 +21,9 @@ import numpy as np
 import soundfile as sf
 from PIL import Image, ImageDraw, ImageFilter
 
+# Windows 콘솔의 기본 인코딩(cp1252)으로는 한글을 출력하지 못합니다.
+sys.stdout.reconfigure(encoding="utf-8")
+
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "public-media")
 HANDWRITTEN_SECONDS = 30
 GENERATED_SECONDS = 24
