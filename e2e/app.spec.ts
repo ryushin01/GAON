@@ -231,3 +231,15 @@ test('플레이리스트는 확인을 거쳐 삭제합니다', async ({ page }) 
   await dialog.getByRole('button', { name: '삭제' }).click();
   await expect(page).toHaveTitle('보관함 - GAON');
 });
+
+test('낮은 창에서도 플레이어를 닫을 수 있습니다', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 500 });
+  await openChart(page);
+  await page.getByRole('button', { name: /^빛 \(The Light\) 유신 .*재생$/ }).click();
+  await page.getByRole('button', { name: /플레이어 열기/ }).click();
+  await expect(page.getByRole('slider')).toBeVisible();
+  await page.getByRole('button', { name: '다음 곡' }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole('button', { name: '다음 곡' })).toBeInViewport();
+  await page.getByRole('button', { name: '플레이어 닫기' }).click();
+  await expect(page.getByRole('slider')).toBeHidden();
+});
