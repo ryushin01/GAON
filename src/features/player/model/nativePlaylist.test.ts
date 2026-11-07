@@ -96,6 +96,17 @@ describe('비트 퍼펙트 재생 목록', () => {
     expect(list.playing).toBe(false);
   });
 
+  it('재생기 오류 뒤에 다시 재생하면 곡을 다시 불러옵니다', async () => {
+    const { bridge, list, emit } = setup();
+    list.play();
+    await settle();
+    emit({ event: 'error', message: 'helper_stopped' });
+    bridge.load.mockClear();
+    list.play();
+    await settle();
+    expect(bridge.load).toHaveBeenCalledWith('a.name');
+  });
+
   it('준비에 실패하면 알립니다', async () => {
     const { bridge, list, onError } = setup();
     bridge.prepareUrl.mockRejectedValueOnce(new Error('download_failed'));

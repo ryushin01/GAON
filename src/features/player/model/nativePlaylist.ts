@@ -154,6 +154,8 @@ export function createNativePlaylist(bridge: AudioBridge, { onOutput, onError }:
     } else if (event.event === 'error') {
       wantPlay = false;
       playing = false;
+      // 재생기가 다시 시작되면 불러온 곡이 없으니 다음 재생 때 다시 불러옵니다.
+      loadedUri = null;
       onError('재생기를 시작하지 못했습니다. 설정에서 기본 출력으로 바꿔 보세요.');
       publish();
     }

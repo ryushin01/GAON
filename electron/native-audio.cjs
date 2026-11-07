@@ -88,21 +88,30 @@ function setupNativeAudio(getWindow) {
   };
   const command = (line) => ensureChild().stdin.write(`${line}\n`);
 
-  const cached = async (key, write) => {
+  // 같은 곡을 연달아 눌러도 한 번만 내려받습니다. 받다 만 파일이 캐시에 남지 않게 다 받은 뒤 이름을 바꿉니다.
+  const inflight = new Map();
+  const cached = (key, write) => {
     const dir = cacheDir();
     const name = `${createHash('sha256').update(key).digest('hex')}.flac`;
     const file = path.join(dir, name);
-    if (!existsSync(file)) {
-      const part = `${file}.${process.pid}.part`;
-      await write(part);
-      if (!isFlacFile(part)) {
-        rmSync(part, { force: true });
-        throw new Error('not_flac');
-      }
-      renameSync(part, file);
-      pruneCache(dir, name);
+    if (existsSync(file)) return Promise.resolve(name);
+    if (!inflight.has(name)) {
+      const job = (async () => {
+        const part = `${file}.${process.pid}.${Date.now()}.part`;
+        try {
+          await write(part);
+          if (!isFlacFile(part)) throw new Error('not_flac');
+          renameSync(part, file);
+          pruneCache(dir, name);
+          return name;
+        } finally {
+          rmSync(part, { force: true });
+          inflight.delete(name);
+        }
+      })();
+      inflight.set(name, job);
     }
-    return name;
+    return inflight.get(name);
   };
 
   ipcMain.on('audio:available', (event) => {

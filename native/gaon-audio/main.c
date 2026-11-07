@@ -282,7 +282,8 @@ static const char *mac_open_hal(void) {
     size = sizeof(physicalFormat);
     if (AudioObjectGetPropertyData(streams[0], &a, 0, NULL, &size, &physicalFormat) != noErr) return "no_stream_format";
     g_macPhysicalBits = physicalFormat.mBitsPerChannel;
-    if (g_macPhysicalBits < g_flac->bitsPerSample) return "format_truncated";
+    /* IOProc는 float32로 씁니다. 24비트를 넘는 값은 정확히 담지 못합니다. */
+    if (g_macPhysicalBits < g_flac->bitsPerSample || !format_holds(ma_format_f32, g_flac->bitsPerSample)) return "format_truncated";
 
     g_macChannels = virtualFormat.mChannelsPerFrame;
     g_macRate = (ma_uint32)virtualFormat.mSampleRate;
@@ -364,7 +365,10 @@ static ma_result init_device(ma_format format, ma_share_mode share) {
 }
 
 #ifndef __APPLE__
-/* 비트 수를 담을 수 있는 형식을 정확한 것부터 시도합니다. */
+/*
+ * miniaudio는 WASAPI 독점 모드에서 요청과 상관없이 장치의 기본 형식으로 엽니다. 샘플레이트도 마찬가지여서
+ * 곡과 다르면 judge_exclusive가 rate_converted로 보고합니다. 샘플 형식은 기본 형식과 같은 것을 찾아 변환을 피합니다.
+ */
 static ma_bool32 open_device_exclusive(void) {
     static const ma_format order24[] = {ma_format_s24, ma_format_s32};
     static const ma_format order16[] = {ma_format_s16, ma_format_s24, ma_format_s32};
@@ -372,9 +376,12 @@ static ma_bool32 open_device_exclusive(void) {
     size_t count = g_flac->bitsPerSample <= 16 ? 3 : 2;
     size_t i;
     for (i = 0; i < count; i += 1) {
-        if (init_device(order[i], ma_share_mode_exclusive) == MA_SUCCESS) return MA_TRUE;
+        if (init_device(order[i], ma_share_mode_exclusive) != MA_SUCCESS) continue;
+        if (g_device.playback.internalFormat == order[i]) return MA_TRUE;
+        ma_device_uninit(&g_device);
     }
-    return MA_FALSE;
+    /* 맞는 형식이 없으면 다시 열고, 변환된다고 judge_exclusive가 보고합니다. */
+    return init_device(order[count - 1], ma_share_mode_exclusive) == MA_SUCCESS;
 }
 
 /* 변환 없이 그대로 나가는지 장치에서 실제로 받은 값으로 판단합니다. */

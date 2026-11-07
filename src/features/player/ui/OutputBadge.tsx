@@ -16,6 +16,8 @@ export function outputLabel(output: OutputInfo): string {
     rate_unsupported: `장치가 ${file}를 지원하지 않아 ${device}로 변환 중`,
     device_busy: '다른 앱이 장치를 쓰는 중이라 공유 모드로 재생 중',
     exclusive_unavailable: '독점 모드를 쓸 수 없어 공유 모드로 재생 중',
+    rate_converted: `장치 기본 형식이 ${device}라 ${file}를 변환 중`,
+    format_truncated: `장치가 ${output.fileBits}bit를 그대로 받지 못해 변환 중`,
     simulated: '시험 출력',
   };
   return reasons[output.reason] ?? '변환을 거쳐 재생 중';
