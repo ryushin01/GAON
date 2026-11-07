@@ -15,6 +15,7 @@ export default defineConfig({
   projects: [
     { name: 'phone', testIgnore: /desktop\.spec/, use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } } },
     { name: 'wide', testIgnore: /desktop\.spec/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
+    { name: 'dark', testIgnore: /desktop\.spec/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, colorScheme: 'dark' } },
     { name: 'desktop-app', testMatch: /desktop\.spec/ },
   ],
   webServer: [

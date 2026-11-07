@@ -30,9 +30,9 @@ export function AddToPlaylistDialog({ visible, trackIds, onClose }: Props) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => close(false)}>
+    <Modal aria-label="플레이리스트에 담기" visible={visible} transparent animationType="fade" onRequestClose={() => close(false)}>
       <View style={styles.backdrop}>
-        <View role="dialog" aria-modal aria-label="플레이리스트에 담기" style={styles.sheet}>
+        <View style={styles.sheet}>
           <View style={styles.header}>
             <AppText variant="heading" role="heading" aria-level={2} style={styles.flex}>
               {trackIds.length}곡 담기
@@ -57,9 +57,8 @@ export function AddToPlaylistDialog({ visible, trackIds, onClose }: Props) {
             ))}
             {!playlists.length && <AppText tone="muted">아직 플레이리스트가 없습니다. 아래에서 새로 만들어 보세요.</AppText>}
           </ScrollView>
-          <AppText variant="caption" nativeID="new-playlist-label">새 플레이리스트 이름</AppText>
+          <AppText variant="caption">새 플레이리스트 이름</AppText>
           <TextInput
-            aria-labelledby="new-playlist-label"
             aria-label="새 플레이리스트 이름"
             aria-invalid={Boolean(error)}
             value={name}
@@ -82,7 +81,7 @@ export function AddToPlaylistDialog({ visible, trackIds, onClose }: Props) {
 
 const styles = StyleSheet.create((theme) => ({
   backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(3, 12, 30, 0.6)' },
-  sheet: { width: '100%', maxWidth: 420, maxHeight: '85%', gap: theme.spacing.md, padding: theme.spacing.lg, borderRadius: theme.radius.lg, backgroundColor: theme.colors.bg },
+  sheet: { width: '100%', maxWidth: 420, maxHeight: '85%', gap: theme.spacing.md, padding: theme.spacing.lg, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
   header: { flexDirection: 'row', alignItems: 'center' },
   flex: { flex: 1 },
   list: { flexGrow: 0 },

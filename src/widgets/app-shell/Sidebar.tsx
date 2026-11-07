@@ -26,6 +26,16 @@ export function Sidebar() {
           </Pressable>
         );
       })}
+      <View style={styles.spacer} />
+      <Pressable
+        role="link"
+        aria-current={pathname.startsWith('/settings') ? 'page' : undefined}
+        onPress={() => router.navigate('/settings')}
+        style={[styles.item, pathname.startsWith('/settings') && styles.itemActive]}
+      >
+        <Ionicons aria-hidden name={pathname.startsWith('/settings') ? 'settings' : 'settings-outline'} size={22} color={pathname.startsWith('/settings') ? theme.colors.primary : theme.colors.textMuted} />
+        <Text style={[styles.label, pathname.startsWith('/settings') && styles.labelActive]}>설정</Text>
+      </Pressable>
     </View>
   );
 }
@@ -34,6 +44,7 @@ const styles = StyleSheet.create((theme) => ({
   root: { width: 220, gap: theme.spacing.xs, padding: theme.spacing.md, backgroundColor: theme.colors.surface, borderRightWidth: 1, borderRightColor: theme.colors.border },
   logo: { color: theme.colors.primary, fontSize: 26, fontWeight: '900', letterSpacing: 2, padding: theme.spacing.md },
   item: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, minHeight: 44, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md },
+  spacer: { flex: 1 },
   itemActive: { backgroundColor: theme.colors.primaryMuted },
   label: { color: theme.colors.text, fontSize: 15, fontWeight: '500' },
   labelActive: { color: theme.colors.primary, fontWeight: '700' },

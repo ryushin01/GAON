@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { useReducedMotion } from 'react-native-reanimated';
 import { View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
@@ -11,12 +12,13 @@ import { Sidebar } from './Sidebar';
 export function TabsLayout() {
   const { theme } = useUnistyles();
   const { width } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
   return (
     <View style={styles.root}>
       {width >= WIDE_LAYOUT_MIN_WIDTH && <Sidebar />}
       <View style={styles.main}>
         <View style={styles.main}>
-          <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: theme.colors.bg } }} />
+          <Stack screenOptions={{ headerShown: false, animation: reduceMotion ? 'none' : 'fade', contentStyle: { backgroundColor: theme.colors.bg } }} />
         </View>
         <BottomDock />
       </View>

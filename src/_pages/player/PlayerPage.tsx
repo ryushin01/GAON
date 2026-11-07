@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -7,13 +8,14 @@ import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
 import { SeekBar, TransportControls, useCurrentTrack } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
-import { AlbumArt, AppText, IconButton } from '@/shared/ui';
+import { AlbumArt, AppText, IconButton, useMainRegion } from '@/shared/ui';
 import { LyricsPanel, QueuePanel } from '@/widgets/player-view';
 
 type Panel = 'art' | 'lyrics' | 'queue';
 
 export function PlayerPage() {
   const { theme } = useUnistyles();
+  const { ref, nativeID } = useMainRegion();
   const { width } = useWindowDimensions();
   const track = useCurrentTrack();
   const [panel, setPanel] = useState<Panel>('art');
@@ -90,7 +92,9 @@ export function PlayerPage() {
   );
 
   return (
-    <View role="main" nativeID="main" tabIndex={-1} style={styles.root}>
+    <View ref={ref} role="main" nativeID={nativeID} tabIndex={-1} style={styles.root}>
+      {/* 플레이어 배경은 테마와 상관없이 어둡습니다. */}
+      <StatusBar style="light" />
       <View style={styles.header}>
         <IconButton icon="chevron-down" label="플레이어 닫기" color={text} onPress={close} />
       </View>

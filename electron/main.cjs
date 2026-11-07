@@ -1,5 +1,5 @@
 // GAON PC 앱입니다. Expo 웹 빌드를 설치본 안에 넣어 실행합니다.
-const { app, BrowserWindow, Menu, net, protocol, shell } = require('electron');
+const { app, BrowserWindow, Menu, nativeTheme, net, protocol, shell } = require('electron');
 const { existsSync, statSync } = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -30,7 +30,7 @@ function createWindow() {
     minWidth: 360,
     minHeight: 560,
     title: 'GAON',
-    backgroundColor: '#06214F',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#081223' : '#FFFFFF',
     autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
   });

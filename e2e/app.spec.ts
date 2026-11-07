@@ -86,7 +86,7 @@ test('좋아요와 플레이리스트가 새로 고침 뒤에도 남습니다', 
   await openChart(page);
   await page.getByRole('button', { name: '빛 (The Light) 좋아요', exact: true }).click();
   await page.getByRole('button', { name: '빛 (The Light) 더보기' }).click();
-  await page.getByRole('menuitem', { name: '플레이리스트에 담기' }).click();
+  await page.getByRole('button', { name: '플레이리스트에 담기' }).click();
   await page.getByRole('button', { name: '새로 만들어 담기' }).click();
   await expect(page.getByRole('alert')).toHaveText('플레이리스트 이름을 입력해 주세요.');
   await page.getByRole('textbox', { name: '새 플레이리스트 이름' }).fill('출근길');
@@ -117,7 +117,7 @@ test('키보드로 본문 바로가기를 쓸 수 있습니다', async ({ page }
   await expect(page.getByRole('main').first()).toBeFocused();
 });
 
-for (const [name, path] of [['홈', '/'], ['TOP 100', '/chart'], ['검색', '/search'], ['보관함', '/library'], ['앨범', '/album/bit'], ['곡 정보', '/track/bit-1'], ['가수', '/artist/%EC%9C%A0%EC%8B%A0']] as const) {
+for (const [name, path] of [['홈', '/'], ['TOP 100', '/chart'], ['검색', '/search'], ['보관함', '/library'], ['앨범', '/album/bit'], ['곡 정보', '/track/bit-1'], ['가수', '/artist/%EC%9C%A0%EC%8B%A0'], ['설정', '/settings']] as const) {
   test(`${name} 화면에 axe 위반이 없습니다`, async ({ page }) => {
     await page.goto(path);
     await page.waitForTimeout(1000);
@@ -136,4 +136,98 @@ test('플레이어 화면에 axe 위반이 없습니다', async ({ page }) => {
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target} ${v.nodes[0]?.failureSummary}`)).toEqual([]);
   await expectNoOverflow(page);
+});
+
+test('테마를 직접 고르면 새로 고침 뒤에도 유지됩니다', async ({ page }) => {
+  await page.goto('/settings');
+  await page.getByRole('button', { name: '다크', exact: true }).click();
+  await expect(page.getByRole('button', { name: '다크', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const scheme = () => page.evaluate(() => document.documentElement.style.colorScheme);
+  await expect.poll(scheme).toBe('dark');
+  await page.reload();
+  await expect.poll(scheme).toBe('dark');
+  await page.getByRole('button', { name: '라이트', exact: true }).click();
+  await expect.poll(scheme).toBe('light');
+});
+
+test('다크로 고른 화면에도 axe 위반이 없습니다', async ({ page }) => {
+  await page.goto('/settings');
+  await page.getByRole('button', { name: '다크', exact: true }).click();
+  await page.waitForTimeout(500);
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+});
+
+test('키보드로 곡을 선택하고 메뉴를 닫습니다', async ({ page }) => {
+  await openChart(page);
+  const checkbox = page.getByRole('checkbox', { name: '빛 (The Light) 선택' });
+  await checkbox.focus();
+  await page.keyboard.press('Space');
+  await expect(checkbox).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Space');
+  await expect(checkbox).toHaveAttribute('aria-checked', 'false');
+
+  const more = page.getByRole('button', { name: '빛 (The Light) 더보기' });
+  await more.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '빛 (The Light) 메뉴' });
+  await expect(dialog).toBeVisible();
+  // 초점이 대화상자 안으로 들어가고, 닫으면 연 버튼으로 돌아와야 합니다.
+  await expect(dialog.locator(':focus')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(more).toBeFocused();
+});
+
+test('열린 대화상자에도 axe 위반이 없습니다', async ({ page }) => {
+  await openChart(page);
+  await page.getByRole('button', { name: /^빛 \(The Light\) 유신 .*재생$/ }).click();
+  await page.getByRole('button', { name: '빛 (The Light) 더보기' }).click();
+  // 여는 애니메이션이 끝나 초점이 들어온 뒤에 검사합니다.
+  await expect(page.getByRole('dialog').locator(':focus')).toHaveCount(1);
+  let result = await new AxeBuilder({ page }).analyze();
+  expect(result.violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+
+  await page.getByRole('button', { name: '플레이리스트에 담기' }).click();
+  await page.getByRole('button', { name: '새로 만들어 담기' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.locator('[aria-modal]')).toHaveCount(1);
+  result = await new AxeBuilder({ page }).analyze();
+  expect(result.violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+});
+
+test('화면을 옮기면 초점이 새 본문으로 갑니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await page.getByRole('link', { name: /^유리 도시 루멘 트리오/ }).click();
+  await expect(page.locator('#main')).toBeFocused();
+});
+
+test('주소로 바로 연 플레이리스트를 삭제하면 보관함으로 갑니다', async ({ page }) => {
+  await page.goto('/library');
+  await page.getByRole('button', { name: '플레이리스트', exact: true }).click();
+  await page.getByRole('textbox', { name: '새 플레이리스트 이름' }).fill('바로 연 목록');
+  await page.getByRole('button', { name: '만들기' }).click();
+  await page.getByRole('link', { name: '바로 연 목록 0곡' }).click();
+  await expect(page).toHaveURL(/\/playlist\//);
+  await page.goto(page.url());
+  await page.getByRole('button', { name: '삭제', exact: true }).click();
+  await page.getByRole('dialog', { name: '바로 연 목록 삭제' }).getByRole('button', { name: '삭제' }).click();
+  await expect(page).toHaveTitle('보관함 - GAON');
+});
+
+test('플레이리스트는 확인을 거쳐 삭제합니다', async ({ page }) => {
+  await page.goto('/library');
+  await page.getByRole('button', { name: '플레이리스트', exact: true }).click();
+  await page.getByRole('textbox', { name: '새 플레이리스트 이름' }).fill('지울 목록');
+  await page.getByRole('button', { name: '만들기' }).click();
+  await page.getByRole('link', { name: '지울 목록 0곡' }).click();
+  await page.getByRole('button', { name: '삭제', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '지울 목록 삭제' });
+  await dialog.getByRole('button', { name: '취소' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { name: '지울 목록', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: '삭제', exact: true }).click();
+  await dialog.getByRole('button', { name: '삭제' }).click();
+  await expect(page).toHaveTitle('보관함 - GAON');
 });

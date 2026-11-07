@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { AlbumCard, useCatalog } from '@/entities/music';
-import { AppText, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
+import { AppText, Rail, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
 import { TrackList } from '@/widgets/track-list';
 
 export function ArtistPage() {
@@ -38,11 +38,11 @@ export function ArtistPage() {
             <ScreenHeader title={artist.name} back />
             <AppText tone="muted" style={styles.role}>{artist.role}</AppText>
             <Section title="앨범">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.albums}>
+              <Rail>
                 {albums.map((album) => (
                   <AlbumCard key={album.id} album={album} size={130} onPress={() => router.push(`/album/${album.id}`)} />
                 ))}
-              </ScrollView>
+              </Rail>
             </Section>
             <AppText variant="heading" role="heading" aria-level={2} style={styles.heading}>곡</AppText>
           </View>
@@ -54,6 +54,5 @@ export function ArtistPage() {
 
 const styles = StyleSheet.create((theme) => ({
   role: { paddingHorizontal: theme.spacing.lg },
-  albums: { gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
   heading: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl },
 }));

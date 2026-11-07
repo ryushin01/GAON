@@ -20,7 +20,7 @@
 
 ### 새 버전 공개
 
-1. `package.json`의 `version`을 올립니다.
+1. `package.json`과 `app.json`의 `version`을 함께 올립니다.
 2. `CHANGELOG.md`에 `## [0.2.0](https://github.com/ryushin01/GAON/releases/tag/v0.2.0) - 날짜` 형식으로 변경 내용을 적고 `main`에 올립니다.
 3. 같은 버전의 태그를 올립니다.
 
@@ -31,7 +31,7 @@ git push origin v0.2.0
 
 Windows와 macOS가 모두 통과하면 [GitHub Release](https://github.com/ryushin01/GAON/releases)가 공개됩니다. 설명은 `CHANGELOG.md`의 해당 버전과 `.github/release-notes.md`로 만듭니다.
 
-- 태그가 `package.json` 버전과 다르거나 버전 기록이 없으면 빌드 전에 멈춥니다.
+- 태그, `package.json`, `app.json`의 버전이 다르거나 버전 기록이 없으면 빌드 전에 멈춥니다.
 - 파일을 초안에 모두 올린 뒤 공개합니다. 중간에 실패하면 **Re-run failed jobs**로 이어서 올립니다.
 - 이미 공개된 Release는 덮어쓰지 않습니다. 고치려면 새 버전을 올립니다.
 - `v1.0.0-rc.1`처럼 하이픈이 있는 태그는 시험판으로 공개하고 최신 버전으로 표시하지 않습니다.
