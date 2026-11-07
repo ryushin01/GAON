@@ -2,7 +2,7 @@
   "expo": {
     "name": "GAON",
     "slug": "gaon",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "scheme": "gaon",
     "orientation": "default",
     "icon": "./assets/icon.png",
