@@ -5,11 +5,24 @@
  *   load <경로> | play | pause | seek <초> | stop | quit
  *
  * 운영체제 믹서를 거치지 않도록 macOS는 hog 모드와 장치 샘플레이트 변경 후 HAL에 직접 쓰고, Windows는
- * WASAPI 독점 모드를 씁니다. 조건이 맞지 않으면 재생은 하되 bitPerfect=false와 이유를 알립니다.
+ * 곡의 형식으로 WASAPI 독점 모드를 엽니다. 조건이 맞지 않으면 재생은 하되 bitPerfect=false와 이유를 알립니다.
  *
  *   --verify <파일> <출력> <형식>  실제 콜백으로 장치에 쓸 버퍼를 만들어 PCM으로 되돌려 저장합니다.
  *   --backend null                 소리 장치가 없는 환경에서 시험합니다.
  */
+#ifdef _WIN32
+#define COBJMACROS
+#include <windows.h>
+#include <objbase.h>
+#include <mmdeviceapi.h>
+#include <audioclient.h>
+#include <avrt.h>
+#include <mmreg.h>
+#ifndef E_NOTFOUND
+#define E_NOTFOUND HRESULT_FROM_WIN32(ERROR_NOT_FOUND)
+#endif
+#endif
+
 #define MA_NO_ENCODING
 #define MA_NO_GENERATION
 #define MA_NO_MP3
@@ -166,6 +179,10 @@ static void data_callback(ma_device *device, void *output, const void *input, ma
     (void)input;
     fill_output(output, frameCount, device->playback.channels, device->playback.format);
 }
+
+#ifdef _WIN32
+#include "wasapi.inc.h"
+#endif
 
 /* ---------- 장치 준비 (macOS) ---------- */
 
@@ -327,6 +344,9 @@ static void close_device(void) {
 #ifdef __APPLE__
     mac_release();
 #endif
+#ifdef _WIN32
+    wasapi_stop();
+#endif
     if (g_deviceOpen && g_usesMiniaudio) ma_device_uninit(&g_device);
     g_usesMiniaudio = MA_FALSE;
     g_deviceOpen = MA_FALSE;
@@ -336,6 +356,12 @@ static ma_bool32 output_start(void) {
 #ifdef __APPLE__
     if (g_macIoProc) return AudioDeviceStart(g_macDevice, g_macIoProc) == noErr;
 #endif
+#ifdef _WIN32
+    if (!g_usesMiniaudio) {
+        if (g_wasRunning) return MA_TRUE;
+        return wasapi_start(g_flac->channels, g_flac->sampleRate, g_flac->bitsPerSample) == NULL;
+    }
+#endif
     return ma_device_start(&g_device) == MA_SUCCESS;
 }
 
@@ -343,6 +369,12 @@ static void output_stop(void) {
 #ifdef __APPLE__
     if (g_macIoProc) {
         AudioDeviceStop(g_macDevice, g_macIoProc);
+        return;
+    }
+#endif
+#ifdef _WIN32
+    if (!g_usesMiniaudio) {
+        wasapi_stop();
         return;
     }
 #endif
@@ -364,37 +396,6 @@ static ma_result init_device(ma_format format, ma_share_mode share) {
     return ma_device_init(&g_context, &config, &g_device);
 }
 
-#ifndef __APPLE__
-/*
- * miniaudio는 WASAPI 독점 모드에서 요청과 상관없이 장치의 기본 형식으로 엽니다. 샘플레이트도 마찬가지여서
- * 곡과 다르면 judge_exclusive가 rate_converted로 보고합니다. 샘플 형식은 기본 형식과 같은 것을 찾아 변환을 피합니다.
- */
-static ma_bool32 open_device_exclusive(void) {
-    static const ma_format order24[] = {ma_format_s24, ma_format_s32};
-    static const ma_format order16[] = {ma_format_s16, ma_format_s24, ma_format_s32};
-    const ma_format *order = g_flac->bitsPerSample <= 16 ? order16 : order24;
-    size_t count = g_flac->bitsPerSample <= 16 ? 3 : 2;
-    size_t i;
-    for (i = 0; i < count; i += 1) {
-        if (init_device(order[i], ma_share_mode_exclusive) != MA_SUCCESS) continue;
-        if (g_device.playback.internalFormat == order[i]) return MA_TRUE;
-        ma_device_uninit(&g_device);
-    }
-    /* 맞는 형식이 없으면 다시 열고, 변환된다고 judge_exclusive가 보고합니다. */
-    return init_device(order[count - 1], ma_share_mode_exclusive) == MA_SUCCESS;
-}
-
-/* 변환 없이 그대로 나가는지 장치에서 실제로 받은 값으로 판단합니다. */
-static const char *judge_exclusive(void) {
-    if (g_device.playback.internalSampleRate != g_flac->sampleRate) return "rate_converted";
-    if (g_device.playback.internalChannels != g_flac->channels) return "channels_converted";
-    if (!format_holds(g_device.playback.internalFormat, g_flac->bitsPerSample)) return "format_truncated";
-    if (g_device.playback.internalFormat != g_device.playback.format) return "format_converted";
-    if (!g_device.playback.converter.isPassthrough) return "converter_active";
-    return NULL;
-}
-#endif
-
 static ma_bool32 open_device(void) {
     const char *reason = NULL;
     ma_bool32 exclusive = MA_FALSE;
@@ -411,13 +412,12 @@ static ma_bool32 open_device(void) {
         if (!reason) exclusive = MA_TRUE;
         else mac_release();
 #else
-        if (open_device_exclusive()) {
-            g_usesMiniaudio = MA_TRUE;
-            exclusive = MA_TRUE;
-            reason = judge_exclusive();
-        } else {
-            reason = "exclusive_unavailable";
-        }
+#ifdef _WIN32
+        reason = wasapi_start(g_flac->channels, g_flac->sampleRate, g_flac->bitsPerSample);
+        if (!reason) exclusive = MA_TRUE;
+#else
+        reason = "exclusive_unavailable";
+#endif
 #endif
     }
     if (!exclusive) {
@@ -434,6 +434,13 @@ static ma_bool32 open_device(void) {
         deviceRate = g_macRate;
         deviceChannels = g_macChannels;
         deviceFormat = "f32";
+    } else
+#endif
+#ifdef _WIN32
+    if (exclusive) {
+        deviceRate = g_wasRate;
+        deviceChannels = g_wasChannels;
+        deviceFormat = g_wasFormatName;
     } else
 #endif
     {
@@ -479,6 +486,13 @@ THREAD_FN(status_thread) {
     while (!g_quit) {
         sleep_ms(250);
         ma_mutex_lock(&g_stateLock);
+#ifdef _WIN32
+        if (g_wasLost) {
+            g_wasLost = MA_FALSE;
+            g_playing = MA_FALSE;
+            close_device();
+        }
+#endif
         if (g_flac) {
             double rate = (double)g_flac->sampleRate;
             ma_uint64 frame = g_baseFrame + g_framesPlayed;
@@ -586,7 +600,12 @@ static void cmd_seek(double seconds) {
     if (g_deviceOpen) output_stop();
     ma_dr_flac_seek_to_pcm_frame(g_flac, frame);
     reset_position(frame);
-    if (wasPlaying && g_deviceOpen) output_start();
+    if (wasPlaying && g_deviceOpen && !output_start()) {
+        /* 다시 시작하지 못하면 소리 없이 재생 중으로 남지 않게 합니다. */
+        g_playing = MA_FALSE;
+        close_device();
+        emit_error("device_lost");
+    }
     ma_mutex_unlock(&g_stateLock);
 }
 
