@@ -600,7 +600,12 @@ static void cmd_seek(double seconds) {
     if (g_deviceOpen) output_stop();
     ma_dr_flac_seek_to_pcm_frame(g_flac, frame);
     reset_position(frame);
-    if (wasPlaying && g_deviceOpen) output_start();
+    if (wasPlaying && g_deviceOpen && !output_start()) {
+        /* 다시 시작하지 못하면 소리 없이 재생 중으로 남지 않게 합니다. */
+        g_playing = MA_FALSE;
+        close_device();
+        emit_error("device_lost");
+    }
     ma_mutex_unlock(&g_stateLock);
 }
 
