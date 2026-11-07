@@ -14,6 +14,16 @@
     "dist/**",
     "!node_modules/**"
   ],
+  "extraResources": [
+    {
+      "from": "native/build",
+      "to": "native",
+      "filter": [
+        "gaon-audio",
+        "gaon-audio.exe"
+      ]
+    }
+  ],
   "npmRebuild": false,
   "icon": "assets/icon.png",
   "mac": {

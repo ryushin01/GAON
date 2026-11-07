@@ -5,7 +5,7 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
-import { SeekBar, TransportControls, useCurrentTrack } from '@/features/player';
+import { OutputBadge, SeekBar, TransportControls, useCurrentTrack } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AlbumArt, AppText, IconButton, useMainRegion } from '@/shared/ui';
@@ -13,10 +13,14 @@ import { LyricsPanel, QueuePanel } from '@/widgets/player-view';
 
 type Panel = 'art' | 'lyrics' | 'queue';
 
+/** 낮은 창에서도 조작 버튼이 보이도록 넓은 화면의 앨범 아트 크기를 창 높이에 맞춥니다. */
+const WIDE_CONTROLS_HEIGHT = 380;
+const MIN_WIDE_ART = 160;
+
 export function PlayerPage() {
   const { theme } = useUnistyles();
   const { ref, nativeID } = useMainRegion();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const track = useCurrentTrack();
   const [panel, setPanel] = useState<Panel>('art');
   const wide = width >= WIDE_LAYOUT_MIN_WIDTH;
@@ -37,7 +41,7 @@ export function PlayerPage() {
     <View style={styles.column}>
       {/* 좁은 화면에서는 앨범 아트 자리에 가사와 재생 목록을 바꿔 가며 보여 줍니다. */}
       {(wide || panel === 'art') && (
-        <View style={styles.artFrame}>
+        <View style={[styles.artFrame, wide && { maxWidth: Math.max(MIN_WIDE_ART, height - WIDE_CONTROLS_HEIGHT) }]}>
           {/* 넓은 화면은 가사가 늘 옆에 보여 누를 필요가 없습니다. */}
           {wide ? art : <Pressable role="button" aria-label="가사 보기" onPress={() => setPanel('lyrics')}>{art}</Pressable>}
         </View>
@@ -54,6 +58,7 @@ export function PlayerPage() {
           <AppText variant="heading" tone="onStage" numberOfLines={2} role="heading" aria-level={1}>{title}</AppText>
           <AppText tone="onStageMuted" numberOfLines={1}>{artistLine(track)} · {track.albumTitle}</AppText>
           <QualityBadge format={track.format} onStage />
+          <OutputBadge />
         </View>
         <LikeButton trackId={track.id} title={title} color={text} size={26} />
       </View>
@@ -100,7 +105,7 @@ export function PlayerPage() {
       </View>
       {wide ? (
         <View style={styles.wide}>
-          <View style={styles.wideLeft}>{artAndControls}</View>
+          <ScrollView style={styles.wideLeft} contentContainerStyle={styles.wideLeftContent}>{artAndControls}</ScrollView>
           <View style={styles.wideRight}>
             <AppText variant="subheading" tone="onStage" role="heading" aria-level={2}>가사</AppText>
             <View style={styles.flex}><LyricsPanel lines={track.lyrics} /></View>
@@ -126,7 +131,8 @@ const styles = StyleSheet.create((theme, rt) => ({
   metaText: { flex: 1, minWidth: 0, gap: 4 },
   tools: { flexDirection: 'row', justifyContent: 'center', gap: theme.spacing.xl },
   narrow: { flexGrow: 1, justifyContent: 'center', padding: theme.spacing.xl, paddingTop: 0 },
-  wide: { flex: 1, flexDirection: 'row', gap: theme.spacing.xxl, padding: theme.spacing.xl, paddingTop: 0 },
-  wideLeft: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  wide: { flex: 1, minHeight: 0, flexDirection: 'row', gap: theme.spacing.xxl, padding: theme.spacing.xl, paddingTop: 0 },
+  wideLeft: { flex: 1, minWidth: 0 },
+  wideLeftContent: { flexGrow: 1, justifyContent: 'center' },
   wideRight: { flex: 1, minWidth: 0, gap: theme.spacing.sm },
 }));

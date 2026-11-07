@@ -44,6 +44,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pip install numpy soundfile pillow
       - run: python scripts/generate-media.py public-media
+      - run: pnpm build:native
+      - name: 비트 퍼펙트 재생기 무손실 검사
+        run: pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/album-28-1.flac
       - name: 검사용 빌드
         shell: bash
         run: |
@@ -53,6 +56,8 @@ jobs:
         run: pnpm exec playwright test --project=desktop-app
         env:
           GAON_EXECUTABLE: ${{ matrix.executable }}
+          # 러너에는 소리 장치가 없을 수 있어 시험 출력을 씁니다.
+          GAON_AUDIO_BACKEND: 'null'
       - name: 배포용 빌드 (공개 미디어 주소)
         run: |
           pnpm build:web

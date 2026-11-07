@@ -25,6 +25,8 @@ jobs:
       - run: pnpm build:storybook
       - run: pip install numpy soundfile pillow
       - run: python scripts/generate-media.py public-media
+      - run: pnpm build:native
+      - run: pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/album-28-1.flac
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build:web
         env:
