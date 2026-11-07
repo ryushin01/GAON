@@ -1,6 +1,6 @@
 # 버전 기록
 
-## 0.1.0
+## [0.1.0](https://github.com/ryushin01/GAON/releases/tag/v0.1.0) - 2026-11-07
 
 첫 버전입니다.
 

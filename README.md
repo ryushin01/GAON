@@ -5,7 +5,7 @@
 
 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. iOS, Android, Windows, macOS에 설치해 들을 수 있고, 기기에 있는 FLAC 파일도 가져와 재생합니다.
 
-**[웹 데모 바로 보기](https://ryushin01.github.io/GAON/)** · PC 설치본은 [Actions의 PC 설치본 워크플로](https://github.com/ryushin01/GAON/actions/workflows/desktop.yml) 아티팩트에서 받습니다.
+**[웹 데모 바로 보기](https://ryushin01.github.io/GAON/)** · **[PC 설치본 내려받기](https://github.com/ryushin01/GAON/releases/latest)** (Windows, macOS)
 
 > **프로젝트 상태:** 포트폴리오 프로젝트입니다. 백엔드 없이 정적 카탈로그와 FLAC 파일을 내려받아 동작합니다. 가수, 앨범, 가사, 순위는 모두 가상 데이터이고, 음원과 앨범 아트는 코드로 합성했습니다.
 
