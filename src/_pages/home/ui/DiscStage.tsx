@@ -1,174 +1,313 @@
-import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import type { ComponentRef, ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
+  FadeInDown,
   interpolate,
   useAnimatedReaction,
   useAnimatedStyle,
-  useDerivedValue,
   useSharedValue,
+  withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { displayTitle, formatQuality, type Track } from '@/entities/music';
+import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
 import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
-import { formatDate } from '@/shared/lib';
-import { AppButton, AppText, Disc, IconButton, MetaRow, useLiveReducedMotion } from '@/shared/ui';
+import { formatCount } from '@/shared/lib';
+import { AppText, Disc, MetaRow, useLiveReducedMotion, useNavSlot } from '@/shared/ui';
+
+import { TrackIndex } from './TrackIndex';
 
 type Props = {
   tracks: Track[];
-  /** 화면 스크롤 위치입니다. 이 값으로 디스크를 넘깁니다. */
-  scrollY: SharedValue<number>;
-  /** 스크롤 영역의 높이입니다. */
+  /** 스테이지의 높이입니다. */
   viewport: number;
-  scrollTo: (y: number) => void;
+  /** 다른 화면이 위에 있으면 꺼서 키보드 입력을 가로채지 않습니다. */
+  active: boolean;
+  playingId?: string;
   onPlay: (track: Track) => void;
+  onOpen: (track: Track) => void;
   header: ReactNode;
 };
 
-/** 디스크 하나를 넘기는 데 드는 스크롤 거리(화면 높이 기준)입니다. */
-const PIN_STEP = 0.8;
-/** 이보다 낮은 창은 고정할 자리가 모자라 일반 스크롤로 보여 줍니다. */
-const MIN_PIN_HEIGHT = 520;
+/** 디스크 하나를 넘기는 데 드는 휠 거리입니다. */
+const WHEEL_STEP = 560;
+/** 동작 줄이기에서는 이만큼 굴리면 한 칸만 넘어갑니다. */
+const REDUCED_WHEEL_STEP = 100;
+const SNAP_DELAY_MS = 160;
+const SPRING = { damping: 26, stiffness: 130, mass: 1 };
+/** 이보다 낮은 창은 한 화면에 담기 어려워 세로로 스크롤합니다. */
+const MIN_STAGE_HEIGHT = 560;
 
-type DiscProps = { track: Track; position: number; progress: SharedValue<number>; size: number; spacing: number; lift: number };
+/** 디스크가 놓이는 대각선입니다. 왼쪽은 멀고 작게, 오른쪽은 가깝고 크게 보입니다. */
+const OFFSETS = [-3, -2, -1, 0, 1, 2];
+const X = [-2.6, -1.78, -0.9, 0, 1.08, 2.2];
+const Y = [0.3, 0.29, 0.21, 0, -0.34, -0.6];
+const SCALE = [0.45, 0.6, 0.8, 1, 1.06, 1.1];
+const OPACITY = [0, 1, 1, 1, 1, 0];
 
-function StageDisc({ track, position, progress, size, spacing, lift }: DiscProps) {
+type DiscProps = { track: Track; position: number; progress: SharedValue<number>; size: number; spinning: boolean };
+
+function StageDisc({ track, position, progress, size, spinning }: DiscProps) {
   const style = useAnimatedStyle(() => {
     const offset = position - progress.get();
-    const distance = Math.abs(offset);
     return {
-      opacity: distance > 1.6 ? 0 : 1,
+      opacity: interpolate(offset, OFFSETS, OPACITY, Extrapolation.CLAMP),
       transform: [
-        { translateX: offset * spacing },
-        { translateY: -offset * lift },
-        { scale: interpolate(distance, [0, 1], [1, 0.84], Extrapolation.CLAMP) },
-        { rotate: `${offset * 16}deg` },
+        { translateX: interpolate(offset, OFFSETS, X, Extrapolation.CLAMP) * size },
+        { translateY: interpolate(offset, OFFSETS, Y, Extrapolation.CLAMP) * size },
+        { scale: interpolate(offset, OFFSETS, SCALE, Extrapolation.CLAMP) },
+        { rotate: `${offset * 7}deg` },
       ],
     };
   });
   return (
     <Animated.View style={[stageDiscStyle, style]}>
-      <Disc uri={track.artUri} size={size} tilted />
+      <Disc uri={track.artUri} size={size} tilted spinning={spinning} />
     </Animated.View>
   );
 }
 
-/** 첫 화면에 고정한 채 스크롤에 따라 순위별 디스크를 옆으로 넘깁니다. */
-export function DiscStage({ tracks, scrollY, viewport, scrollTo, onPlay, header }: Props) {
+/** 긴 크레딧을 사람마다 한 줄로 보여 줍니다. */
+function credits(track: Track) {
+  return [...new Set([...track.lyricists, ...track.composers, ...track.arrangers])];
+}
+
+/** 곡마다 다른 인용구 두 개입니다. 가사가 있는 곡만 보여 줍니다. */
+function quotesOf(track: Track) {
+  const lines = track.lyrics.map((line) => line.text).filter(Boolean);
+  if (lines.length === 0) return [];
+  const first = { stat: formatQualityShort(track.format), source: track.lyricists[0] ?? track.artists[0], text: lines[0] };
+  const last = lines[lines.length - 1];
+  return last === lines[0]
+    ? [first]
+    : [first, { stat: track.likes != null ? `좋아요 ${formatCount(track.likes)}` : track.albumTitle, source: track.artists[0], text: last }];
+}
+
+/** 순위별 디스크를 대각선으로 늘어놓고 휠, 끌기, 방향키, 양옆 디스크로 넘기는 한 화면입니다. */
+export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen, header }: Props) {
+  const { theme } = useUnistyles();
   const { width } = useWindowDimensions();
   const reduced = useLiveReducedMotion();
-  const tall = viewport >= MIN_PIN_HEIGHT;
-  const pinned = !reduced && tall;
-  const wide = width >= WIDE_LAYOUT_MIN_WIDTH && tall;
-
+  const fits = viewport >= MIN_STAGE_HEIGHT;
+  const wide = width >= WIDE_LAYOUT_MIN_WIDTH && fits;
   const last = tracks.length - 1;
-  const distance = viewport * PIN_STEP;
-  const pinMax = distance * last;
 
   const [index, setIndex] = useState(0);
-  const selected = useSharedValue(0);
-  const progress = useDerivedValue(() =>
-    pinned ? interpolate(scrollY.get(), [0, Math.max(pinMax, 1)], [0, last], Extrapolation.CLAMP) : selected.get(),
-  );
+  const [open, setOpen] = useState(false);
+  const progress = useSharedValue(0);
+  const target = useSharedValue(0);
+  const panStart = useSharedValue(0);
+  const wheelRest = useRef(0);
+  const rootRef = useRef<ComponentRef<typeof View>>(null);
+  const toggleRef = useRef<ComponentRef<typeof View>>(null);
+  const setNavNode = useNavSlot((s) => s.setNode);
 
   useAnimatedReaction(
     () => Math.round(progress.get()),
     (current, previous) => {
-      if (current === previous) return;
-      // 동작 줄이기를 켜도 스크롤로 보던 순위에 머물게 합니다.
-      selected.set(current);
-      scheduleOnRN(setIndex, current);
+      if (current !== previous) scheduleOnRN(setIndex, current);
     },
   );
 
-  const pinStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: pinned ? Math.max(0, Math.min(scrollY.get(), pinMax)) : 0 }],
-  }));
+  const moveTo = useCallback(
+    (value: number) => {
+      const next = Math.max(0, Math.min(last, value));
+      target.set(next);
+      progress.set(reduced ? Math.round(next) : withSpring(next, SPRING));
+    },
+    [last, progress, reduced, target],
+  );
 
-  // 스크롤을 쓸 수 없는 사람도 키보드와 버튼으로 같은 내용을 볼 수 있어야 합니다.
-  const go = (next: number) => {
-    if (pinned) {
-      scrollTo(next * distance);
-      return;
-    }
-    selected.set(next);
-    setIndex(next);
-  };
+  const closeIndex = useCallback(() => {
+    setOpen(false);
+    (toggleRef.current as unknown as HTMLElement | null)?.focus?.();
+  }, []);
 
-  const size = wide ? Math.min(viewport * 0.62, 520, width * 0.5) : Math.min(width - 96, Math.max(180, viewport * 0.34));
-  const spacing = size * 1.12;
-  const lift = size * (wide ? 0.38 : 0.16);
+  // 휠은 문서를 스크롤하지 않고 디스크를 넘깁니다.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !fits) return;
+    const element = rootRef.current as unknown as HTMLElement | null;
+    if (!element) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onWheel = (event: WheelEvent) => {
+      if (open) return;
+      event.preventDefault();
+      const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      if (reduced) {
+        wheelRest.current += delta;
+        if (Math.abs(wheelRest.current) >= REDUCED_WHEEL_STEP) {
+          moveTo(Math.round(target.get()) + Math.sign(wheelRest.current));
+          wheelRest.current = 0;
+        }
+        return;
+      }
+      moveTo(target.get() + delta / WHEEL_STEP);
+      clearTimeout(timer);
+      timer = setTimeout(() => moveTo(Math.round(target.get())), SNAP_DELAY_MS);
+    };
+    element.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      clearTimeout(timer);
+      element.removeEventListener('wheel', onWheel);
+    };
+  }, [fits, moveTo, open, reduced, target]);
+
+  // 방향키로 넘기고, 목록은 Esc로 닫습니다.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !active) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (open) {
+        if (event.key === 'Escape') closeIndex();
+        return;
+      }
+      const element = event.target as HTMLElement;
+      if (element.closest?.('input, textarea, select, [role="slider"]')) return;
+      const current = Math.round(target.get());
+      const next = { ArrowRight: current + 1, ArrowDown: current + 1, PageDown: current + 1, ArrowLeft: current - 1, ArrowUp: current - 1, PageUp: current - 1, Home: 0, End: last }[event.key];
+      if (next == null) return;
+      event.preventDefault();
+      moveTo(next);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active, closeIndex, last, moveTo, open, target]);
+
+  const size = wide ? Math.min(viewport * 0.6, width * 0.42, 640) : Math.min(width * 0.68, Math.max(170, viewport * 0.36));
+
+  // 터치와 마우스로 끌어서 넘깁니다. 낮은 창에서는 세로 스크롤을 남겨 둡니다.
+  const pan = useMemo(() => {
+    const gesture = Gesture.Pan()
+      .minDistance(12)
+      .onStart(() => {
+        panStart.set(progress.get());
+      })
+      .onUpdate((event) => {
+        const travel = (Math.abs(event.translationX) >= Math.abs(event.translationY) || !fits ? event.translationX : event.translationY) / (size * 1.2);
+        progress.set(Math.max(0, Math.min(last, panStart.get() - travel)));
+      })
+      .onEnd((event) => {
+        const speed = Math.abs(event.velocityX) >= Math.abs(event.velocityY) || !fits ? event.velocityX : event.velocityY;
+        const landed = Math.max(0, Math.min(last, Math.round(progress.get() - speed / 2600)));
+        progress.set(reduced ? landed : withSpring(landed, SPRING));
+        target.set(landed);
+      });
+    return fits ? gesture : gesture.activeOffsetX([-14, 14]).failOffsetY([-14, 14]);
+  }, [fits, last, panStart, progress, reduced, size, target]);
 
   const position = Math.min(index, last);
   const track = tracks[position];
   const title = displayTitle(track);
-  const rank = track.rank ?? position + 1;
+  const names = credits(track);
+  const quotes = quotesOf(track).slice(0, wide ? 2 : 1);
+  const enter = reduced ? undefined : FadeInDown.duration(360);
+
+  const toggle = useMemo(
+    () => (
+      <Pressable ref={toggleRef} role="button" aria-expanded={open} onPress={() => (open ? closeIndex() : setOpen(true))} style={styles.toggle}>
+        <Text style={styles.toggleLabel}>목록</Text>
+        <Ionicons aria-hidden name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.colors.text} />
+      </Pressable>
+    ),
+    [closeIndex, open, theme.colors.text],
+  );
+
+  useEffect(() => {
+    setNavNode(wide && active ? toggle : null);
+    return () => setNavNode(null);
+  }, [active, setNavNode, toggle, wide]);
 
   const info = (
     <View aria-live="polite" style={wide ? styles.infoWide : styles.info}>
-      <AppText variant="title" role="heading" aria-level={2} numberOfLines={2} style={[styles.title, !wide && styles.centered]}>
-        {title}
-      </AppText>
-      <MetaRow label="가수">{track.artists.join(', ')}</MetaRow>
-      <MetaRow label="발매일">{formatDate(track.released)}</MetaRow>
-      <MetaRow label="음질">{formatQuality(track.format)}</MetaRow>
+      <Animated.View key={track.id} entering={enter}>
+        <Pressable role="link" onPress={() => onOpen(track)}>
+          <Text role="heading" aria-level={2} numberOfLines={2} style={styles.title}>{title}</Text>
+        </Pressable>
+        <MetaRow label="가수">{track.artists.join(', ')}</MetaRow>
+        <MetaRow label="발매">{track.released?.slice(0, 4) ?? '-'}</MetaRow>
+        <MetaRow label="순위">{`${track.rank ?? position + 1}위`}</MetaRow>
+        {names.length > 0 && (
+          <MetaRow label="참여">
+            <AppText numberOfLines={wide ? 4 : 1} style={styles.credits}>{names.join(wide ? '\n' : ', ')}</AppText>
+          </MetaRow>
+        )}
+      </Animated.View>
     </View>
   );
 
-  const rankLabel = <AppText variant="label">오늘의 {rank}위</AppText>;
-  const counter = <AppText variant="caption" tone="muted">{position + 1} / {tracks.length}</AppText>;
-
-  const controls = (
-    <View style={wide ? styles.controlsWide : styles.controls}>
-      <IconButton icon="chevron-back" label="이전 순위" disabled={position === 0} onPress={() => go(position - 1)} />
-      <AppButton variant="rule" label="듣기" aria-label={`${title} 듣기`} onPress={() => onPlay(track)} />
-      <IconButton icon="chevron-forward" label="다음 순위" disabled={position === last} onPress={() => go(position + 1)} />
-    </View>
-  );
-
-  const discs = (
-    <View pointerEvents="none" aria-hidden style={wide ? styles.discsWide : [styles.discs, { minHeight: size + 24 }]}>
-      {tracks.map((item, i) => (
-        <StageDisc key={item.id} track={item} position={i} progress={progress} size={size} spacing={spacing} lift={lift} />
+  const quoteRow = quotes.length > 0 && (
+    <View style={wide ? styles.quotesWide : styles.quotes}>
+      {quotes.map((quote) => (
+        <Animated.View key={`${track.id}-${quote.stat}`} entering={enter} style={styles.quote}>
+          <AppText variant="caption" style={styles.center}>{quote.stat}</AppText>
+          <AppText variant="label" style={styles.quoteSource}>{quote.source}</AppText>
+          <Text numberOfLines={2} style={styles.quoteText}>“{quote.text}”</Text>
+        </Animated.View>
       ))}
     </View>
   );
 
-  return (
-    <View style={[styles.root, { minHeight: viewport }, pinned && { height: viewport + pinMax }]}>
-      <Animated.View style={[{ minHeight: viewport }, pinned && { height: viewport }, pinStyle]}>
-        {wide ? (
-          <View style={styles.stageWide}>
-            {discs}
-            <View style={styles.leftWide}>
-              {header}
-              {info}
-            </View>
-            <View style={styles.rankWide}>
-              <AppText aria-hidden style={styles.rankNumber}>{rank}</AppText>
-              {rankLabel}
-              {counter}
-            </View>
-            {controls}
-          </View>
-        ) : (
-          <View style={styles.stage}>
-            {header}
-            <View style={styles.rankNarrow}>
-              {rankLabel}
-              {counter}
-            </View>
-            {discs}
-            {info}
-            {controls}
-          </View>
+  const stageHeight = fits ? viewport : undefined;
+  const discBand = wide ? styles.discsWide : [styles.discs, { minHeight: size * 1.04 }];
+
+  // 가운데 디스크를 누르면 재생하고, 양옆 디스크를 누르면 그쪽으로 넘어갑니다.
+  const zone = (center: number, zoneSize: number) => {
+    const left = Math.max(0, center - zoneSize / 2);
+    return { left, width: Math.min(width, center + zoneSize / 2) - left };
+  };
+  const discs = (
+    <View style={discBand}>
+      <View pointerEvents="none" aria-hidden style={styles.discLayer}>
+        {tracks.map((item, i) => (
+          <StageDisc key={item.id} track={item} position={i} progress={progress} size={size} spinning={playingId === item.id && i === position} />
+        ))}
+      </View>
+      <View style={[styles.hitRow, { height: size }]}>
+        {position > 0 && (
+          <Pressable role="button" aria-label="이전 순위" onPress={() => moveTo(position - 1)} style={[styles.hit, zone(width / 2 - 0.9 * size, size * 0.8)]} />
         )}
-      </Animated.View>
+        <Pressable role="button" aria-label={`${title} 듣기`} onPress={() => onPlay(track)} style={[styles.hit, styles.hitRound, zone(width / 2, size)]} />
+        {position < last && (
+          <Pressable role="button" aria-label="다음 순위" onPress={() => moveTo(position + 1)} style={[styles.hit, zone(width / 2 + 1.08 * size, size)]} />
+        )}
+      </View>
     </View>
+  );
+
+  const body = wide ? (
+    <View style={styles.flex}>
+      {discs}
+      <View style={styles.leftWide}>
+        {header}
+        {info}
+      </View>
+      {quoteRow}
+    </View>
+  ) : (
+    <View style={[styles.column, fits && styles.flex]}>
+      <View style={styles.headerRow}>
+        <View style={styles.flex}>{header}</View>
+        {toggle}
+      </View>
+      {info}
+      <View style={[styles.flexMin, !fits && { minHeight: size * 1.1 }]}>{discs}</View>
+      {quoteRow}
+    </View>
+  );
+
+  return (
+    <GestureDetector gesture={pan}>
+      <View ref={rootRef} style={[styles.root, stageHeight ? { height: stageHeight } : styles.flex]}>
+        {open && <TrackIndex tracks={tracks} current={position} wide={wide} onSelect={(i) => { moveTo(i); closeIndex(); }} onClose={closeIndex} />}
+        {fits ? body : <ScrollView>{body}</ScrollView>}
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -176,19 +315,28 @@ export function DiscStage({ tracks, scrollY, viewport, scrollTo, onPlay, header 
 const stageDiscStyle = { position: 'absolute' } as const;
 
 const styles = StyleSheet.create((theme) => ({
-  root: { overflow: 'hidden' },
-  stage: { flex: 1, paddingBottom: theme.spacing.md, gap: theme.spacing.xs },
-  stageWide: { flex: 1 },
+  root: { overflow: 'hidden', width: '100%' },
+  flex: { flex: 1, minWidth: 0 },
+  flexMin: { flex: 1, minHeight: 0 },
+  column: { gap: theme.spacing.xs, paddingBottom: theme.spacing.sm },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingRight: theme.spacing.sm },
   discs: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   discsWide: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
-  leftWide: { position: 'absolute', top: 0, left: 0, width: 300 },
+  discLayer: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
+  hitRow: { width: '100%' },
+  hit: { position: 'absolute', top: 0, bottom: 0 },
+  hitRound: { borderRadius: 9999 },
+  leftWide: { position: 'absolute', top: 0, left: 0, width: 312 },
   info: { paddingHorizontal: theme.spacing.lg },
-  infoWide: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xs },
-  title: { paddingBottom: theme.spacing.xs },
-  centered: { textAlign: 'center' },
-  rankNarrow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: theme.spacing.md },
-  rankWide: { position: 'absolute', right: theme.spacing.lg, bottom: theme.spacing.lg, alignItems: 'flex-end', gap: 2 },
-  rankNumber: { fontFamily: SERIF_FONT, fontSize: 96, lineHeight: 108, letterSpacing: -3, color: theme.colors.text },
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.lg, paddingTop: theme.spacing.xs },
-  controlsWide: { position: 'absolute', left: '50%', bottom: theme.spacing.lg, transform: [{ translateX: '-50%' }], flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
+  infoWide: { paddingHorizontal: theme.spacing.sm },
+  title: { fontFamily: SERIF_FONT, fontWeight: '400', color: theme.colors.text, textTransform: 'uppercase', fontSize: { xs: 30, md: 38 }, lineHeight: { xs: 38, md: 46 }, letterSpacing: { xs: -0.8, md: -1.4 }, paddingBottom: theme.spacing.xs },
+  credits: { textAlign: 'right' },
+  center: { textAlign: 'center' },
+  quotes: { alignItems: 'center', paddingHorizontal: theme.spacing.lg },
+  quotesWide: { position: 'absolute', left: 0, right: 0, bottom: theme.spacing.xl, flexDirection: 'row', justifyContent: 'center', gap: 56, pointerEvents: 'none' },
+  quote: { width: 300, maxWidth: '100%', alignItems: 'center', gap: 2 },
+  quoteSource: { textAlign: 'center', fontSize: 11 },
+  quoteText: { fontFamily: SERIF_FONT, fontWeight: '400', color: theme.colors.text, textAlign: 'center', fontSize: 22, lineHeight: 27, letterSpacing: -0.6 },
+  toggle: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.sm },
+  toggleLabel: { color: theme.colors.text, fontSize: 14, fontWeight: '500', letterSpacing: -0.2 },
 }));

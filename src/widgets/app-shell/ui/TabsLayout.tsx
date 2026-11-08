@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { useReducedMotion } from 'react-native-reanimated';
 import { View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -13,9 +13,10 @@ export function TabsLayout() {
   const { theme } = useUnistyles();
   const { width } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
+  const pathname = usePathname();
   return (
     <View style={styles.root}>
-      {width >= WIDE_LAYOUT_MIN_WIDTH && <TopNav />}
+      {width >= WIDE_LAYOUT_MIN_WIDTH && <TopNav overlay={pathname === '/'} />}
       <View style={styles.main}>
         <Stack screenOptions={{ headerShown: false, animation: reduceMotion ? 'none' : 'fade', contentStyle: { backgroundColor: theme.colors.bg } }} />
       </View>

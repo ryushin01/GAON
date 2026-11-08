@@ -8,6 +8,10 @@ async function openChart(page: Page) {
   await expect(page.getByRole('button', { name: /^빛 \(The Light\) 유신 .*재생$/ })).toBeVisible();
 }
 
+function homeReady(page: Page) {
+  return page.getByRole('heading', { name: '빛 (The Light)', level: 2 });
+}
+
 async function expectNoOverflow(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
@@ -15,36 +19,63 @@ async function expectNoOverflow(page: Page) {
 
 test('홈에 1위 곡 유신의 빛 (The Light)가 나옵니다', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await expect(homeReady(page)).toBeVisible();
   await expect(page.getByRole('button', { name: '빛 (The Light) 듣기' })).toBeVisible();
   await expect(page).toHaveTitle('홈 - GAON');
   await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
   await expectNoOverflow(page);
 });
 
-test('홈의 디스크는 스크롤과 버튼으로 넘어갑니다', async ({ page }) => {
+test('홈의 디스크는 양옆 디스크와 방향키, 휠로 넘어갑니다', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
-  await expect(page.getByRole('button', { name: '이전 순위' })).toBeDisabled();
+  await expect(homeReady(page)).toBeVisible();
+  await expect(page.getByRole('button', { name: '이전 순위' })).toHaveCount(0);
   await page.getByRole('button', { name: '다음 순위' }).click();
-  await expect(page.getByText('오늘의 2위')).toBeVisible();
-  await expect(page.getByRole('button', { name: /따뜻한 여름 듣기/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '따뜻한 여름', level: 2 })).toBeVisible();
+  await page.keyboard.press('ArrowLeft');
+  await expect(homeReady(page)).toBeVisible();
+  const viewport = page.viewportSize()!;
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  await page.mouse.wheel(0, 700);
+  await expect(page.getByRole('heading', { name: '따뜻한 여름', level: 2 })).toBeVisible();
   await expectNoOverflow(page);
 });
 
-test('동작 줄이기에서도 버튼으로 디스크를 넘길 수 있습니다', async ({ page }) => {
+test('목록을 열어 순위를 고르고 Esc로 닫습니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  const toggle = page.getByRole('button', { name: '목록' });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('button', { name: /^Daydream/ }).click();
+  await expect(page.getByRole('heading', { name: 'Daydream', level: 2 })).toBeVisible();
+  await toggle.click();
+  await page.keyboard.press('Escape');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toBeFocused();
+});
+
+test('동작 줄이기에서도 디스크를 넘길 수 있고 인트로가 없습니다', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await expect(homeReady(page)).toBeVisible();
+  await expect(page.getByText('재생 준비 중')).toHaveCount(0);
   await page.getByRole('button', { name: '다음 순위' }).click();
-  await expect(page.getByText('오늘의 2위')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '따뜻한 여름', level: 2 })).toBeVisible();
+});
+
+test('가운데 디스크를 누르면 재생합니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  await page.getByRole('button', { name: '빛 (The Light) 듣기' }).click();
+  await expect(page.getByRole('button', { name: /플레이어 열기/ })).toBeVisible();
 });
 
 test('스크립트를 받기 전에도 첫 화면이 있고, 앱이 그려지면 사라집니다', async ({ page }) => {
   const html = await (await page.request.get('/')).text();
   expect(html).toContain('<p class="boot">GAON</p>');
   await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await expect(homeReady(page)).toBeVisible();
   await expect(page.locator('.boot')).toHaveCount(0);
 });
 
@@ -74,8 +105,7 @@ test('TOP 100은 100곡을 순위대로 보여 주고 장르로 거릅니다', a
 });
 
 test('앨범 프레임은 정사각형입니다', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await openChart(page);
   const frames = page.locator('[data-testid="album-art"], [data-testid="disc"]');
   const count = await frames.count();
   expect(count).toBeGreaterThan(5);
@@ -106,15 +136,14 @@ test('FLAC을 스트리밍으로 재생하고 위치를 옮깁니다', async ({ 
 });
 
 test('앨범을 눌러 상세로 들어가고 뒤로 돌아옵니다', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await page.goto('/search');
+  await page.getByRole('searchbox').or(page.getByRole('textbox')).first().fill('유리 도시');
   await page.getByRole('link', { name: /^유리 도시 루멘 트리오/ }).click();
   await expect(page).toHaveURL(/\/album\/glass-city$/);
   await expect(page).toHaveTitle('앨범 - GAON');
   await expect(page.locator('#main')).toHaveCount(1);
   await page.goBack();
-  await expect(page).toHaveTitle('홈 - GAON');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await expect(page).toHaveTitle('검색 - GAON');
 });
 
 test('곡 정보에 싱어송라이터 유신의 크레딧이 나옵니다', async ({ page }) => {
@@ -153,7 +182,7 @@ test('검색은 가수, 제목, 크레딧으로 찾고 결과 없음을 알려 �
 
 test('키보드로 본문 바로가기를 쓸 수 있습니다', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await expect(homeReady(page)).toBeVisible();
   await page.keyboard.press('Tab');
   const skip = page.getByRole('link', { name: '본문 바로가기' });
   await expect(skip).toBeFocused();
@@ -241,8 +270,8 @@ test('열린 대화상자에도 axe 위반이 없습니다', async ({ page }) =>
 });
 
 test('화면을 옮기면 초점이 새 본문으로 갑니다', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await page.goto('/search');
+  await page.getByRole('searchbox').or(page.getByRole('textbox')).first().fill('유리 도시');
   await page.getByRole('link', { name: /^유리 도시 루멘 트리오/ }).click();
   await expect(page.locator('#main')).toBeFocused();
 });

@@ -12,6 +12,7 @@ export const SERIF_FONT = Platform.select({
 
 const lightColors = {
   bg: '#F2F2F0',
+  panel: '#FFFFFF',
   surface: '#E9E8E4',
   surfaceStrong: '#DDDBD6',
   text: '#0A0A0A',
@@ -31,6 +32,7 @@ const lightColors = {
 
 const darkColors = {
   bg: '#0C0C0B',
+  panel: '#181816',
   surface: '#181816',
   surfaceStrong: '#262521',
   text: '#EFEEE9',
