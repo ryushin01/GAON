@@ -6,27 +6,25 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 
 import { BottomDock } from './BottomDock';
-import { Sidebar } from './Sidebar';
+import { TopNav } from './TopNav';
 
-/** 어느 화면에서든 탭과 미니 플레이어가 보이도록 화면 스택을 감쌉니다. */
+/** 어느 화면에서든 메뉴와 미니 플레이어가 보이도록 화면 스택을 감쌉니다. */
 export function TabsLayout() {
   const { theme } = useUnistyles();
   const { width } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   return (
     <View style={styles.root}>
-      {width >= WIDE_LAYOUT_MIN_WIDTH && <Sidebar />}
+      {width >= WIDE_LAYOUT_MIN_WIDTH && <TopNav />}
       <View style={styles.main}>
-        <View style={styles.main}>
-          <Stack screenOptions={{ headerShown: false, animation: reduceMotion ? 'none' : 'fade', contentStyle: { backgroundColor: theme.colors.bg } }} />
-        </View>
-        <BottomDock />
+        <Stack screenOptions={{ headerShown: false, animation: reduceMotion ? 'none' : 'fade', contentStyle: { backgroundColor: theme.colors.bg } }} />
       </View>
+      <BottomDock />
     </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  root: { flex: 1, flexDirection: 'row', backgroundColor: theme.colors.bg },
-  main: { flex: 1, minWidth: 0 },
+  root: { flex: 1, backgroundColor: theme.colors.bg },
+  main: { flex: 1, minHeight: 0 },
 }));

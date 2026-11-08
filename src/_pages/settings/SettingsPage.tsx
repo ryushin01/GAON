@@ -15,7 +15,6 @@ export function SettingsPage() {
       <Section title="화면 테마">
         <View style={styles.body}>
           <ThemeSelector />
-          <AppText variant="caption" tone="muted">플레이어 화면은 앨범 아트가 잘 보이도록 항상 어두운색으로 표시합니다.</AppText>
         </View>
       </Section>
       <Section title="음질 안내">

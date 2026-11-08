@@ -32,7 +32,7 @@ test('TOP 100은 100곡을 순위대로 보여 주고 장르로 거릅니다', a
 test('앨범 프레임은 정사각형입니다', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('오늘의 1위')).toBeVisible();
-  const frames = page.getByTestId('album-art');
+  const frames = page.locator('[data-testid="album-art"], [data-testid="disc"]');
   const count = await frames.count();
   expect(count).toBeGreaterThan(5);
   for (let i = 0; i < count; i += 1) {

@@ -10,7 +10,7 @@ export function Section({ title, actionLabel, actionHint, onAction, children }: 
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <AppText variant="heading" role="heading" aria-level={2}>{title}</AppText>
+        <AppText variant="title" role="heading" aria-level={2}>{title}</AppText>
         {actionLabel && (
           <Pressable role="link" aria-label={actionHint ?? actionLabel} onPress={onAction} style={styles.action}>
             <AppText tone="primary" variant="caption">{actionLabel}</AppText>
@@ -23,7 +23,7 @@ export function Section({ title, actionLabel, actionHint, onAction, children }: 
 }
 
 const styles = StyleSheet.create((theme) => ({
-  root: { marginTop: theme.spacing.xl, gap: theme.spacing.sm },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: theme.spacing.lg, minHeight: 44 },
+  root: { marginTop: 48, gap: theme.spacing.lg },
+  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginHorizontal: theme.spacing.lg, minHeight: 44, paddingBottom: theme.spacing.xs, borderBottomWidth: 1, borderBottomColor: theme.colors.rule },
   action: { minHeight: 44, minWidth: 44, alignItems: 'flex-end', justifyContent: 'center' },
 }));

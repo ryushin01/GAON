@@ -1,31 +1,36 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { AlbumCard, chartTracks, displayTitle, formatQuality, latestAlbums, TrackRow, useCatalog } from '@/entities/music';
 import { playTracks, useCurrentTrack } from '@/features/player';
-import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatDate } from '@/shared/lib';
-import { AlbumArt, AppButton, AppText, IconButton, Rail, Screen, Section, StateView } from '@/shared/ui';
+import { AppButton, AppText, Disc, IconButton, MetaRow, Rail, Screen, Section, StateView } from '@/shared/ui';
 import { TrackActions } from '@/widgets/track-list';
 
 export function HomePage() {
   const { data: catalog, isPending, isError, refetch } = useCatalog();
   const current = useCurrentTrack();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const top = useMemo(() => (catalog ? chartTracks(catalog) : []), [catalog]);
   const albums = useMemo(() => (catalog ? latestAlbums(catalog).slice(0, 12) : []), [catalog]);
+  const wide = width >= WIDE_LAYOUT_MIN_WIDTH;
+  const featured = top[0];
+
+  // 메뉴와 듣기 버튼을 뺀 첫 화면 높이 안에 디스크가 들어오게 합니다.
+  const discSize = wide ? Math.max(280, Math.min(460, height - 300)) : Math.min(320, width - 72);
 
   return (
     <Screen>
       <View style={styles.brand}>
         <View style={styles.brandText}>
-          {/* 넓은 화면에서는 사이드바에 로고와 설정이 있습니다. */}
-          {width < WIDE_LAYOUT_MIN_WIDTH && <AppText variant="title" tone="primary" style={styles.logo}>GAON</AppText>}
-          <AppText variant="caption" tone="muted" role="heading" aria-level={1}>Hi-Res FLAC 전용 스트리밍</AppText>
+          {/* 넓은 화면에서는 상단 메뉴에 로고와 설정이 있습니다. */}
+          {!wide && <AppText variant="heading" style={styles.logo}>GAON</AppText>}
+          <AppText variant="label" tone="muted" role="heading" aria-level={1}>Hi-Res FLAC 전용 스트리밍</AppText>
         </View>
-        {width < WIDE_LAYOUT_MIN_WIDTH && <IconButton icon="settings-outline" label="설정" onPress={() => router.push('/settings')} />}
+        {!wide && <IconButton icon="settings-outline" label="설정" onPress={() => router.push('/settings')} />}
       </View>
 
       {isPending && <StateView loading />}
@@ -38,26 +43,32 @@ export function HomePage() {
         />
       )}
 
-      {catalog && top[0] && (
+      {catalog && featured && (
         <>
-          <View style={styles.hero}>
-            <View style={styles.heroArt}>
-              <AlbumArt uri={top[0].artUri} />
+          <View style={[styles.hero, wide && styles.heroWide]}>
+            <View style={wide && styles.heroInfoWide}>
+              <AppText variant={wide ? 'title' : 'display'} role="heading" aria-level={2} numberOfLines={3} style={[styles.heroTitle, !wide && styles.centered]}>
+                {displayTitle(featured)}
+              </AppText>
+              <MetaRow label="가수">{featured.artists.join(', ')}</MetaRow>
+              <MetaRow label="발매일">{formatDate(featured.released)}</MetaRow>
+              <MetaRow label="음질">{formatQuality(featured.format)}</MetaRow>
             </View>
-            <View style={styles.heroText}>
-              <AppText variant="caption" tone="onStageMuted">오늘의 1위</AppText>
-              <AppText variant="heading" tone="onStage" numberOfLines={2}>{displayTitle(top[0])}</AppText>
-              <AppText tone="onStageMuted" numberOfLines={1}>{top[0].artists.join(', ')} · {formatDate(top[0].released)}</AppText>
-              <AppText variant="caption" tone="onStageMuted">{formatQuality(top[0].format)}</AppText>
-              <Pressable
-                role="button"
-                aria-label={`${displayTitle(top[0])} 듣기`}
-                onPress={() => void playTracks([top[0]])}
-                style={styles.heroButton}
-              >
-                <AppText variant="subheading" style={styles.heroButtonLabel}>듣기</AppText>
-              </Pressable>
+            <View style={[styles.heroDisc, wide && styles.heroDiscWide]}>
+              <Disc uri={featured.artUri} size={discSize} tilted />
             </View>
+            {wide ? (
+              <View style={styles.heroRank}>
+                <AppText style={styles.rankNumber} aria-hidden>1</AppText>
+                <AppText variant="label">오늘의 1위</AppText>
+              </View>
+            ) : (
+              <AppText variant="label" style={styles.centered}>오늘의 1위</AppText>
+            )}
+          </View>
+
+          <View style={styles.listen}>
+            <AppButton variant="rule" label="듣기" aria-label={`${displayTitle(featured)} 듣기`} onPress={() => void playTracks([featured])} />
           </View>
 
           <Section title="최신 앨범">
@@ -83,7 +94,7 @@ export function HomePage() {
               ))}
             </View>
             <View style={styles.more}>
-              <AppButton label="TOP 100 전체 재생" icon="play" onPress={() => void playTracks(top)} />
+              <AppButton variant="secondary" label="TOP 100 전체 재생" icon="play" onPress={() => void playTracks(top)} />
             </View>
           </Section>
         </>
@@ -93,30 +104,19 @@ export function HomePage() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  brand: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
+  brand: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm },
   brandText: { flex: 1, minWidth: 0 },
-  logo: { letterSpacing: 2, fontWeight: '900' },
-  hero: {
-    flexDirection: 'row',
-    gap: theme.spacing.lg,
-    marginHorizontal: theme.spacing.lg,
-    padding: theme.spacing.lg,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.stage.bg,
-  },
-  heroArt: { width: 128, flexShrink: 0 },
-  heroText: { flex: 1, minWidth: 0, gap: 2, justifyContent: 'center' },
-  heroButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    minWidth: 72,
-    marginTop: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.stage.text,
-  },
-  heroButtonLabel: { color: theme.colors.stage.bg },
+  logo: { letterSpacing: -0.4 },
+  // 읽는 순서는 제목이 먼저이고, 좁은 화면에서는 디스크를 위에 보여 줍니다.
+  hero: { flexDirection: 'column-reverse', paddingHorizontal: theme.spacing.lg, gap: theme.spacing.lg },
+  heroWide: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xl },
+  heroInfoWide: { width: 280, flexShrink: 0 },
+  heroTitle: { paddingBottom: theme.spacing.sm },
+  centered: { textAlign: 'center' },
+  heroDisc: { alignItems: 'center', justifyContent: 'center' },
+  heroDiscWide: { flex: 1, minWidth: 0 },
+  heroRank: { width: 120, flexShrink: 0, alignItems: 'flex-end', gap: theme.spacing.xs },
+  rankNumber: { fontFamily: SERIF_FONT, fontSize: 96, lineHeight: 108, letterSpacing: -3, color: theme.colors.text },
+  listen: { alignItems: 'center', marginTop: theme.spacing.xl },
   more: { alignItems: 'center', paddingVertical: theme.spacing.md },
 }));

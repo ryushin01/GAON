@@ -32,7 +32,7 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
       {leading}
       {rank != null && (
         <View style={styles.rankBox}>
-          <AppText variant="subheading" style={styles.rank}>{rank}</AppText>
+          <AppText variant="heading" style={styles.rank}>{rank}</AppText>
           <RankChange change={track.rankChange} isNew={track.isNew} />
         </View>
       )}
@@ -60,9 +60,9 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
 }
 
 const styles = StyleSheet.create((theme) => ({
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, paddingHorizontal: theme.spacing.sm, gap: theme.spacing.xs },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, marginHorizontal: theme.spacing.lg, gap: theme.spacing.xs, borderBottomWidth: 1, borderBottomColor: theme.colors.rule },
   rowActive: { backgroundColor: theme.colors.primaryMuted },
-  rankBox: { width: 34, alignItems: 'center' },
+  rankBox: { width: 44, alignItems: 'center' },
   rank: { textAlign: 'center' },
   main: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.xs },
   text: { flex: 1, minWidth: 0, gap: 2 },

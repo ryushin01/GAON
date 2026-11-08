@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Font from 'expo-font';
 import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useSyncExternalStore } from 'react';
@@ -56,6 +57,11 @@ export function RootLayout() {
     document.body.style.backgroundColor = theme.colors.bg;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.colors.bg);
   }, [rt.themeName, theme.colors.bg]);
+
+  // 제목 글꼴을 기다리지 않고 먼저 그린 뒤, 받으면 바꿉니다. 받지 못해도 대체 글꼴로 보입니다.
+  useEffect(() => {
+    Font.loadAsync({ GaonSerif: { uri: require('../../assets/fonts/SongMyung-Regular.ttf'), display: Font.FontDisplay.SWAP } }).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const restore = () => void restoreLocalArt();

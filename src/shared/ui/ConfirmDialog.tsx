@@ -32,7 +32,7 @@ export function ConfirmDialog({ visible, title, description, confirmLabel, onCon
 }
 
 const styles = StyleSheet.create((theme) => ({
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(3, 12, 30, 0.6)' },
+  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(10, 10, 10, 0.55)' },
   sheet: { width: '100%', maxWidth: 360, gap: theme.spacing.md, padding: theme.spacing.lg, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: theme.spacing.sm },
 }));
