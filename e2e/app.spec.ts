@@ -40,6 +40,14 @@ test('동작 줄이기에서도 버튼으로 디스크를 넘길 수 있습니�
   await expect(page.getByText('오늘의 2위')).toBeVisible();
 });
 
+test('스크립트를 받기 전에도 첫 화면이 있고, 앱이 그려지면 사라집니다', async ({ page }) => {
+  const html = await (await page.request.get('/')).text();
+  expect(html).toContain('<p class="boot">GAON</p>');
+  await page.goto('/');
+  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await expect(page.locator('.boot')).toHaveCount(0);
+});
+
 test('설정에 현재 버전을 표시합니다', async ({ page }) => {
   const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
   await page.goto('/settings');
