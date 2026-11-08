@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite';
-import { useSharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedRef, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 import type { Track } from '@/entities/music';
 
@@ -14,8 +14,23 @@ const track = (id: string, title: string, rank: number): Track => ({
 const tracks = [track('a', '빛 (The Light)', 1), track('b', '따뜻한 여름', 2), track('c', 'Daydream', 3)];
 
 function Demo() {
+  const ref = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0);
-  return <DiscStage tracks={tracks} scrollY={scrollY} viewport={720} scrollTo={(y) => scrollY.set(y)} onPlay={() => {}} header={null} />;
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.set(event.contentOffset.y);
+  });
+  return (
+    <Animated.ScrollView ref={ref} onScroll={onScroll} scrollEventThrottle={16} style={{ height: 720 }}>
+      <DiscStage
+        tracks={tracks}
+        scrollY={scrollY}
+        viewport={720}
+        scrollTo={(y) => ref.current?.scrollTo({ y, animated: true })}
+        onPlay={() => {}}
+        header={null}
+      />
+    </Animated.ScrollView>
+  );
 }
 
 const meta: Meta<typeof Demo> = { title: 'pages/home/DiscStage', component: Demo };
