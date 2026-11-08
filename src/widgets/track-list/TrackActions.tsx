@@ -60,7 +60,7 @@ export function TrackActions({ track, extra = [] }: Props) {
 
 const styles = StyleSheet.create((theme) => ({
   row: { flexDirection: 'row', alignItems: 'center' },
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(3, 12, 30, 0.6)' },
+  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(10, 10, 10, 0.55)' },
   menu: { width: '100%', maxWidth: 360, padding: theme.spacing.sm, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
   menuTitle: { padding: theme.spacing.md },
   item: { minHeight: 48, justifyContent: 'center', paddingHorizontal: theme.spacing.md },

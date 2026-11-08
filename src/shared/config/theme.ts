@@ -1,31 +1,58 @@
-const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
-const radius = { sm: 4, md: 8, lg: 12, pill: 999 } as const;
+import { Platform } from 'react-native';
 
-/** 플레이어처럼 테마와 상관없이 어두운 코발트로 고정하는 영역의 색입니다. */
-const stage = {
-  bg: '#06214F',
-  surface: '#0D3372',
-  text: '#FFFFFF',
-  textMuted: '#C5D5F0',
-  accent: '#9CC2FF',
+const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+/** 종이에 인쇄한 느낌을 내려고 모서리를 굴리지 않습니다. 원형 버튼만 pill을 씁니다. */
+const radius = { sm: 0, md: 0, lg: 0, pill: 999 } as const;
+
+/** 제목용 세리프입니다. 한 벌에 라틴 문자와 한글이 함께 있어 섞인 제목도 같은 글꼴로 나옵니다. */
+export const SERIF_FONT = Platform.select({
+  web: 'GaonSerif, AppleMyungjo, Batang, "Noto Serif CJK KR", serif',
+  default: 'GaonSerif',
+});
+
+const lightColors = {
+  bg: '#F2F2F0',
+  surface: '#E9E8E4',
+  surfaceStrong: '#DDDBD6',
+  text: '#0A0A0A',
+  textMuted: '#55534E',
+  border: '#BDBBB5',
+  /** 표와 구역을 나누는 먹선입니다. */
+  rule: '#0A0A0A',
+  primary: '#0A0A0A',
+  onPrimary: '#F2F2F0',
+  primaryMuted: '#E0DED9',
+  rankUp: '#C62828',
+  rankDown: '#0047AB',
+  danger: '#B3261E',
+  discRim: '#A9A8A3',
+  discHub: 'rgba(150, 155, 165, 0.9)',
+} as const;
+
+const darkColors = {
+  bg: '#0C0C0B',
+  surface: '#181816',
+  surfaceStrong: '#262521',
+  text: '#EFEEE9',
+  textMuted: '#ABA9A3',
+  border: '#46443F',
+  rule: '#EFEEE9',
+  primary: '#EFEEE9',
+  onPrimary: '#0C0C0B',
+  primaryMuted: '#262521',
+  rankUp: '#FF9A90',
+  rankDown: '#8AB6FF',
+  danger: '#FFB4AB',
+  discRim: '#6E6D68',
+  discHub: 'rgba(120, 124, 132, 0.9)',
 } as const;
 
 export const lightTheme = {
   name: 'light',
   colors: {
-    bg: '#FFFFFF',
-    surface: '#F3F6FC',
-    surfaceStrong: '#E4EBF8',
-    text: '#0B1B33',
-    textMuted: '#4A5B75',
-    border: '#D5DFEF',
-    primary: '#0047AB',
-    onPrimary: '#FFFFFF',
-    primaryMuted: '#DCE8FB',
-    rankUp: '#C62828',
-    rankDown: '#0047AB',
-    danger: '#B3261E',
-    stage,
+    ...lightColors,
+    /** 플레이어와 하단 재생 바의 색입니다. 본문과 같은 종이 위에 놓입니다. */
+    stage: { bg: lightColors.bg, surface: lightColors.surfaceStrong, text: lightColors.text, textMuted: lightColors.textMuted, accent: lightColors.text },
   },
   spacing,
   radius,
@@ -34,19 +61,8 @@ export const lightTheme = {
 export const darkTheme = {
   name: 'dark',
   colors: {
-    bg: '#081223',
-    surface: '#101D33',
-    surfaceStrong: '#1A2B4A',
-    text: '#EDF3FF',
-    textMuted: '#A9B8D0',
-    border: '#2A3C5E',
-    primary: '#8AB6FF',
-    onPrimary: '#06214F',
-    primaryMuted: '#1A3160',
-    rankUp: '#FF9A90',
-    rankDown: '#8AB6FF',
-    danger: '#FFB4AB',
-    stage,
+    ...darkColors,
+    stage: { bg: darkColors.bg, surface: darkColors.surfaceStrong, text: darkColors.text, textMuted: darkColors.textMuted, accent: darkColors.text },
   },
   spacing,
   radius,
@@ -54,7 +70,7 @@ export const darkTheme = {
 
 export const breakpoints = { xs: 0, sm: 600, md: 900, lg: 1200 } as const;
 
-/** 이 너비부터 사이드바와 하단 플레이어 바를 씁니다. */
+/** 이 너비부터 상단 메뉴와 하단 플레이어 바를 씁니다. */
 export const WIDE_LAYOUT_MIN_WIDTH = breakpoints.md;
 
 export type AppTheme = typeof lightTheme | typeof darkTheme;

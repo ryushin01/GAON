@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { useCatalog, type Track } from '@/entities/music';
 import { formatDate } from '@/shared/lib';
-import { AlbumArt, AppText, Screen, ScreenHeader, StateView } from '@/shared/ui';
+import { AppText, Disc, IconButton, MetaRow, Screen, ScreenHeader, StateView } from '@/shared/ui';
 import { TrackList } from '@/widgets/track-list';
 
 export function AlbumPage() {
@@ -33,22 +33,25 @@ export function AlbumPage() {
         tracks={tracks}
         header={
           <View>
-            <ScreenHeader title={album.title} back />
+            <View style={styles.back}>
+              <IconButton icon="chevron-back" label="뒤로" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+            </View>
+            <AppText variant="display" role="heading" aria-level={1} style={styles.title}>{album.title}</AppText>
             <View style={styles.info}>
-              <View style={styles.art}>
-                <AlbumArt uri={album.artUri} label={`${album.title} 앨범 아트`} />
-              </View>
-              <View style={styles.text}>
-                <AppText variant="caption" tone="primary">{album.albumType}</AppText>
+              <MetaRow label="가수">
                 {album.artists.map((name) => (
                   <Pressable key={name} role="link" style={styles.artist} onPress={() => router.push(`/artist/${encodeURIComponent(name)}`)}>
-                    <AppText variant="subheading">{name}</AppText>
+                    <AppText>{name}</AppText>
                   </Pressable>
                 ))}
-                <AppText variant="caption" tone="muted">발매일 {formatDate(album.released)}</AppText>
-                <AppText variant="caption" tone="muted">장르 {album.genre}</AppText>
-                <AppText variant="caption" tone="muted">기획사 {album.agency}</AppText>
-              </View>
+              </MetaRow>
+              <MetaRow label="유형">{album.albumType}</MetaRow>
+              <MetaRow label="발매일">{formatDate(album.released)}</MetaRow>
+              <MetaRow label="장르">{album.genre}</MetaRow>
+              <MetaRow label="기획사">{album.agency}</MetaRow>
+            </View>
+            <View style={styles.art}>
+              <Disc uri={album.artUri} label={`${album.title} 앨범 아트`} />
             </View>
           </View>
         }
@@ -58,8 +61,10 @@ export function AlbumPage() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  info: { flexDirection: 'row', gap: theme.spacing.lg, padding: theme.spacing.lg },
-  art: { width: 140, flexShrink: 0 },
-  text: { flex: 1, minWidth: 0, gap: 2, justifyContent: 'center' },
-  artist: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  back: { flexDirection: 'row', paddingHorizontal: theme.spacing.sm },
+  title: { textAlign: 'center', paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md },
+  info: { paddingHorizontal: theme.spacing.lg },
+  art: { width: '100%', maxWidth: 320, alignSelf: 'center', paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.xl },
+  // 표 행 높이를 지키면서 누르는 영역은 44px 이상으로 둡니다.
+  artist: { minHeight: 44, justifyContent: 'center', marginVertical: -11 },
 }));

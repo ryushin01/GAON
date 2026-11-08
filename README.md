@@ -15,15 +15,15 @@
 
 | 홈 | TOP 100 |
 |---|---|
-| ![오늘의 1위 배너, 최신 앨범, TOP 100 요약이 있는 넓은 화면의 홈](docs/images/home.jpg) | ![장르 필터와 순위 변동이 있는 TOP 100 곡 목록](docs/images/top100.jpg) |
+| ![비스듬한 디스크로 보여 주는 오늘의 1위와 정보 표, 듣기 버튼이 있는 넓은 화면의 홈](docs/images/home.jpg) | ![장르 필터와 순위 변동이 있는 TOP 100 곡 목록](docs/images/top100.jpg) |
 
 | 플레이어 | 곡 정보 |
 |---|---|
-| ![앨범 아트, 재생 위치, 가사, 재생 목록을 함께 보여 주는 플레이어](docs/images/player.jpg) | ![작사, 작곡, 발매일 크레딧과 음질을 보여 주는 곡 정보](docs/images/track.jpg) |
+| ![앨범 아트 디스크, 재생 위치, 가사, 재생 목록을 함께 보여 주는 플레이어](docs/images/player.jpg) | ![작사, 작곡, 발매일 크레딧과 음질을 보여 주는 곡 정보](docs/images/track.jpg) |
 
 | 모바일 홈 | 모바일 TOP 100 |
 |---|---|
-| <img src="docs/images/mobile-home.jpg" alt="모바일 홈의 1위 배너와 최신 앨범, 하단 탭" width="240"> | <img src="docs/images/mobile-top100.jpg" alt="모바일 TOP 100 목록과 미니 플레이어" width="240"> |
+| <img src="docs/images/mobile-home.jpg" alt="모바일 홈의 1위 곡 디스크와 정보 표, 하단 메뉴" width="240"> | <img src="docs/images/mobile-top100.jpg" alt="모바일 TOP 100 목록과 미니 플레이어" width="240"> |
 
 | 다크 테마 | 설정 |
 |---|---|
@@ -31,7 +31,7 @@
 
 | 모바일 플레이어 | 내 FLAC |
 |---|---|
-| <img src="docs/images/mobile-player.jpg" alt="모바일 플레이어의 정사각형 앨범 아트와 재생 조작 버튼" width="240"> | <img src="docs/images/mobile-library.jpg" alt="보관함의 내 FLAC 탭과 파일 가져오기 버튼" width="240"> |
+| <img src="docs/images/mobile-player.jpg" alt="모바일 플레이어의 앨범 아트 디스크와 재생 조작 버튼" width="240"> | <img src="docs/images/mobile-library.jpg" alt="보관함의 내 FLAC 탭과 파일 가져오기 버튼" width="240"> |
 
 ## 주요 기능
 

@@ -4,7 +4,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
 import { next, PlayPauseButton, useCurrentTrack, usePlayerStore } from '@/features/player';
-import { AlbumArt, AppText, IconButton, VisuallyHidden } from '@/shared/ui';
+import { AppText, Disc, IconButton, VisuallyHidden } from '@/shared/ui';
 
 function Progress() {
   const percent = usePlayerStore((s) => (s.duration > 0 ? Math.min(100, (s.currentTime / s.duration) * 100) : 0));
@@ -23,6 +23,7 @@ export function NowPlayingBar() {
   const index = usePlayerStore((s) => s.index);
   const count = usePlayerStore((s) => s.queue.length);
   const repeat = usePlayerStore((s) => s.repeat);
+  const playing = usePlayerStore((s) => s.playing);
 
   if (!track) {
     return error ? <AppText tone="danger" role="alert" style={styles.error}>{error}</AppText> : null;
@@ -40,7 +41,7 @@ export function NowPlayingBar() {
           onPress={() => router.push('/player')}
           style={styles.info}
         >
-          <AlbumArt uri={track.artUri} size={44} />
+          <Disc uri={track.artUri} size={44} spinning={playing} />
           <View style={styles.text}>
             <AppText variant="subheading" tone="onStage" numberOfLines={1}>{title}</AppText>
             <View style={styles.sub}>
@@ -60,7 +61,7 @@ export function NowPlayingBar() {
 const styles = StyleSheet.create((theme) => ({
   root: { backgroundColor: theme.colors.stage.bg },
   error: { padding: theme.spacing.md },
-  progress: { height: 2, backgroundColor: theme.colors.stage.surface },
+  progress: { height: 2, backgroundColor: theme.colors.border },
   progressFill: { height: '100%', backgroundColor: theme.colors.stage.accent },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 60, paddingHorizontal: theme.spacing.sm },
   info: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, minHeight: 44 },

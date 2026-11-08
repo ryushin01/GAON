@@ -6,17 +6,12 @@ import { artistLine, displayTitle, QualityBadge, useCatalog } from '@/entities/m
 import { playTracks } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { formatCount, formatDate, formatFileSize, formatTime } from '@/shared/lib';
-import { AlbumArt, AppButton, AppText, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
+import { AppButton, AppText, Disc, MetaRow, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
 import { useTrackLookup } from '@/widgets/track-list';
 
 function Row({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
-  return (
-    <View style={styles.infoRow}>
-      <AppText tone="muted" style={styles.infoLabel}>{label}</AppText>
-      <AppText style={styles.infoValue}>{value}</AppText>
-    </View>
-  );
+  return <MetaRow label={label}>{value}</MetaRow>;
 }
 
 export function TrackPage() {
@@ -39,27 +34,24 @@ export function TrackPage() {
     <Screen>
       <ScreenHeader title="곡 정보" back />
       <View style={styles.summary}>
-        <View style={styles.art}><AlbumArt uri={track.artUri} label={`${track.albumTitle} 앨범 아트`} /></View>
-        <View style={styles.text}>
-          <AppText variant="heading" role="heading" aria-level={2}>{title}</AppText>
-          <AppText tone="muted">{artistLine(track)}</AppText>
-          <QualityBadge format={track.format} />
-          <View style={styles.actions}>
-            <AppButton label="듣기" icon="play" onPress={() => void playTracks([track])} />
-            <LikeButton trackId={track.id} title={title} />
-          </View>
+        <View style={styles.art}><Disc uri={track.artUri} label={`${track.albumTitle} 앨범 아트`} /></View>
+        <AppText variant="display" role="heading" aria-level={2} style={styles.centered}>{title}</AppText>
+        <AppText tone="muted" style={styles.centered}>{artistLine(track)}</AppText>
+        <View style={styles.badge}><QualityBadge format={track.format} /></View>
+        <View style={styles.actions}>
+          <AppButton label="듣기" icon="play" onPress={() => void playTracks([track])} />
+          <LikeButton trackId={track.id} title={title} />
         </View>
       </View>
 
       <Section title="상세 정보">
         <View style={styles.info}>
           {track.albumId ? (
-            <View style={styles.infoRow}>
-              <AppText tone="muted" style={styles.infoLabel}>앨범</AppText>
+            <MetaRow label="앨범">
               <Pressable role="link" style={styles.link} onPress={() => router.push(`/album/${track.albumId}`)}>
-                <AppText tone="primary">{track.albumTitle}</AppText>
+                <AppText style={styles.linkText}>{track.albumTitle}</AppText>
               </Pressable>
-            </View>
+            </MetaRow>
           ) : (
             <Row label="앨범" value={track.albumTitle} />
           )}
@@ -85,7 +77,7 @@ export function TrackPage() {
 
       {track.lyrics.length > 0 && (
         <Section title="가사">
-          <View style={styles.info}>
+          <View style={styles.lyrics}>
             {track.lyrics.map((line, i) => (
               <AppText key={`${i}-${line.text}`}>{line.text}</AppText>
             ))}
@@ -97,13 +89,14 @@ export function TrackPage() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  summary: { flexDirection: 'row', gap: theme.spacing.lg, padding: theme.spacing.lg },
-  art: { width: 120, flexShrink: 0 },
-  text: { flex: 1, minWidth: 0, gap: theme.spacing.xs },
+  summary: { alignItems: 'center', gap: theme.spacing.sm, padding: theme.spacing.lg },
+  art: { width: '100%', maxWidth: 280, paddingBottom: theme.spacing.md },
+  centered: { textAlign: 'center' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginTop: theme.spacing.xs },
-  info: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-  infoLabel: { width: 80 },
-  infoValue: { flex: 1 },
-  link: { flex: 1, minHeight: 44, justifyContent: 'center' },
+  badge: { alignSelf: 'center' },
+  // 구역 제목의 먹선과 첫 행의 먹선이 겹쳐 한 줄로 보이게 합니다.
+  info: { paddingHorizontal: theme.spacing.lg, marginTop: -(theme.spacing.lg + 1) },
+  lyrics: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
+  link: { minHeight: 44, justifyContent: 'center', marginVertical: -11 },
+  linkText: { textDecorationLine: 'underline' },
 }));

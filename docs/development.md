@@ -30,7 +30,7 @@ Android 에뮬레이터에서 로컬 미디어 서버를 쓰려면 `adb reverse 
 
 ## 화면 이동
 
-탭과 상세 화면은 모두 `app/(tabs)`의 `Stack` 하나로 이동합니다. `Tabs`의 숨김 탭(`href: null`)으로 상세 화면을 두면 웹에서 경로가 홈으로 풀리는 문제가 있어 쓰지 않습니다. 하단 탭과 사이드바는 `widgets/app-shell`에 직접 구현했습니다.
+탭과 상세 화면은 모두 `app/(tabs)`의 `Stack` 하나로 이동합니다. `Tabs`의 숨김 탭(`href: null`)으로 상세 화면을 두면 웹에서 경로가 홈으로 풀리는 문제가 있어 쓰지 않습니다. 하단 탭과 상단 메뉴는 `widgets/app-shell`에 직접 구현했습니다.
 
 이전 화면은 숨겨진 채 DOM에 남습니다. 그래서 `Screen`은 현재 화면에만 `id="main"`을 달아 본문 바로가기 대상을 하나로 유지합니다.
 
@@ -75,7 +75,7 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 ## 테마
 
-색은 `shared/config/theme.ts`의 토큰으로만 씁니다. 기본값은 시스템 설정을 따르고, 설정 화면에서 라이트나 다크로 고르면 `features/change-theme`이 저장합니다. 플레이어는 앨범 아트가 돋보이도록 테마와 상관없이 어두운 `stage` 색을 씁니다. Storybook은 상단 도구 모음에서 테마를 바꿔 볼 수 있습니다.
+색은 `shared/config/theme.ts`의 토큰으로만 씁니다. 기본값은 시스템 설정을 따르고, 설정 화면에서 라이트나 다크로 고르면 `features/change-theme`이 저장합니다. 플레이어와 하단 재생 바는 `stage` 색을 쓰며, `stage`는 각 테마의 바탕과 글자색으로 만들어 라이트·다크 테마를 따릅니다. Storybook은 상단 도구 모음에서 테마를 바꿔 볼 수 있습니다.
 
 ## 품질 기준
 

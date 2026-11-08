@@ -16,6 +16,6 @@ export function Rail({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
-  row: { gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.lg, paddingHorizontal: theme.spacing.lg },
+  row: { gap: theme.spacing.lg, paddingHorizontal: theme.spacing.lg },
 }));

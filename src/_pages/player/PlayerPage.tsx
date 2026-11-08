@@ -1,14 +1,13 @@
 import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
-import { OutputBadge, SeekBar, TransportControls, useCurrentTrack } from '@/features/player';
+import { OutputBadge, SeekBar, TransportControls, useCurrentTrack, usePlayerStore } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
-import { AlbumArt, AppText, IconButton, useMainRegion } from '@/shared/ui';
+import { AppText, Disc, IconButton, useMainRegion } from '@/shared/ui';
 import { LyricsPanel, QueuePanel } from '@/widgets/player-view';
 
 type Panel = 'art' | 'lyrics' | 'queue';
@@ -22,6 +21,7 @@ export function PlayerPage() {
   const { ref, nativeID } = useMainRegion();
   const { width, height } = useWindowDimensions();
   const track = useCurrentTrack();
+  const playing = usePlayerStore((s) => s.playing);
   const [panel, setPanel] = useState<Panel>('art');
   const wide = width >= WIDE_LAYOUT_MIN_WIDTH;
   const { text, textMuted, accent } = theme.colors.stage;
@@ -36,7 +36,7 @@ export function PlayerPage() {
   if (!track) return <View style={styles.root} />;
 
   const title = displayTitle(track);
-  const art = <AlbumArt uri={track.artUri} label={`${track.albumTitle} 앨범 아트`} />;
+  const art = <Disc uri={track.artUri} label={`${track.albumTitle} 앨범 아트`} spinning={playing} />;
   const artAndControls = (
     <View style={styles.column}>
       {/* 좁은 화면에서는 앨범 아트 자리에 가사와 재생 목록을 바꿔 가며 보여 줍니다. */}
@@ -55,7 +55,7 @@ export function PlayerPage() {
 
       <View style={styles.meta}>
         <View style={styles.metaText}>
-          <AppText variant="heading" tone="onStage" numberOfLines={2} role="heading" aria-level={1}>{title}</AppText>
+          <AppText variant="title" tone="onStage" numberOfLines={2} role="heading" aria-level={1}>{title}</AppText>
           <AppText tone="onStageMuted" numberOfLines={1}>{artistLine(track)} · {track.albumTitle}</AppText>
           <QualityBadge format={track.format} onStage />
           <OutputBadge />
@@ -98,8 +98,6 @@ export function PlayerPage() {
 
   return (
     <View ref={ref} role="main" nativeID={nativeID} tabIndex={-1} style={styles.root}>
-      {/* 플레이어 배경은 테마와 상관없이 어둡습니다. */}
-      <StatusBar style="light" />
       <View style={styles.header}>
         <IconButton icon="chevron-down" label="플레이어 닫기" color={text} onPress={close} />
       </View>
@@ -107,9 +105,9 @@ export function PlayerPage() {
         <View style={styles.wide}>
           <ScrollView style={styles.wideLeft} contentContainerStyle={styles.wideLeftContent}>{artAndControls}</ScrollView>
           <View style={styles.wideRight}>
-            <AppText variant="subheading" tone="onStage" role="heading" aria-level={2}>가사</AppText>
+            <AppText variant="label" tone="onStage" role="heading" aria-level={2} style={styles.panelTitle}>가사</AppText>
             <View style={styles.flex}><LyricsPanel lines={track.lyrics} /></View>
-            <AppText variant="subheading" tone="onStage" role="heading" aria-level={2}>재생 목록</AppText>
+            <AppText variant="label" tone="onStage" role="heading" aria-level={2} style={styles.panelTitle}>재생 목록</AppText>
             <View style={styles.flex}><QueuePanel /></View>
           </View>
         </View>
@@ -124,6 +122,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.stage.bg, paddingTop: rt.insets.top, paddingBottom: rt.insets.bottom },
   header: { flexDirection: 'row', paddingHorizontal: theme.spacing.sm },
   flex: { flex: 1, minHeight: 0 },
+  panelTitle: { paddingTop: theme.spacing.xs, borderTopWidth: 1, borderTopColor: theme.colors.rule },
   column: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: theme.spacing.md },
   artFrame: { width: '100%', maxWidth: 400, alignSelf: 'center' },
   panel: { height: 340 },

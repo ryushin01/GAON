@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AlbumArt, AppText, VisuallyHidden } from '@/shared/ui';
 
 import { artistLine, displayTitle } from '../model/format';
@@ -25,6 +26,7 @@ type Props = {
 
 export function TrackRow({ track, rank, active = false, onPress, leading, trailing, showArt = true, listItem = false }: Props) {
   const { theme } = useUnistyles();
+  const { width } = useWindowDimensions();
   const title = displayTitle(track);
   const artists = artistLine(track);
   return (
@@ -32,7 +34,7 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
       {leading}
       {rank != null && (
         <View style={styles.rankBox}>
-          <AppText variant="subheading" style={styles.rank}>{rank}</AppText>
+          <AppText variant="heading" style={styles.rank}>{rank}</AppText>
           <RankChange change={track.rankChange} isNew={track.isNew} />
         </View>
       )}
@@ -42,7 +44,7 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
         onPress={onPress}
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
       >
-        {showArt && <AlbumArt uri={track.artUri} size={52} />}
+        {showArt && <AlbumArt uri={track.artUri} size={width < WIDE_LAYOUT_MIN_WIDTH ? 44 : 52} />}
         <View style={styles.text}>
           <View style={styles.titleRow}>
             {/* 색만으로 구분하지 않도록 재생 중 표시를 함께 보여 줍니다. */}
@@ -60,11 +62,12 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
 }
 
 const styles = StyleSheet.create((theme) => ({
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, paddingHorizontal: theme.spacing.sm, gap: theme.spacing.xs },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, marginHorizontal: theme.spacing.lg, gap: theme.spacing.xs, borderBottomWidth: 1, borderBottomColor: theme.colors.rule },
   rowActive: { backgroundColor: theme.colors.primaryMuted },
-  rankBox: { width: 34, alignItems: 'center' },
-  rank: { textAlign: 'center' },
-  main: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.xs },
+  rankBox: { width: { xs: 34, md: 44 }, alignItems: 'center' },
+  // 좁은 칸에서도 세 자리 순위가 넘치지 않게 합니다.
+  rank: { textAlign: 'center', fontSize: { xs: 20, md: 24 } },
+  main: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: { xs: theme.spacing.sm, md: theme.spacing.md }, paddingVertical: theme.spacing.sm, paddingHorizontal: { xs: 0, md: theme.spacing.xs } },
   text: { flex: 1, minWidth: 0, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   title: { flexShrink: 1 },
