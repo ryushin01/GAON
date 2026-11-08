@@ -18,7 +18,7 @@ export function QualityBadge({ format, onStage = false, compact = false, raised 
   const [grade, detail] = compact ? [short.split(' ')[0], short.split(' ')[1]] : [isHiRes(format) ? 'Hi-Res' : '', formatQuality(format)];
   return (
     <View style={[styles.badge, raised && styles.badgeRaised, onStage && styles.badgeStage]}>
-      {grade ? <Text style={[styles.grade, onStage && styles.textStage]}>{grade}</Text> : null}
+      {grade ? <Text numberOfLines={1} style={[styles.grade, onStage && styles.textStage]}>{grade}</Text> : null}
       <Text numberOfLines={1} style={[styles.text, onStage && styles.textStage]}>{detail}</Text>
     </View>
   );
@@ -33,7 +33,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   badgeRaised: {},
   badgeStage: {},
-  grade: { color: theme.colors.primary, fontSize: 12, lineHeight: 17, fontWeight: '800' },
+  grade: { flexShrink: 0, color: theme.colors.primary, fontSize: 12, lineHeight: 17, fontWeight: '800' },
   text: { color: theme.colors.text, fontSize: 12, lineHeight: 17, fontWeight: '500' },
   textStage: { color: theme.colors.stage.text },
 }));
