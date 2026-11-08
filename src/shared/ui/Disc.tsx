@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { Platform, View, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -57,6 +57,7 @@ export function Disc({ uri, size, label, spinning = false, tilted = false }: Pro
       // 비스듬한 디스크는 화면에 놓인 상자가 정사각형이 아니어서 따로 구분합니다.
       testID={tilted ? 'disc-tilted' : 'disc'}
     >
+      {tilted && <View style={styles.edge} />}
       <Animated.View style={[spinLayer, spin]}>
         <View style={styles.face}>
           {uri ? (
@@ -66,7 +67,9 @@ export function Disc({ uri, size, label, spinning = false, tilted = false }: Pro
           )}
         </View>
       </Animated.View>
+      {Platform.OS === 'web' && <View style={[styles.sheen, sheenStyle]} />}
       <View style={styles.hub}>
+        <View style={styles.hubRing} />
         <View style={styles.hole} />
       </View>
     </View>
@@ -77,6 +80,12 @@ export function Disc({ uri, size, label, spinning = false, tilted = false }: Pro
 const spinLayer = { width: '100%', height: '100%' } as const;
 const imageStyle = { width: '100%', height: '100%' } as const;
 const tiltTransform = { transform: [{ perspective: 1400 }, { rotateX: '30deg' }, { rotateY: '-16deg' }, { rotate: '-14deg' }] };
+
+// 웹에서만 디스크 표면의 빛 반사를 그립니다.
+const sheenStyle = {
+  backgroundImage:
+    'conic-gradient(from 20deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.2) 28deg, rgba(255,255,255,0) 70deg, rgba(255,255,255,0) 190deg, rgba(255,255,255,.16) 226deg, rgba(255,255,255,0) 262deg, rgba(255,255,255,0) 360deg)',
+} as unknown as ViewStyle;
 
 const styles = StyleSheet.create((theme) => ({
   frame: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
@@ -92,6 +101,9 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // 기울어진 디스크의 두께입니다.
+  edge: { position: 'absolute', top: 3, left: 1, right: -1, bottom: -3, borderRadius: 9999, backgroundColor: theme.colors.discRim },
+  sheen: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: 9999, pointerEvents: 'none' },
   hub: {
     position: 'absolute',
     width: '24%',
@@ -101,6 +113,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  hubRing: { position: 'absolute', width: '84%', aspectRatio: 1, borderRadius: 9999, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.55)' },
   // 가운데 구멍으로 배경이 비쳐 보이게 합니다.
   hole: { width: '62%', aspectRatio: 1, borderRadius: 9999, backgroundColor: theme.colors.bg },
 }));

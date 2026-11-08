@@ -7,6 +7,7 @@ export { ConfirmDialog } from './ConfirmDialog';
 export { Disc } from './Disc';
 export { IconButton } from './IconButton';
 export { MetaRow } from './MetaRow';
+export { useNavSlot } from './navSlot';
 export { PageFade } from './PageFade';
 export { PaperGrain } from './PaperGrain';
 export { Rail } from './Rail';

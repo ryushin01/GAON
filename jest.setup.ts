@@ -11,6 +11,8 @@ jest.mock('react-native-reanimated', () => {
     cancelAnimation: jest.fn(),
     Extrapolation: { CLAMP: 'clamp' },
     FadeIn: { duration: () => undefined },
+    FadeInDown: { duration: () => undefined },
+    withSpring: (value: unknown) => value,
     interpolate: () => 0,
     useAnimatedReaction: jest.fn(),
     useDerivedValue: (compute: () => unknown) => ({ get: compute }),

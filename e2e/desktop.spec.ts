@@ -19,7 +19,7 @@ test('PC 앱에서 스트리밍과 로컬 FLAC이 재시작 뒤에도 동작합�
 
   let app = await _electron.launch({ executablePath: executablePath!, args });
   let win = await app.firstWindow();
-  await expect(win.getByText('오늘의 1위')).toBeVisible({ timeout: 30_000 });
+  await expect(win.getByRole('heading', { name: '빛 (The Light)', level: 2 })).toBeVisible({ timeout: 30_000 });
   await win.getByRole('link', { name: 'TOP 100', exact: true }).click();
   await expect(win).toHaveTitle('TOP 100 - GAON');
   await win.getByRole('button', { name: '전체 재생' }).click();
@@ -37,7 +37,7 @@ test('PC 앱에서 스트리밍과 로컬 FLAC이 재시작 뒤에도 동작합�
 
   app = await _electron.launch({ executablePath: executablePath!, args });
   win = await app.firstWindow();
-  await expect(win.getByText('오늘의 1위')).toBeVisible({ timeout: 30_000 });
+  await expect(win.getByRole('heading', { name: '빛 (The Light)', level: 2 })).toBeVisible({ timeout: 30_000 });
   await win.getByRole('link', { name: '보관함', exact: true }).click();
   await win.getByRole('button', { name: '내 FLAC' }).click();
   await win.getByRole('button', { name: /네온 레인.*재생/ }).first().click();
@@ -58,7 +58,7 @@ test('독점 출력을 켜면 재생기로 스트리밍과 로컬 FLAC을 재생
 
   let app = await _electron.launch({ executablePath: executablePath!, args, env });
   let win = await app.firstWindow();
-  await expect(win.getByText('오늘의 1위')).toBeVisible({ timeout: 30_000 });
+  await expect(win.getByRole('heading', { name: '빛 (The Light)', level: 2 })).toBeVisible({ timeout: 30_000 });
   await win.getByRole('link', { name: '설정', exact: true }).click();
   await win.getByRole('button', { name: '비트 퍼펙트 (독점)' }).click();
   await expect(win.getByRole('button', { name: '비트 퍼펙트 (독점)' })).toHaveAttribute('aria-pressed', 'true');
@@ -107,7 +107,7 @@ test('독점 출력을 켜면 재생기로 스트리밍과 로컬 FLAC을 재생
   // 설정이 다시 켜도 유지됩니다.
   app = await _electron.launch({ executablePath: executablePath!, args, env });
   win = await app.firstWindow();
-  await expect(win.getByText('오늘의 1위')).toBeVisible({ timeout: 30_000 });
+  await expect(win.getByRole('heading', { name: '빛 (The Light)', level: 2 })).toBeVisible({ timeout: 30_000 });
   await win.getByRole('link', { name: '설정', exact: true }).click();
   await expect(win.getByRole('button', { name: '비트 퍼펙트 (독점)' })).toHaveAttribute('aria-pressed', 'true');
   await app.close();
