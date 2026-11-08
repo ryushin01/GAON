@@ -1,1 +1,1 @@
-export { PlaylistPage } from './PlaylistPage';
+export { PlaylistPage } from './ui/PlaylistPage';

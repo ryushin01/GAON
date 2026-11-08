@@ -1,1 +1,1 @@
-export { ChartPage } from './ChartPage';
+export { ChartPage } from './ui/ChartPage';

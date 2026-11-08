@@ -77,8 +77,11 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 색은 `shared/config/theme.ts`의 토큰으로만 씁니다. 기본값은 시스템 설정을 따르고, 설정 화면에서 라이트나 다크로 고르면 `features/change-theme`이 저장합니다. 플레이어와 하단 재생 바는 `stage` 색을 쓰며, `stage`는 각 테마의 바탕과 글자색으로 만들어 라이트·다크 테마를 따릅니다. Storybook은 상단 도구 모음에서 테마를 바꿔 볼 수 있습니다.
 
+제목 글꼴은 Nanum Myeongjo(OFL)입니다. 앱은 `assets/fonts/NanumMyeongjo-Regular.ttf` 원본을, 웹과 PC 앱은 KS X 1001 한글과 라틴 문자만 남긴 `GaonSerif-subset.woff2`를 씁니다. OFL의 예약 이름 때문에 글자를 줄인 파일은 글꼴 이름을 GaonSerif로 바꿨습니다.
+
 ## 품질 기준
 
+- 구조는 `pnpm lint:fsd`(Steiger)로 검사합니다. 예외는 `steiger.config.ts`에 이유와 함께 적습니다.
 - 새 화면은 `e2e/app.spec.ts`의 axe 검사 목록에 추가합니다. 프로덕션 빌드에서 360px과 1280px 너비, 다크 테마로 검사합니다.
 - axe를 통과해도 KWCAG 준수는 아닙니다. 키보드 조작, 초점 표시, 대체 텍스트는 직접 확인합니다.
 - 누를 수 있는 요소의 이름은 보이는 글자에서 나오게 합니다. 동작이나 부가 정보는 `aria-label` 대신 `VisuallyHidden`으로 덧붙입니다. (KWCAG 6.5.3 레이블과 네임)

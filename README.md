@@ -1,7 +1,7 @@
 # GAON - 고해상도 음악 스트리밍
 
 [![CI](https://github.com/ryushin01/GAON/actions/workflows/ci.yml/badge.svg)](https://github.com/ryushin01/GAON/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-0.4.0-0047AB)
+![version](https://img.shields.io/badge/version-0.5.0-0A0A0A)
 
 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. iOS, Android, Windows, macOS에 설치해 들을 수 있고, 기기에 있는 FLAC 파일도 가져와 재생합니다.
 
@@ -15,7 +15,7 @@
 
 | 홈 | TOP 100 |
 |---|---|
-| ![비스듬한 디스크로 보여 주는 오늘의 1위와 정보 표, 듣기 버튼이 있는 넓은 화면의 홈](docs/images/home.jpg) | ![장르 필터와 순위 변동이 있는 TOP 100 곡 목록](docs/images/top100.jpg) |
+| ![스크롤로 넘기는 순위별 디스크와 곡 정보 표, 듣기 버튼이 있는 넓은 화면의 홈](docs/images/home.jpg) | ![장르 필터와 순위 변동이 있는 TOP 100 곡 목록](docs/images/top100.jpg) |
 
 | 플레이어 | 곡 정보 |
 |---|---|
@@ -85,6 +85,7 @@ pnpm web                                          # 또는 pnpm ios, pnpm androi
 | `pnpm build:desktop` | PC 설치본 빌드 |
 | `pnpm build:native` / `test:native <FLAC>` | 비트 퍼펙트 재생기 빌드 / 무손실 검사 (clang 필요) |
 | `pnpm lint` / `typecheck` / `test` | ESLint / 타입 검사 / 단위 테스트 |
+| `pnpm lint:fsd` | Feature-Sliced Design 구조 검사 (Steiger) |
 | `pnpm test:e2e` | 프로덕션 웹 빌드의 화면·접근성 검사 (먼저 `build:web` 필요) |
 | `pnpm test:desktop` | 설치본 실행 검사 (`GAON_EXECUTABLE` 필요) |
 | `pnpm storybook` | Storybook (`http://localhost:6006`) |

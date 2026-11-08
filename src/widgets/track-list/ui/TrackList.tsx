@@ -3,7 +3,7 @@ import { FlatList, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { TrackRow, type Track } from '@/entities/music';
-import { AddToPlaylistDialog } from '@/features/add-to-playlist';
+import { AddToPlaylistDialog } from './AddToPlaylistDialog';
 import { addToQueue, playTracks, useCurrentTrack } from '@/features/player';
 import { AppButton, AppText, Checkbox } from '@/shared/ui';
 

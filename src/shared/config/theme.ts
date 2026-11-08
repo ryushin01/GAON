@@ -4,7 +4,7 @@ const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 /** 종이에 인쇄한 느낌을 내려고 모서리를 굴리지 않습니다. 원형 버튼만 pill을 씁니다. */
 const radius = { sm: 0, md: 0, lg: 0, pill: 999 } as const;
 
-/** 제목용 세리프입니다. 한 벌에 라틴 문자와 한글이 함께 있어 섞인 제목도 같은 글꼴로 나옵니다. */
+/** 제목용 세리프입니다. Nanum Myeongjo 한 벌에 라틴 문자와 한글이 함께 있어 섞인 제목도 같은 글꼴로 나옵니다. */
 export const SERIF_FONT = Platform.select({
   web: 'GaonSerif, AppleMyungjo, Batang, "Noto Serif CJK KR", serif',
   default: 'GaonSerif',

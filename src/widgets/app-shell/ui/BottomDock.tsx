@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 
 import { NavLink } from './NavLink';
-import { isActive, NAV_ITEMS } from './nav';
+import { isActive, NAV_ITEMS } from '../config/nav';
 import { NowPlayingBar } from './NowPlayingBar';
 
 export function BottomDock() {

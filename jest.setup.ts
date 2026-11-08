@@ -9,6 +9,11 @@ jest.mock('react-native-reanimated', () => {
     __esModule: true,
     default: { View },
     cancelAnimation: jest.fn(),
+    Extrapolation: { CLAMP: 'clamp' },
+    FadeIn: { duration: () => undefined },
+    interpolate: () => 0,
+    useAnimatedReaction: jest.fn(),
+    useDerivedValue: (compute: () => unknown) => ({ get: compute }),
     Easing: { linear: (t: number) => t },
     useAnimatedStyle: () => ({}),
     useReducedMotion: () => false,
@@ -17,3 +22,5 @@ jest.mock('react-native-reanimated', () => {
     withTiming: (value: unknown) => value,
   };
 });
+
+jest.mock('react-native-worklets', () => ({ scheduleOnRN: (fn: (...args: unknown[]) => void, ...args: unknown[]) => fn(...args) }));
