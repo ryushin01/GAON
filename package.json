@@ -1,6 +1,6 @@
 {
   "name": "gaon",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "packageManager": "pnpm@12.16.1",
   "description": "고해상도 FLAC 전용 음악 스트리밍 앱",
