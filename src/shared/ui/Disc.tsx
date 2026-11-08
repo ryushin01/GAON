@@ -1,17 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, View } from 'react-native';
+import { useEffect } from 'react';
+import { View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+
+import { useLiveReducedMotion } from './useLiveReducedMotion';
 
 type Props = {
   uri?: string;
@@ -26,24 +27,6 @@ type Props = {
 };
 
 const SPIN_MS = 9000;
-
-/** Reanimated의 값은 앱을 켤 때 정해져, 재생 중에 바꾼 동작 줄이기 설정도 따르도록 구독합니다. */
-function useLiveReducedMotion() {
-  const initial = useReducedMotion();
-  const [reduced, setReduced] = useState(initial);
-  useEffect(() => {
-    let alive = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((value) => {
-      if (alive) setReduced(value);
-    });
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
-    return () => {
-      alive = false;
-      subscription.remove();
-    };
-  }, []);
-  return reduced;
-}
 
 /** 앨범 아트를 입힌 디스크입니다. */
 export function Disc({ uri, size, label, spinning = false, tilted = false }: Props) {

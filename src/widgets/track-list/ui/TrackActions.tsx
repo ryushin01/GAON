@@ -4,7 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { displayTitle, type Track } from '@/entities/music';
-import { AddToPlaylistDialog } from '@/features/add-to-playlist';
+import { AddToPlaylistDialog } from './AddToPlaylistDialog';
 import { addToQueue } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { AppText, IconButton } from '@/shared/ui';

@@ -1,1 +1,1 @@
-export { TabsLayout } from './TabsLayout';
+export { TabsLayout } from './ui/TabsLayout';

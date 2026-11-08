@@ -1,1 +1,1 @@
-export { TrackPage } from './TrackPage';
+export { TrackPage } from './ui/TrackPage';

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -18,6 +20,30 @@ test('홈에 1위 곡 유신의 빛 (The Light)가 나옵니다', async ({ page 
   await expect(page).toHaveTitle('홈 - GAON');
   await expect(page.locator('html')).toHaveAttribute('lang', 'ko');
   await expectNoOverflow(page);
+});
+
+test('홈의 디스크는 스크롤과 버튼으로 넘어갑니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await expect(page.getByRole('button', { name: '이전 순위' })).toBeDisabled();
+  await page.getByRole('button', { name: '다음 순위' }).click();
+  await expect(page.getByText('오늘의 2위')).toBeVisible();
+  await expect(page.getByRole('button', { name: /따뜻한 여름 듣기/ })).toBeVisible();
+  await expectNoOverflow(page);
+});
+
+test('동작 줄이기에서도 버튼으로 디스크를 넘길 수 있습니다', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await expect(page.getByText('오늘의 1위')).toBeVisible();
+  await page.getByRole('button', { name: '다음 순위' }).click();
+  await expect(page.getByText('오늘의 2위')).toBeVisible();
+});
+
+test('설정에 현재 버전을 표시합니다', async ({ page }) => {
+  const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
+  await page.goto('/settings');
+  await expect(page.getByText(`버전 ${version}`)).toBeVisible();
 });
 
 test('TOP 100은 100곡을 순위대로 보여 주고 장르로 거릅니다', async ({ page }) => {

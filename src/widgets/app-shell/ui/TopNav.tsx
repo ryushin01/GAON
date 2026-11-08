@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { SERIF_FONT } from '@/shared/config';
 
 import { NavLink } from './NavLink';
-import { isActive, NAV_ITEMS } from './nav';
+import { isActive, NAV_ITEMS } from '../config/nav';
 
 /** 넓은 화면의 상단 메뉴입니다. 로고와 메뉴를 가운데에 모아 본문을 가리지 않습니다. */
 export function TopNav() {

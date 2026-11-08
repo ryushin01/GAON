@@ -1,6 +1,6 @@
 {
   "name": "gaon",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "packageManager": "pnpm@12.16.1",
   "description": "고해상도 FLAC 전용 음악 스트리밍 앱",
@@ -15,6 +15,7 @@
     "build:web": "expo export --platform web --output-dir dist",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
+    "lint:fsd": "steiger src",
     "test": "jest",
     "desktop": "pnpm build:native && electron electron/main.cjs",
     "build:desktop": "pnpm build:web && pnpm build:native && electron-builder --config electron-builder.json",
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@feature-sliced/steiger-plugin": "^0.8.2",
     "@playwright/test": "^1.64.1",
     "@storybook/react-native-web-vite": "^10.6.5",
     "@testing-library/react-native": "^14.1.0",
@@ -72,6 +74,7 @@
     "jest": "^30.5.2",
     "jest-expo": "~58.0.14",
     "prettier": "^3.9.10",
+    "steiger": "^0.9.0",
     "storybook": "^10.6.5",
     "typescript": "~6.0.3",
     "vite": "^8.3.6"

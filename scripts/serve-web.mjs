@@ -6,7 +6,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'dist');
 const port = Number(process.argv[3] ?? 8081);
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf', '.png': 'image/png', '.ico': 'image/x-icon' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ttf': 'font/ttf', '.woff2': 'font/woff2', '.png': 'image/png', '.ico': 'image/x-icon' };
 
 createServer((req, res) => {
   let path = join(root, normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)));

@@ -7,8 +7,9 @@ import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
 import { OutputBadge, SeekBar, TransportControls, useCurrentTrack, usePlayerStore } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
-import { AppText, Disc, IconButton, useMainRegion } from '@/shared/ui';
-import { LyricsPanel, QueuePanel } from '@/widgets/player-view';
+import { AppText, Disc, IconButton, PageFade, useMainRegion } from '@/shared/ui';
+import { LyricsPanel } from './LyricsPanel';
+import { QueuePanel } from './QueuePanel';
 
 type Panel = 'art' | 'lyrics' | 'queue';
 
@@ -98,22 +99,24 @@ export function PlayerPage() {
 
   return (
     <View ref={ref} role="main" nativeID={nativeID} tabIndex={-1} style={styles.root}>
-      <View style={styles.header}>
-        <IconButton icon="chevron-down" label="플레이어 닫기" color={text} onPress={close} />
-      </View>
-      {wide ? (
-        <View style={styles.wide}>
-          <ScrollView style={styles.wideLeft} contentContainerStyle={styles.wideLeftContent}>{artAndControls}</ScrollView>
-          <View style={styles.wideRight}>
-            <AppText variant="label" tone="onStage" role="heading" aria-level={2} style={styles.panelTitle}>가사</AppText>
-            <View style={styles.flex}><LyricsPanel lines={track.lyrics} /></View>
-            <AppText variant="label" tone="onStage" role="heading" aria-level={2} style={styles.panelTitle}>재생 목록</AppText>
-            <View style={styles.flex}><QueuePanel /></View>
-          </View>
+      <PageFade>
+        <View style={styles.header}>
+          <IconButton icon="chevron-down" label="플레이어 닫기" color={text} onPress={close} />
         </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.narrow}>{artAndControls}</ScrollView>
-      )}
+        {wide ? (
+          <View style={styles.wide}>
+            <ScrollView style={styles.wideLeft} contentContainerStyle={styles.wideLeftContent}>{artAndControls}</ScrollView>
+            <View style={styles.wideRight}>
+              <AppText variant="label" tone="onStage" role="heading" aria-level={2} style={styles.panelTitle}>가사</AppText>
+              <View style={styles.flex}><LyricsPanel lines={track.lyrics} /></View>
+              <AppText variant="label" tone="onStage" role="heading" aria-level={2} style={styles.panelTitle}>재생 목록</AppText>
+              <View style={styles.flex}><QueuePanel /></View>
+            </View>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.narrow}>{artAndControls}</ScrollView>
+        )}
+      </PageFade>
     </View>
   );
 }

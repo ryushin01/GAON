@@ -11,7 +11,9 @@ import { useUnistyles } from 'react-native-unistyles';
 import { useLibraryStore } from '@/entities/library';
 import { useThemeStore } from '@/features/change-theme';
 import { restoreLocalArt } from '@/features/import-local';
-import { SkipLink } from '@/shared/ui';
+import { PaperGrain, SkipLink } from '@/shared/ui';
+
+import { SERIF_FONT_SOURCE } from './serifFontSource';
 
 // 저장한 테마를 읽은 뒤에 첫 화면을 그립니다. 시스템 테마가 잠깐 보이지 않게 합니다.
 void useThemeStore.persist.rehydrate();
@@ -60,7 +62,7 @@ export function RootLayout() {
 
   // 제목 글꼴을 기다리지 않고 먼저 그린 뒤, 받으면 바꿉니다. 받지 못해도 대체 글꼴로 보입니다.
   useEffect(() => {
-    Font.loadAsync({ GaonSerif: { uri: require('../../assets/fonts/SongMyung-Regular.ttf'), display: Font.FontDisplay.SWAP } }).catch(() => undefined);
+    Font.loadAsync({ GaonSerif: { uri: SERIF_FONT_SOURCE, display: Font.FontDisplay.SWAP } }).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -81,6 +83,7 @@ export function RootLayout() {
           <Stack.Screen name="player" options={{ presentation: 'fullScreenModal', animation: reduceMotion ? 'none' : 'slide_from_bottom' }} />
           <Stack.Screen name="+not-found" />
         </Stack>
+        <PaperGrain />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
