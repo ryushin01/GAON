@@ -35,8 +35,9 @@ export function HomePage() {
   }, []);
 
   const setBooting = useNavSlot((s) => s.setBooting);
-  // 카탈로그를 받지 못하면 인트로가 사라지므로 메뉴도 바로 보여 줍니다.
-  useEffect(() => setBooting(intro && !isError), [intro, isError, setBooting]);
+  // 카탈로그를 받지 못하면 인트로를 끝냅니다. 다시 시도하는 동안에도 메뉴를 쓸 수 있어야 합니다.
+  if (isError && intro) setIntro(false);
+  useEffect(() => setBooting(intro), [intro, setBooting]);
 
   const [active, setActive] = useState(true);
   useFocusEffect(
@@ -85,7 +86,7 @@ export function HomePage() {
           />
         )}
       </View>
-      {intro && !isError && <HomeIntro uri={stageTracks[0]?.artUri} ready={Boolean(catalog)} onDone={finishIntro} />}
+      {intro && <HomeIntro uri={stageTracks[0]?.artUri} ready={Boolean(catalog)} onDone={finishIntro} />}
     </Screen>
   );
 }

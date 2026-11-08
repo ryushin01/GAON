@@ -162,6 +162,11 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     return () => {
       clearTimeout(timer);
       element.removeEventListener('wheel', onWheel);
+      // 멈추기 전에 끊긴 휠은 바로 제자리를 찾아, 다음 휠에 옛 시작점이 남지 않게 합니다.
+      if (wheelStart.current != null) {
+        moveTo(snapIndex(wheelStart.current, target.get(), last));
+        wheelStart.current = null;
+      }
     };
   }, [fits, last, moveTo, open, reduced, target, viewport]);
 
