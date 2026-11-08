@@ -48,6 +48,16 @@ test('스크립트를 받기 전에도 첫 화면이 있고, 앱이 그려지면
   await expect(page.locator('.boot')).toHaveCount(0);
 });
 
+test('앱 스크립트가 없어도 저장한 테마로 첫 화면을 표시합니다', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('gaon-theme', JSON.stringify({ state: { preference: 'dark' }, version: 0 })));
+  await page.route('**/_expo/static/js/**', (route) => route.abort());
+  await page.reload();
+  await expect(page.locator('.boot')).toBeVisible();
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(12, 12, 11)');
+});
+
 test('설정에 현재 버전을 표시합니다', async ({ page }) => {
   const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
   await page.goto('/settings');
