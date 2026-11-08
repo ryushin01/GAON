@@ -78,7 +78,10 @@ export function DiscStage({ tracks, scrollY, viewport, scrollTo, onPlay, header 
   useAnimatedReaction(
     () => Math.round(progress.get()),
     (current, previous) => {
-      if (current !== previous) scheduleOnRN(setIndex, current);
+      if (current === previous) return;
+      // 동작 줄이기를 켜도 스크롤로 보던 순위에 머물게 합니다.
+      selected.set(current);
+      scheduleOnRN(setIndex, current);
     },
   );
 

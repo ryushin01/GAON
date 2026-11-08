@@ -17,7 +17,10 @@ function subscribe(notify: () => void) {
   consumers.add(notify);
   if (!started) {
     started = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then(publish);
+    // 조회하는 사이에 설정이 바뀌었다면 더 새로운 값을 덮어쓰지 않습니다.
+    void AccessibilityInfo.isReduceMotionEnabled().then((value) => {
+      if (current === null) publish(value);
+    });
     AccessibilityInfo.addEventListener('reduceMotionChanged', publish);
   }
   return () => {
