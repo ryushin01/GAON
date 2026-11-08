@@ -6,7 +6,7 @@ import { DiscStage } from './DiscStage';
 
 jest.mock('react-native-gesture-handler', () => {
   const chain: Record<string, unknown> = {};
-  for (const name of ['minDistance', 'onStart', 'onUpdate', 'onEnd', 'activeOffsetX', 'failOffsetY']) chain[name] = () => chain;
+  for (const name of ['enabled', 'minDistance', 'onStart', 'onUpdate', 'onEnd', 'activeOffsetX', 'failOffsetY']) chain[name] = () => chain;
   return { Gesture: { Pan: () => chain }, GestureDetector: ({ children }: { children: unknown }) => children };
 });
 

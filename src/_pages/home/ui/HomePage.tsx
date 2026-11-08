@@ -35,7 +35,8 @@ export function HomePage() {
   }, []);
 
   const setBooting = useNavSlot((s) => s.setBooting);
-  useEffect(() => setBooting(intro), [intro, setBooting]);
+  // 카탈로그를 받지 못하면 인트로가 사라지므로 메뉴도 바로 보여 줍니다.
+  useEffect(() => setBooting(intro && !isError), [intro, isError, setBooting]);
 
   const [active, setActive] = useState(true);
   useFocusEffect(

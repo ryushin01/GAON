@@ -41,6 +41,58 @@ test('홈의 디스크는 양옆 디스크와 방향키, 휠로 넘어갑니다'
   await expectNoOverflow(page);
 });
 
+test('휠을 한 칸만 굴려도 다음 곡으로 넘어갑니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  const viewport = page.viewportSize()!;
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  await page.mouse.wheel(0, 120);
+  await expect(page.getByRole('heading', { name: '따뜻한 여름', level: 2 })).toBeVisible();
+});
+
+test('Ctrl+휠은 브라우저 확대에 맡깁니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  const prevented = await page.evaluate(() => {
+    const target = document.elementFromPoint(innerWidth / 2, innerHeight / 2)!;
+    const event = new WheelEvent('wheel', { deltaY: 120, ctrlKey: true, bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(prevented).toBe(false);
+});
+
+test('낮은 창에서는 세로 방향키로 곡을 넘기지 않습니다', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 420 });
+  await page.goto('/');
+  await expect(homeReady(page)).toBeAttached();
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(500);
+  await expect(homeReady(page)).toBeAttached();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('heading', { name: '따뜻한 여름', level: 2 })).toBeAttached();
+});
+
+test('목록을 연 채 끌어도 디스크가 넘어가지 않습니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  await page.getByRole('button', { name: '목록' }).click();
+  const viewport = page.viewportSize()!;
+  await page.mouse.move(viewport.width - 20, viewport.height - 90);
+  await page.mouse.down();
+  await page.mouse.move(40, viewport.height - 90, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  await expect(homeReady(page)).toBeVisible();
+});
+
+test('카탈로그를 받지 못해도 메뉴로 이동할 수 있습니다', async ({ page }) => {
+  await page.route('**/catalog.json', (route) => route.abort());
+  await page.goto('/');
+  await expect(page.getByText('카탈로그를 불러오지 못했습니다')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('link', { name: '보관함', exact: true })).toBeVisible();
+});
+
 test('목록을 열어 순위를 고르고 Esc로 닫습니다', async ({ page }) => {
   await page.goto('/');
   await expect(homeReady(page)).toBeVisible();
