@@ -21,6 +21,7 @@ import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatCount } from '@/shared/lib';
 import { AppText, Disc, MetaRow, useLiveReducedMotion, useNavSlot } from '@/shared/ui';
 
+import { snapIndex, wheelPixels } from '../lib/wheel';
 import { TrackIndex } from './TrackIndex';
 
 type Props = {
@@ -104,6 +105,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
   const target = useSharedValue(0);
   const panStart = useSharedValue(0);
   const wheelRest = useRef(0);
+  const wheelStart = useRef<number | null>(null);
   const rootRef = useRef<ComponentRef<typeof View>>(null);
   const toggleRef = useRef<ComponentRef<typeof View>>(null);
   const setNavNode = useNavSlot((s) => s.setNode);
@@ -136,9 +138,10 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     if (!element) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const onWheel = (event: WheelEvent) => {
-      if (open) return;
+      // Ctrl+휠과 핀치는 브라우저의 화면 확대에 맡깁니다.
+      if (open || event.ctrlKey) return;
       event.preventDefault();
-      const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      const delta = wheelPixels(event, viewport);
       if (reduced) {
         wheelRest.current += delta;
         if (Math.abs(wheelRest.current) >= REDUCED_WHEEL_STEP) {
@@ -147,16 +150,20 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
         }
         return;
       }
+      wheelStart.current ??= Math.round(target.get());
       moveTo(target.get() + delta / WHEEL_STEP);
       clearTimeout(timer);
-      timer = setTimeout(() => moveTo(Math.round(target.get())), SNAP_DELAY_MS);
+      timer = setTimeout(() => {
+        moveTo(snapIndex(wheelStart.current ?? Math.round(target.get()), target.get(), last));
+        wheelStart.current = null;
+      }, SNAP_DELAY_MS);
     };
     element.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       clearTimeout(timer);
       element.removeEventListener('wheel', onWheel);
     };
-  }, [fits, moveTo, open, reduced, target]);
+  }, [fits, last, moveTo, open, reduced, target, viewport]);
 
   // 방향키로 넘기고, 목록은 Esc로 닫습니다.
   useEffect(() => {
@@ -170,20 +177,24 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
       const element = event.target as HTMLElement;
       if (element.closest?.('input, textarea, select, [role="slider"]')) return;
       const current = Math.round(target.get());
-      const next = { ArrowRight: current + 1, ArrowDown: current + 1, PageDown: current + 1, ArrowLeft: current - 1, ArrowUp: current - 1, PageUp: current - 1, Home: 0, End: last }[event.key];
+      // 낮은 창은 세로로 스크롤하므로 세로 이동 키를 남겨 둡니다.
+      const sideways: Record<string, number> = { ArrowRight: current + 1, ArrowLeft: current - 1 };
+      const keys: Record<string, number> = fits ? { ...sideways, ArrowDown: current + 1, PageDown: current + 1, ArrowUp: current - 1, PageUp: current - 1, Home: 0, End: last } : sideways;
+      const next = keys[event.key];
       if (next == null) return;
       event.preventDefault();
       moveTo(next);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [active, closeIndex, last, moveTo, open, target]);
+  }, [active, closeIndex, fits, last, moveTo, open, target]);
 
   const size = wide ? Math.min(viewport * 0.6, width * 0.42, 640) : Math.min(width * 0.68, Math.max(170, viewport * 0.36));
 
   // 터치와 마우스로 끌어서 넘깁니다. 낮은 창에서는 세로 스크롤을 남겨 둡니다.
   const pan = useMemo(() => {
     const gesture = Gesture.Pan()
+      .enabled(!open)
       .minDistance(12)
       .onStart(() => {
         panStart.set(progress.get());
@@ -199,7 +210,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
         target.set(landed);
       });
     return fits ? gesture : gesture.activeOffsetX([-14, 14]).failOffsetY([-14, 14]);
-  }, [fits, last, panStart, progress, reduced, size, target]);
+  }, [fits, last, open, panStart, progress, reduced, size, target]);
 
   const position = Math.min(index, last);
   const track = tracks[position];
