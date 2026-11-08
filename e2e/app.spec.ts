@@ -93,6 +93,20 @@ test('카탈로그를 받지 못해도 메뉴로 이동할 수 있습니다', as
   await expect(page.getByRole('link', { name: '보관함', exact: true })).toBeVisible();
 });
 
+test('카탈로그를 다시 시도하는 동안에도 메뉴로 이동할 수 있습니다', async ({ page }) => {
+  let fail = true;
+  await page.route('**/catalog.json', async (route) => {
+    if (fail) await route.abort();
+    // 두 번째 요청은 응답하지 않아 다시 시도하는 상태를 유지합니다.
+  });
+  await page.goto('/');
+  await expect(page.getByText('카탈로그를 불러오지 못했습니다')).toBeVisible({ timeout: 20_000 });
+  fail = false;
+  await page.getByRole('button', { name: '다시 시도' }).click();
+  await expect(page.getByText('카탈로그를 불러오지 못했습니다')).toBeHidden();
+  await expect(page.getByRole('link', { name: '보관함', exact: true })).toBeVisible();
+});
+
 test('목록을 열어 순위를 고르고 Esc로 닫습니다', async ({ page }) => {
   await page.goto('/');
   await expect(homeReady(page)).toBeVisible();
