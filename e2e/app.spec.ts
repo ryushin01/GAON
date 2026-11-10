@@ -17,6 +17,15 @@ async function expectNoOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+test('건너뛰기 버튼으로 디스크를 넘기지 않고 아래 구역에 갑니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  await page.getByRole('button', { name: /^건너뛰기/ }).click();
+  await expect(page.getByRole('heading', { name: '최신 앨범', level: 2 })).toBeInViewport();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: /^빛 \(The Light\) 유신/ })).toBeFocused();
+});
+
 test('홈에 1위 곡 유신의 빛 (The Light)가 나옵니다', async ({ page }) => {
   await page.goto('/');
   await expect(homeReady(page)).toBeVisible();
@@ -107,13 +116,38 @@ test('카탈로그를 다시 시도하는 동안에도 메뉴로 이동할 수 �
   await expect(page.getByRole('link', { name: '보관함', exact: true })).toBeVisible();
 });
 
+test('마지막 디스크 다음에는 휠이 아래의 최신 앨범과 TOP 100으로 내려갑니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  await page.keyboard.press('End');
+  await expect(page.getByText('12위', { exact: true })).toBeVisible();
+  await page.waitForTimeout(400);
+  const viewport = page.viewportSize()!;
+  await page.mouse.move(viewport.width / 2, viewport.height / 2);
+  for (let i = 0; i < 2; i += 1) {
+    await page.mouse.wheel(0, 360);
+    await page.waitForTimeout(80);
+  }
+  await expect(page.getByRole('heading', { name: '최신 앨범', level: 2 })).toBeInViewport();
+});
+
+test('세로로 스크롤하면 최신 앨범과 TOP 100이 나옵니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  const playAll = page.getByRole('button', { name: 'TOP 100 전체 재생' });
+  await playAll.scrollIntoViewIfNeeded();
+  await expect(playAll).toBeInViewport();
+  await expect(page.getByRole('link', { name: /^유리 도시 루멘 트리오/ })).toBeAttached();
+  await expectNoOverflow(page);
+});
+
 test('목록을 열어 순위를 고르고 Esc로 닫습니다', async ({ page }) => {
   await page.goto('/');
   await expect(homeReady(page)).toBeVisible();
   const toggle = page.getByRole('button', { name: '목록' });
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await page.getByRole('button', { name: /^Daydream/ }).click();
+  await page.getByRole('region', { name: '순위 목록' }).getByRole('button', { name: /^Daydream/ }).click();
   await expect(page.getByRole('heading', { name: 'Daydream', level: 2 })).toBeVisible();
   await toggle.click();
   await page.keyboard.press('Escape');

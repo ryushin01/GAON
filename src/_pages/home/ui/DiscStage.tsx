@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentRef, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -19,7 +19,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
 import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatCount } from '@/shared/lib';
-import { AppText, Disc, MetaRow, useLiveReducedMotion, useNavSlot } from '@/shared/ui';
+import { AppText, Disc, MetaRow, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 
 import { snapIndex, wheelPixels } from '../lib/wheel';
 import { TrackIndex } from './TrackIndex';
@@ -34,6 +34,10 @@ type Props = {
   onPlay: (track: Track) => void;
   onOpen: (track: Track) => void;
   header: ReactNode;
+  /** 휠로 디스크를 넘겨도 되는지 묻습니다. 페이지가 아래로 스크롤된 동안에는 페이지가 휠을 씁니다. */
+  canCapture?: () => boolean;
+  /** 아래의 최신 앨범과 TOP 100으로 내려갑니다. */
+  onMore?: () => void;
 };
 
 /** 디스크 하나를 넘기는 데 드는 휠 거리입니다. */
@@ -91,7 +95,7 @@ function quotesOf(track: Track) {
 }
 
 /** 순위별 디스크를 대각선으로 늘어놓고 휠, 끌기, 방향키, 양옆 디스크로 넘기는 한 화면입니다. */
-export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen, header }: Props) {
+export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen, header, canCapture, onMore }: Props) {
   const { theme } = useUnistyles();
   const { width } = useWindowDimensions();
   const reduced = useLiveReducedMotion();
@@ -131,7 +135,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     (toggleRef.current as unknown as HTMLElement | null)?.focus?.();
   }, []);
 
-  // 휠은 문서를 스크롤하지 않고 디스크를 넘깁니다.
+  // 휠은 디스크를 넘깁니다. 첫 곡이나 마지막 곡에 닿으면 페이지를 스크롤합니다.
   useEffect(() => {
     if (Platform.OS !== 'web' || !fits) return;
     const element = rootRef.current as unknown as HTMLElement | null;
@@ -140,8 +144,12 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     const onWheel = (event: WheelEvent) => {
       // Ctrl+휠과 핀치는 브라우저의 화면 확대에 맡깁니다.
       if (open || event.ctrlKey) return;
-      event.preventDefault();
+      if (canCapture && !canCapture()) return;
       const delta = wheelPixels(event, viewport);
+      const settled = wheelStart.current == null && wheelRest.current === 0;
+      const position = target.get();
+      if (settled && ((delta > 0 && position >= last - 0.001) || (delta < 0 && position <= 0.001))) return;
+      event.preventDefault();
       if (reduced) {
         wheelRest.current += delta;
         if (Math.abs(wheelRest.current) >= REDUCED_WHEEL_STEP) {
@@ -168,7 +176,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
         wheelStart.current = null;
       }
     };
-  }, [fits, last, moveTo, open, reduced, target, viewport]);
+  }, [canCapture, fits, last, moveTo, open, reduced, target, viewport]);
 
   // 방향키로 넘기고, 목록은 Esc로 닫습니다.
   useEffect(() => {
@@ -196,7 +204,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
 
   const size = wide ? Math.min(viewport * 0.6, width * 0.42, 640) : Math.min(width * 0.68, Math.max(170, viewport * 0.36));
 
-  // 터치와 마우스로 끌어서 넘깁니다. 낮은 창에서는 세로 스크롤을 남겨 둡니다.
+  // 가로로 끌어서 넘깁니다. 세로로 밀면 페이지를 스크롤합니다.
   const pan = useMemo(() => {
     const gesture = Gesture.Pan()
       .enabled(!open)
@@ -205,17 +213,16 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
         panStart.set(progress.get());
       })
       .onUpdate((event) => {
-        const travel = (Math.abs(event.translationX) >= Math.abs(event.translationY) || !fits ? event.translationX : event.translationY) / (size * 1.2);
+        const travel = event.translationX / (size * 1.2);
         progress.set(Math.max(0, Math.min(last, panStart.get() - travel)));
       })
       .onEnd((event) => {
-        const speed = Math.abs(event.velocityX) >= Math.abs(event.velocityY) || !fits ? event.velocityX : event.velocityY;
-        const landed = Math.max(0, Math.min(last, Math.round(progress.get() - speed / 2600)));
+        const landed = Math.max(0, Math.min(last, Math.round(progress.get() - event.velocityX / 2600)));
         progress.set(reduced ? landed : withSpring(landed, SPRING));
         target.set(landed);
       });
-    return fits ? gesture : gesture.activeOffsetX([-14, 14]).failOffsetY([-14, 14]);
-  }, [fits, last, open, panStart, progress, reduced, size, target]);
+    return gesture.activeOffsetX([-14, 14]).failOffsetY([-14, 14]);
+  }, [last, open, panStart, progress, reduced, size, target]);
 
   const position = Math.min(index, last);
   const track = tracks[position];
@@ -269,6 +276,15 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     </View>
   );
 
+  // 디스크를 하나씩 넘기지 않고 아래의 최신 앨범과 TOP 100으로 바로 갑니다.
+  const skip = onMore && (
+    <Pressable role="button" onPress={onMore} style={styles.skip}>
+      <Text style={styles.skipLabel}>건너뛰기</Text>
+      <VisuallyHidden> 최신 앨범과 TOP 100으로</VisuallyHidden>
+      <Ionicons aria-hidden name="arrow-down" size={14} color={theme.colors.text} />
+    </Pressable>
+  );
+
   const stageHeight = fits ? viewport : undefined;
   const discBand = wide ? styles.discsWide : [styles.discs, { minHeight: size * 1.04 }];
 
@@ -303,12 +319,14 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
         {header}
         {info}
       </View>
+      {skip && <View style={styles.skipWide}>{skip}</View>}
       {quoteRow}
     </View>
   ) : (
     <View style={[styles.column, fits && styles.flex]}>
       <View style={styles.headerRow}>
         <View style={styles.flex}>{header}</View>
+        {skip}
         {toggle}
       </View>
       {info}
@@ -319,9 +337,9 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
 
   return (
     <GestureDetector gesture={pan}>
-      <View ref={rootRef} style={[styles.root, stageHeight ? { height: stageHeight } : styles.flex]}>
+      <View ref={rootRef} style={[styles.root, stageHeight ? { height: stageHeight } : undefined]}>
         {open && <TrackIndex tracks={tracks} current={position} wide={wide} onSelect={(i) => { moveTo(i); closeIndex(); }} onClose={closeIndex} />}
-        {fits ? body : <ScrollView>{body}</ScrollView>}
+        {body}
       </View>
     </GestureDetector>
   );
@@ -354,5 +372,8 @@ const styles = StyleSheet.create((theme) => ({
   quoteSource: { textAlign: 'center', fontSize: 11 },
   quoteText: { fontFamily: SERIF_FONT, fontWeight: '400', color: theme.colors.text, textAlign: 'center', fontSize: 22, lineHeight: 27, letterSpacing: -0.6 },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.sm },
+  skip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.sm },
+  skipWide: { position: 'absolute', right: theme.spacing.sm, bottom: 112 },
+  skipLabel: { color: theme.colors.text, fontSize: 14, fontWeight: '500', letterSpacing: -0.2, textDecorationLine: 'underline' },
   toggleLabel: { color: theme.colors.text, fontSize: 14, fontWeight: '500', letterSpacing: -0.2 },
 }));
