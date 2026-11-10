@@ -9,8 +9,10 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useUnistyles } from 'react-native-unistyles';
 
 import { useLibraryStore } from '@/entities/library';
+import { startSession } from '@/entities/session';
 import { useThemeStore } from '@/features/change-theme';
 import { restoreLocalArt } from '@/features/import-local';
+import { startLibrarySync } from '@/features/sync-library';
 import { PaperGrain, SkipLink } from '@/shared/ui';
 
 import { SERIF_FONT_SOURCE } from './serifFontSource';
@@ -18,6 +20,10 @@ import { SERIF_FONT_SOURCE } from './serifFontSource';
 // 저장한 테마를 읽은 뒤에 첫 화면을 그립니다. 시스템 테마가 잠깐 보이지 않게 합니다.
 void useThemeStore.persist.rehydrate();
 const subscribeThemeHydration = (onChange: () => void) => useThemeStore.persist.onFinishHydration(onChange);
+
+// 로그인을 설정한 빌드에서만 저장된 로그인을 읽고 보관함 동기화를 시작합니다.
+startSession();
+startLibrarySync();
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2 } },

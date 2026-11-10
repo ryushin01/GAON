@@ -4,7 +4,11 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { ThemeSelector } from '@/features/change-theme';
 import { OutputModeSelector } from '@/features/player';
+import { forgetSync, SyncStatus } from '@/features/sync-library';
+import { supabase } from '@/shared/api';
 import { AppText, Screen, ScreenHeader, Section } from '@/shared/ui';
+
+import { AccountSection } from './AccountSection';
 
 const HELP_URL = 'https://github.com/ryushin01/GAON/issues';
 
@@ -12,6 +16,13 @@ export function SettingsPage() {
   return (
     <Screen>
       <ScreenHeader title="설정" back />
+      {supabase && (
+        <Section title="계정">
+          <AccountSection onSignedOut={forgetSync}>
+            <SyncStatus />
+          </AccountSection>
+        </Section>
+      )}
       <Section title="화면 테마">
         <View style={styles.body}>
           <ThemeSelector />

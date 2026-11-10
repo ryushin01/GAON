@@ -17,3 +17,8 @@ if (ipcRenderer.sendSync('audio:available')) {
     },
   });
 }
+
+// 소셜 로그인은 시스템 브라우저에서 하고, 앱으로 돌아온 주소를 받습니다.
+contextBridge.exposeInMainWorld('gaonAuth', {
+  signIn: (url) => ipcRenderer.invoke('auth:signIn', url),
+});
