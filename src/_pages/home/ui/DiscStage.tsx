@@ -146,9 +146,14 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
       if (open || event.ctrlKey) return;
       if (canCapture && !canCapture()) return;
       const delta = wheelPixels(event, viewport);
-      const settled = wheelStart.current == null && wheelRest.current === 0;
       const position = target.get();
-      if (settled && ((delta > 0 && position >= last - 0.001) || (delta < 0 && position <= 0.001))) return;
+      // 끝에 닿은 뒤 같은 방향의 휠은 관성이 남아 있어도 바로 페이지에 넘깁니다.
+      if ((delta > 0 && position >= last - 0.001) || (delta < 0 && position <= 0.001)) {
+        clearTimeout(timer);
+        wheelStart.current = null;
+        wheelRest.current = 0;
+        return;
+      }
       event.preventDefault();
       if (reduced) {
         wheelRest.current += delta;
