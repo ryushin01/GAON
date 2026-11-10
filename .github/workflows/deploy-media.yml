@@ -62,3 +62,6 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          # 공개 미디어가 커서 Pages 동기화가 기본 10분을 넘깁니다.
+          timeout: 1800000
