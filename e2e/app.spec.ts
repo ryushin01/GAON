@@ -197,6 +197,46 @@ test('앱 스크립트가 없어도 저장한 테마로 첫 화면을 표시합�
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(12, 12, 11)');
 });
 
+test('로그인 서버가 없으면 데모로 로그인하고 로그아웃합니다', async ({ page }) => {
+  await page.goto('/settings');
+  await page.getByRole('button', { name: 'GitHub로 로그인 (데모)' }).click();
+  await expect(page.getByText('데모 사용자 · GitHub 데모 로그인 중입니다.')).toBeVisible();
+  await expect(page.getByText(/이 기기에만 저장됩니다/)).toBeVisible();
+  await page.getByRole('button', { name: '로그아웃' }).click();
+  await expect(page.getByRole('button', { name: '카카오 로그인 (데모)' })).toBeVisible();
+});
+
+test('소유자 토큰으로 로그인하면 보관함을 비공개 Gist에 저장합니다', async ({ page }) => {
+  const saved: unknown[] = [];
+  await page.route('https://api.github.com/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const reply = (body: unknown) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname === '/user') return reply({ login: request.headers().authorization === 'Bearer owner-token' ? 'ryushin01' : 'someone' });
+    if (url.pathname === '/gists' && request.method() === 'GET') return reply([]);
+    if (url.pathname === '/gists' && request.method() === 'POST') {
+      saved.push(JSON.parse(request.postData() ?? '{}'));
+      return reply({ id: 'g1', updated_at: new Date().toISOString(), files: {} });
+    }
+    if (url.pathname === '/gists/g1') {
+      saved.push(JSON.parse(request.postData() ?? '{}'));
+      return reply({ id: 'g1', updated_at: new Date().toISOString(), files: {} });
+    }
+    return route.fulfill({ status: 404, body: '{}' });
+  });
+  await page.goto('/settings');
+  await page.getByRole('button', { name: '소유자 로그인' }).click();
+  const token = page.getByLabel('GitHub 토큰');
+  await token.fill('other-token');
+  await page.getByRole('button', { name: '소유자로 로그인' }).click();
+  await expect(page.getByRole('alert')).toContainText('소유자 계정이 아닙니다');
+  await token.fill('owner-token');
+  await page.getByRole('button', { name: '소유자로 로그인' }).click();
+  await expect(page.getByText('ryushin01 · GitHub 소유자 계정으로 로그인했습니다.')).toBeVisible();
+  await expect(page.getByText('보관함이 이 계정과 맞춰져 있습니다.')).toBeVisible();
+  expect((saved[0] as { public: boolean }).public).toBe(false);
+});
+
 test('설정에 현재 버전을 표시합니다', async ({ page }) => {
   const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
   await page.goto('/settings');

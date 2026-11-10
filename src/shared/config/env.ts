@@ -9,3 +9,6 @@ export const SUPABASE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISH
 
 /** 개인정보 처리방침은 어느 플랫폼에서나 같은 공개 주소로 엽니다. */
 export const PRIVACY_POLICY_URL = 'https://ryushin01.github.io/GAON/privacy.html';
+
+/** 이 GitHub 계정의 토큰으로만 소유자 로그인을 받습니다. 보관함은 그 계정의 비공개 Gist에 저장합니다. */
+export const OWNER_GITHUB_LOGIN = 'ryushin01';

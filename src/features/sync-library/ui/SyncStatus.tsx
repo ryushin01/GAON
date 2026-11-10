@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { useSessionStore } from '@/entities/session';
 import { AppButton, AppText } from '@/shared/ui';
 
 import { syncNow, useSyncStatus } from '../model/sync';
@@ -10,6 +11,8 @@ const LABEL = { idle: '아직 동기화하지 않았습니다.', syncing: '보�
 /** 보관함 동기화 상태를 보여 주고, 실패하면 다시 시도하게 합니다. */
 export function SyncStatus() {
   const { state, error } = useSyncStatus();
+  const kind = useSessionStore((s) => s.session?.kind);
+  if (kind === 'demo') return <AppText variant="caption" tone="muted">데모 로그인은 동기화하지 않고, 보관함은 이 기기에만 저장됩니다.</AppText>;
   return (
     <View style={styles.root} aria-live="polite">
       {state === 'error' ? (

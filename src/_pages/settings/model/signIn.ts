@@ -1,7 +1,9 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
-import { AUTH_CALLBACK_URL, isDesktopApp, supabase } from '@/shared/api';
+import { setDemoSession, setOwnerSession, type SessionKind } from '@/entities/session';
+import { AUTH_CALLBACK_URL, fetchGitHubLogin, forgetLibraryGist, isDesktopApp, supabase } from '@/shared/api';
+import { OWNER_GITHUB_LOGIN } from '@/shared/config';
 
 export type SocialProvider = 'kakao' | 'google' | 'github';
 
@@ -29,6 +31,11 @@ export async function completeSignIn(callbackUrl: string, flowId?: string | null
  * 시스템 브라우저에서 로그인한 뒤 앱 주소로 돌아옵니다. 사용자가 창을 닫으면 false를 돌려줍니다.
  */
 export async function signIn(provider: SocialProvider): Promise<boolean> {
+  // 로그인 서버가 없는 빌드는 서버에 가지 않고 데모 사용자로 들어갑니다.
+  if (!supabase) {
+    setDemoSession(provider);
+    return true;
+  }
   const auth = client().auth;
   if (Platform.OS === 'web' && !isDesktopApp()) {
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
@@ -49,7 +56,25 @@ export async function signIn(provider: SocialProvider): Promise<boolean> {
   return true;
 }
 
-export async function signOut() {
+/** 소유자의 GitHub 토큰으로 로그인합니다. 토큰 주인이 소유자 계정이 아니면 거절합니다. */
+export async function signInOwner(token: string) {
+  const trimmed = token.trim();
+  if (!trimmed) throw new Error('토큰을 입력해 주세요.');
+  const login = await fetchGitHubLogin(trimmed);
+  if (login.toLowerCase() !== OWNER_GITHUB_LOGIN.toLowerCase()) throw new Error('이 앱의 소유자 계정이 아닙니다.');
+  setOwnerSession({ login, token: trimmed });
+}
+
+export async function signOut(kind: SessionKind) {
+  if (kind === 'owner') {
+    setOwnerSession(null);
+    forgetLibraryGist();
+    return;
+  }
+  if (kind === 'demo') {
+    setDemoSession(null);
+    return;
+  }
   const { error } = await client().auth.signOut();
   if (error) throw error;
 }

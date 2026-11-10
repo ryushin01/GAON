@@ -2,7 +2,27 @@
 
 카카오, Google, GitHub 소셜 로그인으로 좋아요, 최근 재생, 플레이리스트를 기기 사이에 맞춥니다. 가져온 내 FLAC 파일은 서버에 올리지 않습니다. 로그인하지 않아도 모든 기능을 쓸 수 있습니다.
 
-`EXPO_PUBLIC_SUPABASE_URL`과 `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 없는 빌드에서는 로그인 화면이 나오지 않습니다.
+로그인은 빌드에 따라 세 가지로 동작합니다.
+
+| 로그인 | 언제 | 보관함 저장 위치 |
+|---|---|---|
+| 실제 소셜 로그인 | `EXPO_PUBLIC_SUPABASE_URL`과 `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 있는 빌드 | Supabase |
+| 데모 로그인 | 위 키가 없는 빌드 (지금 공개 데모) | 이 기기만. 서버에 가지 않습니다. |
+| 소유자 로그인 | 키가 없는 빌드에서 소유자(`ryushin01`)의 GitHub 토큰을 넣었을 때 | 소유자 계정의 비공개 Gist |
+
+## 소유자 로그인
+
+서버 없이 소유자 한 사람만 보관함을 여러 기기에서 맞춰 쓰는 방식입니다.
+
+1. GitHub > Settings > Developer settings > [Fine-grained tokens](https://github.com/settings/personal-access-tokens/new)에서 토큰을 만듭니다.
+   - Repository access: Public repositories (저장소 권한은 주지 않습니다)
+   - Account permissions > Gists: Read and write
+   - 만료일을 정해 둡니다.
+2. 앱의 설정 > 계정 > 소유자 로그인에 토큰을 넣습니다.
+3. 앱이 GitHub API로 토큰 주인을 확인합니다. `src/shared/config/env.ts`의 `OWNER_GITHUB_LOGIN`과 다르면 거절합니다.
+4. 보관함은 `gaon-library.json` 파일 하나를 담은 비공개 Gist에 저장합니다. 처음 저장할 때 만들어집니다.
+
+토큰은 그 기기의 저장소(웹은 브라우저 저장소)에만 남고, 로그아웃하면 지워집니다. 권한이 Gist뿐이라 토큰이 새어도 저장소에는 접근할 수 없지만, 공용 기기에서는 쓰지 않습니다.
 
 ## 구조
 
