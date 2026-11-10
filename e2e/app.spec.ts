@@ -116,6 +116,14 @@ test('카탈로그를 다시 시도하는 동안에도 메뉴로 이동할 수 �
   await expect(page.getByRole('link', { name: '보관함', exact: true })).toBeVisible();
 });
 
+test('낮은 창에서도 건너뛰기가 아래 구역으로 정확히 갑니다', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 420 });
+  await page.goto('/');
+  await expect(homeReady(page)).toBeAttached();
+  await page.getByRole('button', { name: /^건너뛰기/ }).click();
+  await expect(page.getByRole('heading', { name: '최신 앨범', level: 2 })).toBeInViewport();
+});
+
 test('마지막 디스크 다음에는 휠이 아래의 최신 앨범과 TOP 100으로 내려갑니다', async ({ page }) => {
   await page.goto('/');
   await expect(homeReady(page)).toBeVisible();

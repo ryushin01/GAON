@@ -58,13 +58,15 @@ export function HomePage() {
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const moreRef = useRef<ComponentRef<typeof View>>(null);
   const pageY = useRef(0);
+  /** 아래 구역의 실제 위치입니다. 낮은 창에서는 무대 높이가 화면 높이와 다릅니다. */
+  const moreY = useRef(0);
   const scrolledAt = useRef(0);
   const canCapture = useCallback(() => pageY.current < 4 && Date.now() - scrolledAt.current > SCROLL_SETTLE_MS, []);
   const showMore = useCallback(() => {
-    scrollRef.current?.scrollTo({ y: viewport, animated: !reduced });
+    scrollRef.current?.scrollTo({ y: moreY.current, animated: !reduced });
     // 키보드 사용자도 이어서 읽도록 초점을 옮깁니다. 초점 이동이 스크롤을 다시 옮기지 않게 합니다.
     (moreRef.current as unknown as HTMLElement | null)?.focus?.({ preventScroll: true });
-  }, [reduced, viewport]);
+  }, [reduced]);
 
   const header = (
     <View style={styles.brand}>
@@ -113,7 +115,7 @@ export function HomePage() {
               onMore={showMore}
             />
 
-            <View ref={moreRef} tabIndex={-1} style={styles.rest}>
+            <View ref={moreRef} tabIndex={-1} style={styles.rest} onLayout={(event) => (moreY.current = event.nativeEvent.layout.y)}>
               <Section title="최신 앨범">
                 <Rail>
                   {albums.map((album) => (
