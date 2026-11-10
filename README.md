@@ -44,6 +44,7 @@
 | 비트 퍼펙트 출력 | PC 앱 독점 출력, 곡마다 장치 샘플레이트 전환 (macOS Core Audio, Windows WASAPI) |
 | 테마 | 라이트, 다크, 시스템 설정 따르기 |
 | 보관함 | 좋아요, 최근 재생, 플레이리스트 (앱을 다시 켜도 유지) |
+| 계정 | 카카오, Google, GitHub 소셜 로그인으로 보관함을 기기 사이에 동기화 (로그인 없이도 사용 가능) |
 | 카탈로그 | 곡·앨범·가수 상세, 피처링과 작사·작곡·편곡 크레딧, 통합 검색 |
 | 접근성 | 키보드 조작, 본문 바로가기, 스크린 리더 이름, 색과 무관한 순위 변동 표시 |
 
@@ -58,6 +59,7 @@ FLAC은 변환 없이 저장하고 손실 없이 디코딩합니다. PC 앱은 �
 | 앱 | Expo 58, React Native 0.88, React 19, Expo Router, TypeScript |
 | 오디오·파일 | expo-audio, expo-document-picker, expo-file-system |
 | 상태·데이터 | TanStack Query v5, Zustand |
+| 로그인·동기화 | Supabase (Auth, Postgres) |
 | 스타일 | react-native-unistyles 3 |
 | PC 앱 | Electron 45, electron-builder, C (miniaudio, Core Audio, WASAPI) |
 | 품질 | ESLint, Jest, Storybook 10, Playwright, axe |
@@ -104,8 +106,8 @@ src/
 ├─ _app/         앱 초기화와 루트 레이아웃
 ├─ _pages/       화면
 ├─ widgets/      앱 셸, 곡 목록, 플레이어 패널
-├─ features/     재생, FLAC 가져오기, 좋아요, 플레이리스트 담기
-├─ entities/     음악 카탈로그, 보관함
+├─ features/     재생, FLAC 가져오기, 좋아요, 보관함 동기화
+├─ entities/     음악 카탈로그, 보관함, 로그인 상태
 └─ shared/       UI, 설정, FLAC 파서
 ```
 
@@ -115,4 +117,5 @@ src/
 |---|---|
 | [개발 가이드](docs/development.md) | 환경 변수, 데모 미디어, 네이티브 빌드, 테스트와 접근성 기준 |
 | [CI · 배포](docs/ci-deploy.md) | GitHub Actions, 공개 미디어, PC 설치본 |
+| [로그인과 동기화](docs/auth.md) | Supabase와 카카오·Google·GitHub 로그인 설정, 동기화 규칙 |
 | [버전 기록](CHANGELOG.md) | 버전별 변경 내용 |

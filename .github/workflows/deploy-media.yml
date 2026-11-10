@@ -40,6 +40,10 @@ jobs:
       - run: python scripts/generate-media.py site/media
       - run: pnpm install --frozen-lockfile
       - name: 웹 데모 빌드 (/GAON 경로)
+        # 저장소 변수가 없으면 로그인이 꺼진 채로 빌드됩니다. 공개용 키라 화면 코드에 들어가도 됩니다.
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           node -e "const f='app.json',c=require('./'+f);c.expo.experiments.baseUrl='/GAON';require('fs').writeFileSync(f,JSON.stringify(c))"
           pnpm exec expo export --platform web --output-dir web-out

@@ -59,6 +59,10 @@ jobs:
           # 러너에는 소리 장치가 없을 수 있어 시험 출력을 씁니다.
           GAON_AUDIO_BACKEND: 'null'
       - name: 배포용 빌드 (공개 미디어 주소)
+        # 저장소 변수가 없으면 로그인이 꺼진 채로 빌드됩니다. 공개용 키라 화면 코드에 들어가도 됩니다.
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           pnpm build:web
           pnpm exec electron-builder --config electron-builder.json ${{ matrix.target }} --publish never
