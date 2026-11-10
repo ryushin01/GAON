@@ -2,7 +2,27 @@
 
 카카오, Google, GitHub 소셜 로그인으로 좋아요, 최근 재생, 플레이리스트를 기기 사이에 맞춥니다. 가져온 내 FLAC 파일은 서버에 올리지 않습니다. 로그인하지 않아도 모든 기능을 쓸 수 있습니다.
 
-`EXPO_PUBLIC_SUPABASE_URL`과 `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 없는 빌드에서는 로그인 화면이 나오지 않습니다.
+로그인은 빌드에 따라 세 가지로 동작합니다.
+
+| 로그인 | 언제 | 보관함 저장 위치 |
+|---|---|---|
+| 실제 소셜 로그인 | `EXPO_PUBLIC_SUPABASE_URL`과 `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 있는 빌드 | Supabase |
+| 데모 로그인 | 위 키가 없는 빌드 (지금 공개 데모) | 이 기기만. 서버에 가지 않습니다. |
+| 소유자 로그인 | 키가 없는 빌드에서 소유자(`ryushin01`)의 GitHub 토큰을 넣었을 때 | 소유자 계정의 비공개 Gist |
+
+## 소유자 로그인
+
+서버 없이 소유자 한 사람만 보관함을 여러 기기에서 맞춰 쓰는 방식입니다.
+
+1. GitHub > Settings > Developer settings > [Fine-grained tokens](https://github.com/settings/personal-access-tokens/new)에서 토큰을 만듭니다.
+   - Repository access: Public repositories (저장소 권한은 주지 않습니다)
+   - Account permissions > Gists: Read and write
+   - 만료일을 정해 둡니다.
+2. 앱의 설정 > 계정 > 소유자 로그인에 토큰을 넣습니다.
+3. 앱이 GitHub API로 토큰 주인을 확인합니다. `src/shared/config/env.ts`의 `OWNER_GITHUB_LOGIN`과 다르면 거절합니다.
+4. 보관함은 `gaon-library.json` 파일 하나를 담은 비공개 Gist에 저장합니다. 처음 저장할 때 만들어집니다.
+
+토큰은 iOS·Android에서는 기기의 암호화 저장소(`expo-secure-store`)에, 웹과 PC 앱에서는 브라우저 저장소에 남고, 로그아웃하면 지워집니다. 권한이 Gist뿐이라 토큰이 새어도 저장소에는 접근할 수 없지만, 공용 기기에서는 쓰지 않습니다.
 
 ## 구조
 
@@ -54,7 +74,14 @@ gaon://auth-callback
 
 ### 4. 빌드에 키 넣기
 
-로컬은 `.env`에, 배포는 GitHub 저장소 변수(Settings > Secrets and variables > Actions > Variables)에 넣습니다. Publishable key는 화면 코드에 들어가도 되는 공개용 키라 변수로 둡니다.
+로컬은 `.env`에 `EXPO_PUBLIC_` 접두사를 붙인 이름으로 넣습니다. 앱은 이 이름만 읽습니다.
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://<프로젝트>.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+배포는 GitHub 저장소 변수(Settings > Secrets and variables > Actions > Variables)에 접두사 없는 이름으로 넣고, 워크플로가 `EXPO_PUBLIC_` 이름으로 넘깁니다. Publishable key는 화면 코드에 들어가도 되는 공개용 키라 변수로 둡니다.
 
 | 저장소 변수 | 값 |
 |---|---|
@@ -65,4 +92,6 @@ gaon://auth-callback
 
 ## 개인정보
 
-`public/privacy.html`이 개인정보 처리방침 초안입니다. 공개 전에 저장 지역을 채우고 내용을 직접 확인합니다. 설정 화면의 링크는 `https://ryushin01.github.io/GAON/privacy.html`을 엽니다.
+`public/privacy.html`이 개인정보 처리방침입니다. 실제 로그인을 켤 때 위탁 항목의 저장 지역을 실제 Supabase 지역으로 고치고 내용을 직접 확인합니다. 데모 빌드는 처리방침 링크를 보여 주지 않습니다.
+
+실제 로그인의 세션은 모바일 앱에서도 `AsyncStorage`에 저장합니다. 정식 서비스로 열 때는 암호화 저장소로 옮기는 것이 좋습니다. Supabase 세션은 `expo-secure-store`의 한 항목 크기 제한(약 2KB)을 넘을 수 있어, 암호화한 값을 나눠 저장하는 방식이 필요합니다. 설정 화면의 링크는 `https://ryushin01.github.io/GAON/privacy.html`을 엽니다.

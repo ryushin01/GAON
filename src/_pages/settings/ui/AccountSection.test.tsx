@@ -44,7 +44,7 @@ describe('AccountSection', () => {
 
   it('로그인하면 계정과 로그아웃, 계정 삭제를 보여 줍니다', async () => {
     useSessionStore.setState({
-      session: { user: { id: 'u1', user_metadata: { name: '가온' }, app_metadata: { provider: 'kakao' } } } as never,
+      session: { kind: 'supabase', userId: 'u1', name: '가온', provider: 'kakao' },
       ready: true,
     });
     await render(<AccountSection />);
