@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { supabase } from '@/shared/api';
+import { secureStorage } from '@/shared/lib';
 
 /**
  * - supabase: 실제 소셜 로그인 (키가 있는 빌드)
@@ -24,8 +25,13 @@ export const useSessionStore = create<SessionState>(() => ({ session: null, read
 
 type LocalAuth = {
   demo: { provider: string } | null;
-  owner: { login: string; token: string } | null;
+  /** 토큰은 여기 두지 않고 암호화 저장소에 따로 둡니다. */
+  owner: { login: string } | null;
 };
+
+const OWNER_TOKEN_KEY = 'gaon-owner-token';
+let ownerToken: string | null = null;
+let ownerTokenLoaded = false;
 
 /** 데모와 소유자 로그인은 이 기기에만 저장합니다. */
 const useLocalAuth = create<LocalAuth>()(
@@ -46,14 +52,14 @@ function fromSupabase(session: Session): AppSession {
 /** 소유자, 실제 로그인, 데모 순으로 지금 로그인을 정합니다. */
 function resolve() {
   const { demo, owner } = useLocalAuth.getState();
-  const session: AppSession | null = owner
+  const session: AppSession | null = owner && ownerToken
     ? { kind: 'owner', userId: `github:${owner.login}`, name: owner.login, provider: 'github' }
     : supabaseSession
       ? fromSupabase(supabaseSession)
       : demo
         ? { kind: 'demo', userId: 'demo', name: '데모 사용자', provider: demo.provider }
         : null;
-  const ready = supabaseReady && useLocalAuth.persist.hasHydrated();
+  const ready = supabaseReady && ownerTokenLoaded && useLocalAuth.persist.hasHydrated();
   useSessionStore.setState({ session, ready });
 }
 
@@ -64,6 +70,15 @@ export function startSession() {
   if (started) return;
   started = true;
   useLocalAuth.subscribe(resolve);
+  void secureStorage
+    .getItem(OWNER_TOKEN_KEY)
+    .then((token) => {
+      ownerToken = token;
+    })
+    .finally(() => {
+      ownerTokenLoaded = true;
+      resolve();
+    });
   if (useLocalAuth.persist.hasHydrated()) resolve();
   else useLocalAuth.persist.onFinishHydration(resolve);
   if (!supabase) return;
@@ -91,11 +106,14 @@ export function setDemoSession(provider: string | null) {
   useLocalAuth.setState({ demo: provider ? { provider } : null });
 }
 
-export function setOwnerSession(owner: { login: string; token: string } | null) {
-  useLocalAuth.setState({ owner });
+export async function setOwnerSession(owner: { login: string; token: string } | null) {
+  ownerToken = owner?.token ?? null;
+  if (owner) await secureStorage.setItem(OWNER_TOKEN_KEY, owner.token);
+  else await secureStorage.removeItem(OWNER_TOKEN_KEY);
+  useLocalAuth.setState({ owner: owner ? { login: owner.login } : null });
 }
 
 /** 소유자 로그인의 GitHub 토큰입니다. 소유자가 아니면 null입니다. */
 export function getOwnerToken() {
-  return useLocalAuth.getState().owner?.token ?? null;
+  return useLocalAuth.getState().owner ? ownerToken : null;
 }

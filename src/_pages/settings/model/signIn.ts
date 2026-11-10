@@ -62,12 +62,12 @@ export async function signInOwner(token: string) {
   if (!trimmed) throw new Error('토큰을 입력해 주세요.');
   const login = await fetchGitHubLogin(trimmed);
   if (login.toLowerCase() !== OWNER_GITHUB_LOGIN.toLowerCase()) throw new Error('이 앱의 소유자 계정이 아닙니다.');
-  setOwnerSession({ login, token: trimmed });
+  await setOwnerSession({ login, token: trimmed });
 }
 
 export async function signOut(kind: SessionKind) {
   if (kind === 'owner') {
-    setOwnerSession(null);
+    await setOwnerSession(null);
     forgetLibraryGist();
     return;
   }

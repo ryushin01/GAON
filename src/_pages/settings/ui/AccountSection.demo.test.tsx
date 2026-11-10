@@ -15,10 +15,13 @@ jest.mock('@/shared/api', () => ({
 }));
 
 describe('AccountSection (로그인 서버가 없는 빌드)', () => {
-  beforeAll(() => startSession());
-  beforeEach(() => {
+  beforeAll(async () => {
+    startSession();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  beforeEach(async () => {
     mockLogin.mockReset();
-    setOwnerSession(null);
+    await setOwnerSession(null);
     setDemoSession(null);
   });
 

@@ -25,6 +25,8 @@ type SyncStatus = { state: 'idle' | 'syncing' | 'synced' | 'error'; at: number |
 export const useSyncStatus = create<SyncStatus>(() => ({ state: 'idle', at: null, error: null }));
 
 let applying = false;
+/** 이 기기의 보관함이 바뀔 때마다 늘어납니다. 동기화 도중에 바뀌었는지 가립니다. */
+let localVersion = 0;
 
 function snapshot(): LibrarySnapshot {
   const { likedIds, recentIds, playlists } = useLibraryStore.getState();
@@ -70,9 +72,10 @@ function canSync() {
   return Boolean(session && session.kind !== 'demo');
 }
 
-async function push(remote: Remote, userId: string, data: LibrarySnapshot) {
+/** 올리는 사이에 이 기기가 또 바뀌었으면 바뀐 표시를 남겨 다시 올립니다. */
+async function push(remote: Remote, userId: string, data: LibrarySnapshot, version: number) {
   const syncedAt = await remote.push(data);
-  useSyncMeta.setState({ userId, syncedAt, dirty: false });
+  useSyncMeta.setState({ userId, syncedAt, dirty: localVersion !== version });
 }
 
 let running: Promise<void> | null = null;
@@ -86,14 +89,19 @@ export function syncNow(): Promise<void> {
     const { userId } = session;
     useSyncStatus.setState({ state: 'syncing', error: null });
     try {
+      const startVersion = localVersion;
       const row = await store.pull();
       const remote = row ? parseSnapshot(row.data) : null;
-      const action = decideSync(useSyncMeta.getState(), userId, remote ? (row?.updatedAt ?? null) : null);
-      if (action === 'push') await push(store, userId, snapshot());
+      // 서버 보관함을 읽지 못하면 덮어쓰지 않습니다. 새 버전 앱이 저장한 형식일 수 있습니다.
+      if (row && !remote) throw new Error('서버 보관함의 형식을 읽지 못했습니다. 앱을 최신 버전으로 업데이트해 주세요.');
+      let action = decideSync(useSyncMeta.getState(), userId, row?.updatedAt ?? null);
+      // 받아 오는 사이에 이 기기가 바뀌었으면 덮어쓰지 않고 합칩니다.
+      if (action === 'pull' && localVersion !== startVersion) action = 'merge';
+      if (action === 'push') await push(store, userId, snapshot(), localVersion);
       if (action === 'merge' && remote) {
         const merged = mergeLibraries(snapshot(), remote);
         apply(merged);
-        await push(store, userId, merged);
+        await push(store, userId, merged, localVersion);
       }
       if (action === 'pull' && remote && row) {
         apply(remote);
@@ -105,6 +113,8 @@ export function syncNow(): Promise<void> {
     }
   })().finally(() => {
     running = null;
+    // 동기화하는 동안 생긴 변경은 한 번 더 올립니다.
+    if (useSyncMeta.getState().dirty && canSync() && useSyncStatus.getState().state !== 'error') void syncNow();
   });
   return running;
 }
@@ -144,14 +154,18 @@ export function startLibrarySync() {
   useSessionStore.subscribe(follow);
   follow();
 
-  useLibraryStore.subscribe((state, previous) => {
-    if (applying) return;
-    if (state.likedIds === previous.likedIds && state.recentIds === previous.recentIds && state.playlists === previous.playlists) return;
-    useSyncMeta.setState({ dirty: true });
-    if (!canSync()) return;
-    clearTimeout(timer);
-    timer = setTimeout(() => void syncNow(), PUSH_DELAY_MS);
-  });
+  // 저장된 보관함을 불러오는 것은 사용자의 변경이 아니어서, 다 불러온 뒤부터 지켜봅니다.
+  void ready.then(() =>
+    useLibraryStore.subscribe((state, previous) => {
+      if (applying) return;
+      if (state.likedIds === previous.likedIds && state.recentIds === previous.recentIds && state.playlists === previous.playlists) return;
+      localVersion += 1;
+      useSyncMeta.setState({ dirty: true });
+      if (!canSync()) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => void syncNow(), PUSH_DELAY_MS);
+    }),
+  );
 
   // 다른 기기에서 바꾼 내용을 다시 화면에 돌아왔을 때 받습니다.
   if (Platform.OS === 'web') {
