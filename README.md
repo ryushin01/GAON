@@ -15,7 +15,7 @@
 
 | 홈 | TOP 100 |
 |---|---|
-| ![대각선으로 늘어선 순위별 디스크와 곡 정보 표, 가사 인용구가 있는 넓은 화면의 홈](docs/images/home.jpg) | ![장르 필터와 순위 변동이 있는 TOP 100 곡 목록](docs/images/top100.jpg) |
+| ![대각선으로 늘어선 순위별 디스크와 곡 정보 표, 가사 인용구, 건너뛰기 버튼이 있는 넓은 화면의 홈](docs/images/home.jpg) | ![장르 필터와 순위 변동이 있는 TOP 100 곡 목록](docs/images/top100.jpg) |
 
 | 플레이어 | 곡 정보 |
 |---|---|
@@ -23,7 +23,7 @@
 
 | 모바일 홈 | 모바일 TOP 100 |
 |---|---|
-| <img src="docs/images/mobile-home.jpg" alt="모바일 홈의 1위 곡 디스크와 정보 표, 하단 메뉴" width="240"> | <img src="docs/images/mobile-top100.jpg" alt="모바일 TOP 100 목록과 미니 플레이어" width="240"> |
+| <img src="docs/images/mobile-home.jpg" alt="모바일 홈의 1위 곡 디스크와 정보 표, 건너뛰기와 목록 버튼, 하단 메뉴" width="240"> | <img src="docs/images/mobile-top100.jpg" alt="모바일 TOP 100 목록과 미니 플레이어" width="240"> |
 
 | 다크 테마 | 설정 |
 |---|---|
