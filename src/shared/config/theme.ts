@@ -9,19 +9,20 @@ const radius = { sm: 0, md: 0, lg: 0, pill: 999 } as const;
  * 앱은 글꼴을 이어 쓸 수 없어 라틴 문자까지 든 Diphylleia 한 벌을 씁니다.
  */
 export const DISPLAY_FONT = Platform.select({
-  web: 'Cormorant, Diphylleia, GaonSerif, AppleMyungjo, Batang, "Noto Serif CJK KR", serif',
+  // 대체 글꼴: 섬세한 명조 분위기를 잇도록 영문은 운영체제 올드스타일 세리프(Baskerville, Garamond), 한글은 운영체제 명조
+  web: 'Cormorant, Diphylleia, GaonSerif, Baskerville, Garamond, AppleMyungjo, "Noto Serif CJK KR", Batang, serif',
   default: 'Diphylleia',
 });
 
 /** 본문 세리프입니다. Nanum Myeongjo 한 벌에 라틴 문자와 한글이 함께 있습니다. */
 export const SERIF_FONT = Platform.select({
-  web: 'GaonSerif, AppleMyungjo, Batang, "Noto Serif CJK KR", serif',
+  web: 'GaonSerif, AppleMyungjo, "Noto Serif CJK KR", Batang, Baskerville, serif',
   default: 'GaonSerif',
 });
 
 /** 비트·샘플레이트 같은 음질 수치를 기기 표시창처럼 보여 주는 고정폭 글꼴(Nanum Gothic Coding)입니다. */
 export const MONO_FONT = Platform.select({
-  web: 'GaonMono, ui-monospace, Menlo, Consolas, monospace',
+  web: 'GaonMono, ui-monospace, "SF Mono", Menlo, Consolas, D2Coding, monospace',
   default: 'GaonMono',
 });
 

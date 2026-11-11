@@ -1,5 +1,9 @@
 # 버전 기록
 
+## [0.7.4](https://github.com/ryushin01/GAON/releases/tag/v0.7.4) - 2026-11-11
+
+- 웹과 PC 앱의 대체 글꼴을 다듬었습니다. 글꼴 파일을 읽지 못해도 제목과 본문은 운영체제의 올드스타일 세리프(Baskerville, Garamond)와 명조로, 음질 수치는 SF Mono·Menlo·Consolas·D2Coding으로 이어집니다.
+
 ## [0.7.3](https://github.com/ryushin01/GAON/releases/tag/v0.7.3) - 2026-11-11
 
 - 홈의 가운데 디스크 이미지를 혼자 먼저 받고, 옆 디스크와 아래 구역의 이미지, 큰 한글 글꼴은 그 다음에 받습니다. 글꼴을 바꾼 뒤 늘었던 첫 앨범 아트 표시 시간이 느린 모바일에서 약 9.5초에서 8초로 줄었습니다.
