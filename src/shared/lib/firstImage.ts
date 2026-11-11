@@ -21,7 +21,13 @@ export function markFirstImage() {
 
 /** 그 이미지가 도착했거나 시간 제한이 지나면 끝납니다. */
 export function whenFirstImage(timeoutMs: number) {
-  return Promise.race([arrived, new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))]);
+  if (opened) return Promise.resolve();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, timeoutMs);
+  });
+  // 이미지가 먼저 오면 남은 타이머를 지웁니다.
+  return Promise.race([arrived, timeout]).finally(() => clearTimeout(timer));
 }
 
 /** 그 이미지가 도착했거나 시간 제한이 지나면 true가 됩니다. */
