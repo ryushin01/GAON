@@ -5,6 +5,8 @@ export { Checkbox } from './Checkbox';
 export { Chip } from './Chip';
 export { ConfirmDialog } from './ConfirmDialog';
 export { Disc } from './Disc';
+export { Icon } from './Icon';
+export type { IconName } from './Icon';
 export { IconButton } from './IconButton';
 export { MetaRow } from './MetaRow';
 export { useNavSlot } from './navSlot';

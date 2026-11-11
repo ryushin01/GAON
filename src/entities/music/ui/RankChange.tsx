@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+
+import { Icon } from '@/shared/ui';
 
 type Props = { change?: number; isNew?: boolean };
 
@@ -24,7 +25,7 @@ export function RankChange({ change = 0, isNew = false }: Props) {
   const up = change > 0;
   return (
     <View role="img" aria-label={label} style={styles.row}>
-      <Ionicons aria-hidden name={up ? 'caret-up' : 'caret-down'} size={12} color={up ? theme.colors.rankUp : theme.colors.rankDown} />
+      <Icon aria-hidden name={up ? 'caret-up' : 'caret-down'} size={12} color={up ? theme.colors.rankUp : theme.colors.rankDown} />
       <Text style={up ? styles.up : styles.down}>{Math.abs(change)}</Text>
     </View>
   );

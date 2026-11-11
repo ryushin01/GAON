@@ -9,7 +9,7 @@ const mockLogin = jest.fn();
 jest.mock('@/shared/api', () => ({
   AUTH_CALLBACK_URL: 'gaon://auth-callback',
   isDesktopApp: () => false,
-  supabase: null,
+  getSupabase: async () => null,
   fetchGitHubLogin: (...args: unknown[]) => mockLogin(...args),
   forgetLibraryGist: jest.fn(),
 }));

@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+
+import { Icon } from './Icon';
 
 type Props = { label: string; selected: boolean; onPress: () => void };
 
@@ -14,7 +15,7 @@ export function Chip({ label, selected, onPress }: Props) {
       style={[styles.chip, selected && styles.chipSelected]}
     >
       {/* 색만으로 구분하지 않도록 선택 표시를 함께 보여 줍니다. */}
-      {selected && <Ionicons aria-hidden name="checkmark" size={16} color={theme.colors.onPrimary} />}
+      {selected && <Icon aria-hidden name="checkmark" size={16} color={theme.colors.onPrimary} />}
       <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
     </Pressable>
   );

@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Platform, Pressable } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+
+import { Icon } from './Icon';
 
 type Props = { checked: boolean; label: string; onChange: (checked: boolean) => void };
 
@@ -27,7 +28,7 @@ export function Checkbox({ checked, label, onChange }: Props) {
       onPress={() => onChange(!checked)}
       style={styles.hit}
     >
-      <Ionicons
+      <Icon
         aria-hidden
         name={checked ? 'checkbox' : 'square-outline'}
         size={24}

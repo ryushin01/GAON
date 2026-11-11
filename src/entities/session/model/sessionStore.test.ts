@@ -1,6 +1,6 @@
 import { getOwnerToken, setDemoSession, setOwnerSession, startSession, useSessionStore } from './sessionStore';
 
-jest.mock('@/shared/api', () => ({ supabase: null }));
+jest.mock('@/shared/api', () => ({ getSupabase: async () => null }));
 
 describe('로그인 상태', () => {
   beforeAll(async () => {

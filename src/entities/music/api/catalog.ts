@@ -39,8 +39,23 @@ export async function fetchCatalog(): Promise<Catalog> {
   return toCatalog((await response.json()) as RawCatalog);
 }
 
+let early: Promise<Catalog> | null = null;
+
+/** 앱을 켜자마자 카탈로그를 받기 시작합니다. 화면이 처음 찾을 때 이 결과를 이어받습니다. */
+export function prefetchCatalog() {
+  early ??= fetchCatalog();
+  // 실패는 화면이 다시 요청할 때 처리합니다.
+  early.catch(() => undefined);
+}
+
+function loadCatalog() {
+  const pending = early;
+  early = null;
+  return pending ?? fetchCatalog();
+}
+
 export function useCatalog() {
-  return useQuery({ queryKey: ['catalog'], queryFn: fetchCatalog, staleTime: 60 * 60 * 1000 });
+  return useQuery({ queryKey: ['catalog'], queryFn: loadCatalog, staleTime: 60 * 60 * 1000 });
 }
 
 /** 발매일이 최근인 순서로 앨범을 돌려줍니다. */

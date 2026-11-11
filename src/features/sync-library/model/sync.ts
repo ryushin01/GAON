@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { useLibraryStore } from '@/entities/library';
 import { getOwnerToken, useSessionStore, type AppSession } from '@/entities/session';
-import { forgetLibraryGist, readLibraryGist, supabase, writeLibraryGist } from '@/shared/api';
+import { forgetLibraryGist, getSupabase, readLibraryGist, writeLibraryGist } from '@/shared/api';
 
 import { decideSync, mergeLibraries, parseSnapshot, type LibrarySnapshot, type SyncMeta } from './merge';
 
@@ -46,15 +46,21 @@ type Remote = {
 
 /** 로그인 종류에 맞는 저장소입니다. 데모 로그인은 서버가 없어 null입니다. */
 function remoteFor(session: AppSession): Remote | null {
-  if (session.kind === 'supabase' && supabase) {
-    const client = supabase;
+  if (session.kind === 'supabase') {
+    const connect = async () => {
+      const client = await getSupabase();
+      if (!client) throw new Error('로그인 서버를 쓸 수 없는 빌드입니다.');
+      return client;
+    };
     return {
       pull: async () => {
+        const client = await connect();
         const { data: row, error } = await client.from('libraries').select('data, updated_at').eq('user_id', session.userId).maybeSingle();
         if (error) throw error;
         return row ? { data: row.data as unknown, updatedAt: row.updated_at as string } : null;
       },
       push: async (data) => {
+        const client = await connect();
         const { data: row, error } = await client.from('libraries').upsert({ user_id: session.userId, data }).select('updated_at').single();
         if (error) throw error;
         return row.updated_at as string;

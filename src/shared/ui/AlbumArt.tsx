@@ -1,7 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+
+import { Icon } from './Icon';
 
 type Props = {
   uri?: string;
@@ -26,7 +27,7 @@ export function AlbumArt({ uri, size, label }: Props) {
       {uri ? (
         <Image accessible={Boolean(label)} accessibilityLabel={label} source={{ uri }} style={imageStyle} contentFit="cover" transition={120} recyclingKey={uri} />
       ) : (
-        <Ionicons aria-hidden name="musical-notes" size={size ? Math.max(16, size * 0.4) : 48} color={theme.colors.textMuted} />
+        <Icon aria-hidden name="musical-notes" size={size ? Math.max(16, size * 0.4) : 48} color={theme.colors.textMuted} />
       )}
     </View>
   );
