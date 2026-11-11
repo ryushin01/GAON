@@ -1,7 +1,7 @@
 import { Pressable, Text, type PressableProps } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { SERIF_FONT } from '../config';
+import { DISPLAY_FONT } from '../config';
 
 import { Icon, type IconName } from './Icon';
 
@@ -48,5 +48,5 @@ const styles = StyleSheet.create((theme) => ({
 const labelStyles = StyleSheet.create((theme) => ({
   primary: { color: theme.colors.onPrimary, fontSize: 15, fontWeight: '600' },
   secondary: { color: theme.colors.text, fontSize: 15, fontWeight: '600' },
-  rule: { color: theme.colors.text, fontFamily: SERIF_FONT, fontWeight: '400', fontSize: 32, lineHeight: 42, letterSpacing: -0.8, textTransform: 'uppercase' },
+  rule: { color: theme.colors.text, fontFamily: DISPLAY_FONT, fontWeight: '400', fontSize: 32, lineHeight: 42, letterSpacing: -0.8, textTransform: 'uppercase' },
 }));

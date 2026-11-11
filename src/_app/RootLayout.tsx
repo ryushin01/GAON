@@ -15,7 +15,7 @@ import { restoreLocalArt } from '@/features/import-local';
 import { startLibrarySync } from '@/features/sync-library';
 import { PaperGrain, SkipLink } from '@/shared/ui';
 
-import { SERIF_FONT_SOURCE } from './serifFontSource';
+import { FONT_SOURCES } from './fontSources';
 
 // 저장한 테마를 읽은 뒤에 첫 화면을 그립니다. 시스템 테마가 잠깐 보이지 않게 합니다.
 void useThemeStore.persist.rehydrate();
@@ -66,9 +66,12 @@ export function RootLayout() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.colors.bg);
   }, [rt.themeName, theme.colors.bg]);
 
-  // 제목 글꼴을 기다리지 않고 먼저 그린 뒤, 받으면 바꿉니다. 받지 못해도 대체 글꼴로 보입니다.
+  // 글꼴을 기다리지 않고 먼저 그린 뒤, 받으면 바꿉니다. 받지 못해도 대체 글꼴로 보입니다.
   useEffect(() => {
-    Font.loadAsync({ GaonSerif: { uri: SERIF_FONT_SOURCE, display: Font.FontDisplay.SWAP } }).catch(() => undefined);
+    const fonts = Object.fromEntries(
+      Object.entries(FONT_SOURCES).map(([name, uri]) => [name, { uri, display: Font.FontDisplay.SWAP }]),
+    );
+    Font.loadAsync(fonts).catch(() => undefined);
   }, []);
 
   useEffect(() => {

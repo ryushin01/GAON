@@ -1,5 +1,9 @@
 # 버전 기록
 
+## [0.7.2](https://github.com/ryushin01/GAON/releases/tag/v0.7.2) - 2026-11-11
+
+- 글꼴을 바꿨습니다. 제목은 가늘고 섬세한 디필레이아(Diphylleia)와 숫자가 아름다운 Cormorant(웹·PC 앱의 영문·숫자), 본문은 나눔명조, 음질 수치는 기기 표시창 같은 나눔고딕코딩입니다. 웹과 PC 앱은 KS X 1001 한글과 라틴 문자만 남긴 파일을 받습니다(`scripts/subset-fonts.py`).
+
 ## [0.7.1](https://github.com/ryushin01/GAON/releases/tag/v0.7.1) - 2026-11-11
 
 - 홈의 순위 목록에서 멀리 건너뛰어도 건너뛴 디스크의 이미지는 받지 않습니다. 로그인 SDK를 받지 못하면 로그인 없이 쓸 수 있게 하고, 다음 요청에서 다시 받습니다.

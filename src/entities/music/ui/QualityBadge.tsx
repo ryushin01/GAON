@@ -1,6 +1,8 @@
 import { Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { MONO_FONT } from '@/shared/config';
+
 import { formatQuality, formatQualityShort, isHiRes } from '../model/format';
 import type { AudioFormat } from '../model/types';
 
@@ -33,7 +35,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   badgeRaised: {},
   badgeStage: {},
-  grade: { flexShrink: 0, color: theme.colors.primary, fontSize: 12, lineHeight: 17, fontWeight: '800' },
-  text: { color: theme.colors.text, fontSize: 12, lineHeight: 17, fontWeight: '500' },
+  grade: { flexShrink: 0, color: theme.colors.primary, fontFamily: MONO_FONT, fontSize: 12, lineHeight: 17, fontWeight: '800' },
+  text: { color: theme.colors.text, fontFamily: MONO_FONT, fontSize: 12, lineHeight: 17, fontWeight: '500' },
   textStage: { color: theme.colors.stage.text },
 }));

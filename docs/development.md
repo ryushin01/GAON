@@ -77,7 +77,15 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 색은 `shared/config/theme.ts`의 토큰으로만 씁니다. 기본값은 시스템 설정을 따르고, 설정 화면에서 라이트나 다크로 고르면 `features/change-theme`이 저장합니다. 플레이어와 하단 재생 바는 `stage` 색을 쓰며, `stage`는 각 테마의 바탕과 글자색으로 만들어 라이트·다크 테마를 따릅니다. Storybook은 상단 도구 모음에서 테마를 바꿔 볼 수 있습니다.
 
-제목 글꼴은 Nanum Myeongjo(OFL)입니다. 앱은 `assets/fonts/NanumMyeongjo-Regular.ttf` 원본을, 웹과 PC 앱은 KS X 1001 한글과 라틴 문자만 남긴 `GaonSerif-subset.woff2`를 씁니다. OFL의 예약 이름 때문에 글자를 줄인 파일은 글꼴 이름을 GaonSerif로 바꿨습니다.
+글꼴은 모두 SIL OFL입니다. 이름은 `shared/config/theme.ts`에 있습니다.
+
+| 역할 | 글꼴 | 앱(iOS·Android) | 웹·PC 앱 |
+|---|---|---|---|
+| 제목 `DISPLAY_FONT` | Diphylleia, 웹은 앞에 Cormorant | `Diphylleia-Regular.ttf` | `Diphylleia-subset.woff2`, `Cormorant-latin.woff2` |
+| 본문 `SERIF_FONT` | Nanum Myeongjo | `NanumMyeongjo-Regular.ttf` | `GaonSerif-subset.woff2` |
+| 음질 수치 `MONO_FONT` | Nanum Gothic Coding | `NanumGothicCoding-Regular.ttf` | `GaonMono-subset.woff2` (라틴 문자만) |
+
+앱은 원본을 번들에 넣고, 웹과 PC 앱은 KS X 1001 한글과 라틴 문자만 남긴 WOFF2를 씁니다(`python scripts/subset-fonts.py`). OFL의 예약 이름(Nanum) 때문에 나눔 글꼴을 줄인 파일은 이름을 GaonSerif, GaonMono로 바꿨습니다. 앱은 글꼴을 이어 쓸 수 없어 제목에 라틴 문자까지 든 Diphylleia 한 벌을 씁니다.
 
 ## 아이콘
 

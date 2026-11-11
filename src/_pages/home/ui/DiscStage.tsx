@@ -16,7 +16,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
-import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { DISPLAY_FONT, SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatCount } from '@/shared/lib';
 import { AppText, Disc, Icon, MetaRow, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 
@@ -400,7 +400,7 @@ const styles = StyleSheet.create((theme) => ({
   leftWide: { position: 'absolute', top: 0, left: 0, width: 312 },
   info: { paddingHorizontal: theme.spacing.lg },
   infoWide: { paddingHorizontal: theme.spacing.sm },
-  title: { fontFamily: SERIF_FONT, fontWeight: '400', color: theme.colors.text, textTransform: 'uppercase', fontSize: { xs: 30, md: 38 }, lineHeight: { xs: 38, md: 46 }, letterSpacing: { xs: -0.8, md: -1.4 }, paddingBottom: theme.spacing.xs },
+  title: { fontFamily: DISPLAY_FONT, fontWeight: '400', color: theme.colors.text, textTransform: 'uppercase', fontSize: { xs: 30, md: 38 }, lineHeight: { xs: 38, md: 46 }, letterSpacing: { xs: -0.8, md: -1.4 }, paddingBottom: theme.spacing.xs },
   credits: { textAlign: 'right' },
   center: { textAlign: 'center' },
   quotes: { alignItems: 'center', paddingHorizontal: theme.spacing.lg },
