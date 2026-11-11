@@ -4,7 +4,7 @@ import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDe
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { DISPLAY_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AppText, Disc } from '@/shared/ui';
 
 type Props = {
@@ -94,7 +94,7 @@ const styles = StyleSheet.create((theme) => ({
   top: { position: 'absolute', top: theme.spacing.xs, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
   left: { position: 'absolute', left: theme.spacing.sm, top: '50%' },
   right: { position: 'absolute', right: theme.spacing.sm, top: '50%' },
-  count: { position: 'absolute', top: '46%', fontFamily: SERIF_FONT, fontSize: 72, lineHeight: 84, letterSpacing: -2, color: theme.colors.text },
+  count: { position: 'absolute', top: '46%', fontFamily: DISPLAY_FONT, fontSize: 72, lineHeight: 84, letterSpacing: -2, color: theme.colors.text },
   logoMask: { position: 'absolute', bottom: 40, height: LOGO_HEIGHT, overflow: 'hidden' },
-  logo: { fontFamily: SERIF_FONT, fontSize: 76, lineHeight: LOGO_HEIGHT, letterSpacing: -2, color: theme.colors.text },
+  logo: { fontFamily: DISPLAY_FONT, fontSize: 76, lineHeight: LOGO_HEIGHT, letterSpacing: -2, color: theme.colors.text },
 }));

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { SERIF_FONT } from '@/shared/config';
+import { DISPLAY_FONT } from '@/shared/config';
 import { useNavSlot } from '@/shared/ui';
 
 import { NavLink } from './NavLink';
@@ -32,5 +32,5 @@ const styles = StyleSheet.create((theme, rt) => ({
   // 홈에서는 디스크 위에 떠 있습니다. 가운데만 차지해 왼쪽 정보표를 가리지 않고, 아래로 스크롤한 내용 위에서도 읽히게 바탕을 깝니다.
   overlay: { position: 'absolute', top: 0, alignSelf: 'center', zIndex: 20, paddingHorizontal: theme.spacing.lg },
   booting: { color: theme.colors.text, fontSize: 14, fontWeight: '500', letterSpacing: -0.2 },
-  logo: { color: theme.colors.text, fontFamily: SERIF_FONT, fontSize: 22, letterSpacing: -0.4, marginRight: theme.spacing.md },
+  logo: { color: theme.colors.text, fontFamily: DISPLAY_FONT, fontSize: 22, letterSpacing: -0.4, marginRight: theme.spacing.md },
 }));
