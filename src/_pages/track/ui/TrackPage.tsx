@@ -34,7 +34,7 @@ export function TrackPage() {
     <Screen>
       <ScreenHeader title="곡 정보" back />
       <View style={styles.summary}>
-        <View style={styles.art}><Disc uri={track.artUri} label={`${track.albumTitle} 앨범 아트`} /></View>
+        <View style={styles.art}><Disc uri={track.discUri ?? track.artUri} label={`${track.albumTitle} 앨범 아트`} /></View>
         <AppText variant="display" role="heading" aria-level={2} style={styles.centered}>{title}</AppText>
         <AppText tone="muted" style={styles.centered}>{artistLine(track)}</AppText>
         <View style={styles.badge}><QualityBadge format={track.format} /></View>

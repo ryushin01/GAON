@@ -6,7 +6,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'public-media');
 const port = Number(process.argv[3] ?? 8787);
-const TYPES = { '.flac': 'audio/flac', '.json': 'application/json; charset=utf-8', '.jpg': 'image/jpeg' };
+const TYPES = { '.flac': 'audio/flac', '.json': 'application/json; charset=utf-8', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
 
 createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

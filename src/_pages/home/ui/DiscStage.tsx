@@ -76,7 +76,7 @@ function StageDisc({ track, position, progress, size, spinning, load, important 
   });
   return (
     <Animated.View style={[stageDiscStyle, style]}>
-      <Disc uri={load ? track.artUri : undefined} size={size} tilted spinning={spinning} priority={important ? 'high' : 'normal'} onLoad={important ? markFirstImage : undefined} />
+      <Disc uri={load ? (track.discUri ?? track.artUri) : undefined} size={size} tilted spinning={spinning} priority={important ? 'high' : 'normal'} onLoad={important ? markFirstImage : undefined} />
     </Animated.View>
   );
 }

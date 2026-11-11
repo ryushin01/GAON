@@ -22,6 +22,8 @@ export type Track = {
   /** 스트리밍 주소입니다. 로컬 곡은 재생 직전에 실제 주소로 바꿉니다. */
   uri: string;
   artUri?: string;
+  /** CD 윗면 라벨 이미지입니다. 없으면 커버를 씁니다. */
+  discUri?: string;
   likes?: number;
   lyrics: LyricLine[];
   rank?: number | null;
@@ -38,6 +40,8 @@ export type Album = {
   agency: string;
   released: string;
   artUri: string;
+  /** CD 윗면 라벨 이미지입니다. 없으면 커버를 씁니다. */
+  discUri?: string;
   trackIds: string[];
 };
 

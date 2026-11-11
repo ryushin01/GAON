@@ -21,6 +21,8 @@ import numpy as np
 import soundfile as sf
 from PIL import Image, ImageDraw, ImageFilter
 
+from disc_labels import make_disc
+
 # Windows 콘솔의 기본 인코딩(cp1252)으로는 한글을 출력하지 못합니다.
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -306,12 +308,16 @@ def make_art(album, path: Path, seed: int):
 def main():
     (OUT / "audio").mkdir(parents=True, exist_ok=True)
     (OUT / "art").mkdir(parents=True, exist_ok=True)
+    (OUT / "disc").mkdir(parents=True, exist_ok=True)
     albums, tracks = [], []
     rng = random.Random(20261106)
 
     for album_index, album in enumerate(ALBUMS):
         art = f"art/{album['id']}.jpg"
         make_art(album, OUT / art, album_index + 7)
+        # CD 윗면 라벨입니다. 앱의 디스크는 이 이미지를, 정사각형 커버는 art를 씁니다.
+        disc = f"disc/{album['id']}.webp"
+        make_disc(album, OUT / disc, album_index, OUT / art)
         ids = []
         for i, meta in enumerate(album["tracks"]):
             track_id = f"{album['id']}-{i + 1}"
@@ -333,7 +339,7 @@ def main():
                 "lyricists": meta["lyricists"], "composers": meta["composers"], "arrangers": meta["arrangers"],
                 "durationSec": round(info.duration, 3), "sampleRate": info.samplerate, "bitDepth": 24,
                 "channels": info.channels, "fileSize": os.path.getsize(OUT / rel),
-                "audioPath": rel, "artPath": art,
+                "audioPath": rel, "artPath": art, "discPath": disc,
                 "likes": rng.randint(800, 48000),
                 "lyrics": [{"t": 2 + n * (album["seconds"] - 4) / len(lines), "text": line} for n, line in enumerate(lines)] if has_lyrics else [],
             })
@@ -342,7 +348,7 @@ def main():
         albums.append({
             "id": album["id"], "title": album["title"], "artists": album["artists"], "albumType": album["albumType"],
             "genre": album["genre"], "agency": album["agency"], "released": album["released"],
-            "artPath": art, "trackIds": ids,
+            "artPath": art, "discPath": disc, "trackIds": ids,
         })
 
     # 차트 순위와 변동은 데모용 가상 값입니다.

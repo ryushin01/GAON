@@ -41,7 +41,7 @@ export function NowPlayingBar() {
           onPress={() => router.push('/player')}
           style={styles.info}
         >
-          <Disc uri={track.artUri} size={44} spinning={playing} />
+          <Disc uri={track.discUri ?? track.artUri} size={44} spinning={playing} />
           <View style={styles.text}>
             <AppText variant="subheading" tone="onStage" numberOfLines={1}>{title}</AppText>
             <View style={styles.sub}>
