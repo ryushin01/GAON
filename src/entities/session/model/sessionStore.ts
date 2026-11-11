@@ -98,9 +98,8 @@ export function startSession() {
         .then(({ data }) => {
           supabaseSession = data.session;
         })
-        .catch(() => {
-          supabaseSession = null;
-        })
+        // 읽지 못하면 그대로 둡니다. 그 사이 로그인 이벤트로 받은 세션을 지우지 않습니다.
+        .catch(() => undefined)
         .finally(() => {
           supabaseReady = true;
           resolve();
