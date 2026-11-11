@@ -7,11 +7,15 @@ import { StyleSheet } from 'react-native-unistyles';
 import { AlbumCard, chartTracks, latestAlbums, TrackRow, useCatalog } from '@/entities/music';
 import { playTracks, useCurrentTrack, usePlayerStore } from '@/features/player';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { useFirstImage } from '@/shared/lib';
 import { AppButton, AppText, IconButton, Rail, Screen, Section, StateView, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 import { TrackActions } from '@/widgets/track-list';
 
 import { DiscStage } from './DiscStage';
 import { HomeIntro } from './HomeIntro';
+
+/** 첫 디스크가 오지 않아도 이 시간이 지나면 아래 구역의 이미지를 받습니다. */
+const FIRST_IMAGE_WAIT_MS = 4000;
 
 /** 첫 화면에서 넘겨 보는 순위 수입니다. */
 const STAGE_TRACKS = 12;
@@ -31,6 +35,8 @@ export function HomePage() {
   const stageTracks = useMemo(() => top.slice(0, STAGE_TRACKS), [top]);
   const albums = useMemo(() => (catalog ? latestAlbums(catalog).slice(0, 12) : []), [catalog]);
   const wide = width >= WIDE_LAYOUT_MIN_WIDTH;
+  // 아래 구역의 이미지는 첫 디스크를 먼저 받은 뒤에 받습니다.
+  const firstImageReady = useFirstImage(FIRST_IMAGE_WAIT_MS);
 
   const navigation = useNavigation();
   const [intro, setIntro] = useState(() => !introPlayed && !reduced && !navigation.canGoBack());
@@ -119,7 +125,7 @@ export function HomePage() {
               <Section title="최신 앨범">
                 <Rail>
                   {albums.map((album) => (
-                    <AlbumCard key={album.id} album={album} onPress={() => router.push(`/album/${album.id}`)} />
+                    <AlbumCard key={album.id} album={album} artReady={firstImageReady} onPress={() => router.push(`/album/${album.id}`)} />
                   ))}
                 </Rail>
               </Section>
@@ -128,6 +134,7 @@ export function HomePage() {
                 <View role="list">
                   {top.slice(0, 5).map((track) => (
                     <TrackRow
+                      artReady={firstImageReady}
                       key={track.id}
                       track={track}
                       listItem
