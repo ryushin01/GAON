@@ -37,7 +37,7 @@ export function PlayerPage() {
   if (!track) return <View style={styles.root} />;
 
   const title = displayTitle(track);
-  const art = <Disc uri={track.artUri} label={`${track.albumTitle} 앨범 아트`} spinning={playing} />;
+  const art = <Disc uri={track.discUri ?? track.artUri} label={`${track.albumTitle} 앨범 아트`} spinning={playing} />;
   const artAndControls = (
     <View style={styles.column}>
       {/* 좁은 화면에서는 앨범 아트 자리에 가사와 재생 목록을 바꿔 가며 보여 줍니다. */}

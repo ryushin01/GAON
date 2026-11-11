@@ -51,7 +51,7 @@ export function AlbumPage() {
               <MetaRow label="기획사">{album.agency}</MetaRow>
             </View>
             <View style={styles.art}>
-              <Disc uri={album.artUri} label={`${album.title} 앨범 아트`} />
+              <Disc uri={album.discUri ?? album.artUri} label={`${album.title} 앨범 아트`} />
             </View>
           </View>
         }

@@ -22,7 +22,7 @@ export function AlbumCard({ album, size = 196, onPress, artReady = true }: Props
       onPress={onPress}
       style={({ pressed }) => [styles.card, { width: size }, pressed && styles.pressed]}
     >
-      <Disc uri={artReady ? album.artUri : undefined} size={size} />
+      <Disc uri={artReady ? (album.discUri ?? album.artUri) : undefined} size={size} />
       <View style={styles.text}>
         <AppText variant="subheading" numberOfLines={1} style={styles.center}>{album.title}</AppText>
         <AppText variant="caption" tone="muted" numberOfLines={1} style={styles.center}>{artists}</AppText>

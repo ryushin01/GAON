@@ -153,7 +153,7 @@ export function HomePage() {
           </>
         )}
       </ScrollView>
-      {intro && <HomeIntro uri={stageTracks[0]?.artUri} ready={Boolean(catalog)} onDone={finishIntro} />}
+      {intro && <HomeIntro uri={stageTracks[0]?.discUri ?? stageTracks[0]?.artUri} ready={Boolean(catalog)} onDone={finishIntro} />}
     </Screen>
   );
 }

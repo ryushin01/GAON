@@ -4,26 +4,32 @@ import { MEDIA_BASE_URL } from '@/shared/config';
 
 import type { Album, Artist, Catalog, LyricLine, Track } from '../model/types';
 
-type RawTrack = Omit<Track, 'source' | 'format' | 'uri' | 'artUri'> & {
+type RawTrack = Omit<Track, 'source' | 'format' | 'uri' | 'artUri' | 'discUri'> & {
   sampleRate: number;
   bitDepth: number;
   channels: number;
   audioPath: string;
   artPath: string;
+  discPath?: string;
   lyrics: LyricLine[];
 };
-type RawAlbum = Omit<Album, 'artUri'> & { artPath: string };
+type RawAlbum = Omit<Album, 'artUri' | 'discUri'> & { artPath: string; discPath?: string };
 export type RawCatalog = { artists: Artist[]; albums: RawAlbum[]; tracks: RawTrack[] };
 
 export function toCatalog(raw: RawCatalog, baseUrl: string = MEDIA_BASE_URL): Catalog {
-  const tracks: Track[] = raw.tracks.map(({ sampleRate, bitDepth, channels, audioPath, artPath, ...rest }) => ({
+  const tracks: Track[] = raw.tracks.map(({ sampleRate, bitDepth, channels, audioPath, artPath, discPath, ...rest }) => ({
     ...rest,
     source: 'stream',
     format: { sampleRate, bitDepth, channels },
     uri: `${baseUrl}/${audioPath}`,
     artUri: `${baseUrl}/${artPath}`,
+    discUri: discPath ? `${baseUrl}/${discPath}` : undefined,
   }));
-  const albums: Album[] = raw.albums.map(({ artPath, ...rest }) => ({ ...rest, artUri: `${baseUrl}/${artPath}` }));
+  const albums: Album[] = raw.albums.map(({ artPath, discPath, ...rest }) => ({
+    ...rest,
+    artUri: `${baseUrl}/${artPath}`,
+    discUri: discPath ? `${baseUrl}/${discPath}` : undefined,
+  }));
   return {
     artists: raw.artists,
     albums,
