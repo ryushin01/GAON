@@ -14,15 +14,22 @@ export function isDesktopApp() {
   return Platform.OS === 'web' && typeof window !== 'undefined' && 'gaonAuth' in window;
 }
 
-let client: Promise<SupabaseClient> | null = null;
-
 /**
- * 로그인 서버 클라이언트입니다. 키가 없는 빌드(공개 데모)에서는 null이고,
- * SDK를 처음 필요할 때 따로 받아 첫 화면에 싣지 않습니다.
+ * 한 번만 만드는 비동기 값을 돌려줍니다. 만들다 실패하면 기억하지 않아 다음 요청에서 다시 만듭니다.
  */
-export function getSupabase(): Promise<SupabaseClient | null> {
-  if (!SUPABASE_ENABLED) return Promise.resolve(null);
-  client ??= import('@supabase/supabase-js').then(({ createClient }) =>
+export function onceAsync<T>(create: () => Promise<T>): () => Promise<T> {
+  let pending: Promise<T> | null = null;
+  return () => {
+    pending ??= create().catch((error: unknown) => {
+      pending = null;
+      throw error;
+    });
+    return pending;
+  };
+}
+
+const loadClient = onceAsync(() =>
+  import('@supabase/supabase-js').then(({ createClient }) =>
     createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: {
         // 앱은 세션을 암호화해 저장합니다.
@@ -34,6 +41,14 @@ export function getSupabase(): Promise<SupabaseClient | null> {
         detectSessionInUrl: Platform.OS === 'web' && !isDesktopApp(),
       },
     }),
-  );
-  return client;
+  ),
+);
+
+/**
+ * 로그인 서버 클라이언트입니다. 키가 없는 빌드(공개 데모)에서는 null이고,
+ * SDK를 처음 필요할 때 따로 받아 첫 화면에 싣지 않습니다. 받지 못하면 다음 요청에서 다시 받습니다.
+ */
+export function getSupabase(): Promise<SupabaseClient | null> {
+  if (!SUPABASE_ENABLED) return Promise.resolve(null);
+  return loadClient();
 }
