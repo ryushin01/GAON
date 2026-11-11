@@ -1,9 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 import { SUPABASE_ENABLED, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config';
 
+import { authStorage } from './authStorage';
 import './urlPolyfill';
 
 /** 앱과 PC 앱이 로그인 뒤 돌아오는 주소입니다. */
@@ -25,7 +25,8 @@ export function getSupabase(): Promise<SupabaseClient | null> {
   client ??= import('@supabase/supabase-js').then(({ createClient }) =>
     createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: {
-        storage: AsyncStorage,
+        // 앱은 세션을 암호화해 저장합니다.
+        storage: authStorage,
         persistSession: true,
         autoRefreshToken: true,
         flowType: 'pkce',

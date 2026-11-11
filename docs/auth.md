@@ -94,4 +94,6 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 `public/privacy.html`이 개인정보 처리방침입니다. 실제 로그인을 켤 때 위탁 항목의 저장 지역을 실제 Supabase 지역으로 고치고 내용을 직접 확인합니다. 데모 빌드는 처리방침 링크를 보여 주지 않습니다.
 
-실제 로그인의 세션은 모바일 앱에서도 `AsyncStorage`에 저장합니다. 정식 서비스로 열 때는 암호화 저장소로 옮기는 것이 좋습니다. Supabase 세션은 `expo-secure-store`의 한 항목 크기 제한(약 2KB)을 넘을 수 있어, 암호화한 값을 나눠 저장하는 방식이 필요합니다. 설정 화면의 링크는 `https://ryushin01.github.io/GAON/privacy.html`을 엽니다.
+실제 로그인의 세션은 모바일 앱에서 암호화해 저장합니다(`src/shared/api/authStorage.ts`). 세션이 `expo-secure-store`의 한 항목 한도(약 2KB)를 넘을 수 있어, 무작위 AES 키만 암호화 저장소에 두고 그 키로 암호화한 세션은 `AsyncStorage`에 둡니다. 웹과 PC 앱은 브라우저 저장소를 씁니다.
+
+Google 버튼은 Google 로그인 브랜드 가이드의 문구와 공식 G 로고(`assets/brand/google-g.png`)를 씁니다. 카카오 버튼은 가이드의 색(#FEE500)과 말풍선 심볼 모양을 따르지만, 공식 심볼 파일이 아닌 아이콘 글꼴입니다. 정식 서비스 전에는 Kakao Developers에서 받은 심볼 파일로 바꿉니다. 설정 화면의 링크는 `https://ryushin01.github.io/GAON/privacy.html`을 엽니다.

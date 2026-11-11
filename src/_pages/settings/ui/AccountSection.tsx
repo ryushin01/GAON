@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
-import { Linking, Pressable, Text, TextInput, View } from 'react-native';
+import { Image, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { useSessionStore } from '@/entities/session';
@@ -9,12 +9,14 @@ import { AppButton, AppText, ConfirmDialog, Icon, type IconName } from '@/shared
 
 import { deleteAccount, signIn, signInOwner, signOut, type SocialProvider } from '../model/signIn';
 
-type Brand = { provider: SocialProvider; label: string; icon: IconName; bg: string; fg: string; border?: string };
+/** 공식 로고 이미지가 있으면 아이콘 대신 씁니다. */
+type Brand = { provider: SocialProvider; label: string; icon: IconName; logo?: number; bg: string; fg: string; border?: string };
 
 /** 각 서비스의 로그인 버튼 색입니다. 테마와 상관없이 그대로 씁니다. */
 const BRANDS: Brand[] = [
   { provider: 'kakao', label: '카카오 로그인', icon: 'chatbubble', bg: '#FEE500', fg: 'rgba(0, 0, 0, 0.85)' },
-  { provider: 'google', label: 'Google로 로그인', icon: 'logo-google', bg: '#FFFFFF', fg: '#1F1F1F', border: '#747775' },
+  // Google 로그인 가이드의 문구와 공식 G 로고를 씁니다.
+  { provider: 'google', label: 'Google 계정으로 로그인', icon: 'logo-google', logo: require('../../../../assets/brand/google-g.png'), bg: '#FFFFFF', fg: '#1F1F1F', border: '#747775' },
   { provider: 'github', label: 'GitHub로 로그인', icon: 'logo-github', bg: '#24292F', fg: '#FFFFFF', border: '#8C959F' },
 ];
 
@@ -87,7 +89,11 @@ export function AccountSection({ onSignedOut, children }: Props) {
                 onPress={() => void run(brand.provider, () => signIn(brand.provider))}
                 style={({ pressed }) => [styles.brand, { backgroundColor: brand.bg, borderColor: brand.border ?? brand.bg }, pressed && styles.pressed, busy !== null && busy !== brand.provider && styles.dim]}
               >
-                <Icon aria-hidden name={brand.icon} size={18} color={brand.fg} />
+                {brand.logo ? (
+                  <Image source={brand.logo} alt="" aria-hidden accessible={false} style={styles.logo} />
+                ) : (
+                  <Icon aria-hidden name={brand.icon} size={18} color={brand.fg} />
+                )}
                 <Text style={[styles.brandLabel, { color: brand.fg }]}>{busy === brand.provider ? '로그인 중…' : label}</Text>
               </Pressable>
             );
@@ -164,6 +170,7 @@ const styles = StyleSheet.create((theme) => ({
   body: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
   buttons: { gap: theme.spacing.sm, maxWidth: 360 },
   brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm, minHeight: 48, paddingHorizontal: theme.spacing.lg, borderWidth: 1, borderRadius: 6 },
+  logo: { width: 18, height: 18 },
   brandLabel: { fontSize: 15, fontWeight: '600' },
   pressed: { opacity: 0.8 },
   dim: { opacity: 0.5 },
