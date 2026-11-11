@@ -292,10 +292,13 @@ def style_type_ring(album, catalog_no, art_path):
     ink = rgb(album["colors"][1]) if abs(luminance(rgb(album["colors"][1])) - luminance(base)) > 0.35 else ink_for(base)
     img = Image.new("RGBA", (SIZE, SIZE), (*base, 255))
     word = f"{album['title']}  ·  "
-    for radius, size in ((0.9, 40), (0.77, 34), (0.64, 30), (0.52, 26)):
+    # 바깥쪽에는 가수와 음질을 두고, 그 안쪽을 제목 띠로 채웁니다.
+    for radius, size, alpha in ((0.78, 34, 255), (0.66, 30, 190), (0.54, 26, 150)):
         fnt = display_font(size)
         repeat = max(1, int(2 * math.pi * radius * R / max(1, fnt.getlength(word))))
-        arc_text(img, word * repeat, radius, -90, fnt, (*ink, 255 if radius > 0.85 else 170))
+        arc_text(img, word * repeat, radius, -90, fnt, (*ink, alpha))
+    arc_text(img, " · ".join(album["artists"]), 0.87, -90, serif_font(30), (*ink, 255))
+    footer(img, album, catalog_no, ink)
     return finish(img, album, catalog_no)
 
 
