@@ -1,9 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { formatKhz } from '@/entities/music';
-import { AppText } from '@/shared/ui';
+import { AppText, Icon } from '@/shared/ui';
 
 import type { OutputInfo } from '../model/nativePlaylist';
 import { usePlayerStore } from '../model/playerStore';
@@ -31,7 +30,7 @@ export function OutputBadge() {
   if (!output) return null;
   return (
     <View style={styles.row}>
-      <Ionicons aria-hidden name={output.bitPerfect ? 'checkmark-circle' : 'alert-circle-outline'} size={14} color={theme.colors.stage.textMuted} />
+      <Icon aria-hidden name={output.bitPerfect ? 'checkmark-circle' : 'alert-circle-outline'} size={14} color={theme.colors.stage.textMuted} />
       <AppText variant="caption" tone="onStageMuted" style={styles.text}>{outputLabel(output)}</AppText>
     </View>
   );

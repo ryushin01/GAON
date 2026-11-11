@@ -1,10 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
-import { AlbumArt, AppText, VisuallyHidden } from '@/shared/ui';
+import { AlbumArt, AppText, Icon, VisuallyHidden } from '@/shared/ui';
 
 import { artistLine, displayTitle } from '../model/format';
 import type { Track } from '../model/types';
@@ -48,7 +47,7 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
         <View style={styles.text}>
           <View style={styles.titleRow}>
             {/* 색만으로 구분하지 않도록 재생 중 표시를 함께 보여 줍니다. */}
-            {active && <Ionicons aria-hidden name="volume-high" size={16} color={theme.colors.primary} />}
+            {active && <Icon aria-hidden name="volume-high" size={16} color={theme.colors.primary} />}
             <AppText variant="subheading" tone={active ? 'primary' : 'default'} numberOfLines={1} style={styles.title}>{title}</AppText>
           </View>
           <AppText variant="caption" tone="muted" numberOfLines={1}>{artists} · {track.albumTitle}</AppText>

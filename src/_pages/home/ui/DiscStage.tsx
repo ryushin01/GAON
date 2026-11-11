@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { ComponentRef, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
@@ -14,12 +13,12 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { scheduleOnRN } from 'react-native-worklets';
+import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
 import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatCount } from '@/shared/lib';
-import { AppText, Disc, MetaRow, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
+import { AppText, Disc, Icon, MetaRow, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 
 import { snapIndex, wheelPixels } from '../lib/wheel';
 import { TrackIndex } from './TrackIndex';
@@ -45,6 +44,8 @@ const WHEEL_STEP = 560;
 /** 동작 줄이기에서는 이만큼 굴리면 한 칸만 넘어갑니다. */
 const REDUCED_WHEEL_STEP = 100;
 const SNAP_DELAY_MS = 160;
+/** 지금 순위에서 이만큼 앞의 디스크까지 이미지를 미리 받습니다. */
+const PRELOAD_AHEAD = 2;
 const SPRING = { damping: 26, stiffness: 130, mass: 1 };
 /** 이보다 낮은 창은 한 화면에 담기 어려워 세로로 스크롤합니다. */
 const MIN_STAGE_HEIGHT = 560;
@@ -56,9 +57,9 @@ const Y = [0.3, 0.29, 0.21, 0, -0.34, -0.6];
 const SCALE = [0.45, 0.6, 0.8, 1, 1.06, 1.1];
 const OPACITY = [0, 1, 1, 1, 1, 0];
 
-type DiscProps = { track: Track; position: number; progress: SharedValue<number>; size: number; spinning: boolean };
+type DiscProps = { track: Track; position: number; progress: SharedValue<number>; size: number; spinning: boolean; load: boolean; important: boolean };
 
-function StageDisc({ track, position, progress, size, spinning }: DiscProps) {
+function StageDisc({ track, position, progress, size, spinning, load, important }: DiscProps) {
   const style = useAnimatedStyle(() => {
     const offset = position - progress.get();
     return {
@@ -73,7 +74,7 @@ function StageDisc({ track, position, progress, size, spinning }: DiscProps) {
   });
   return (
     <Animated.View style={[stageDiscStyle, style]}>
-      <Disc uri={track.artUri} size={size} tilted spinning={spinning} />
+      <Disc uri={load ? track.artUri : undefined} size={size} tilted spinning={spinning} priority={important ? 'high' : 'normal'} />
     </Animated.View>
   );
 }
@@ -126,6 +127,22 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
       const next = Math.max(0, Math.min(last, value));
       target.set(next);
       progress.set(reduced ? Math.round(next) : withSpring(next, SPRING));
+    },
+    [last, progress, reduced, target],
+  );
+
+  /**
+   * 지금 목표에서 한 칸씩 옮깁니다. 앱에서는 목표 값이 애니메이션 스레드에 있어,
+   * 빠르게 두 번 누를 때 같은 값을 읽지 않도록 그 스레드에서 읽고 바꾸기를 한 번에 합니다.
+   */
+  const moveBy = useCallback(
+    (step: number) => {
+      scheduleOnUI(() => {
+        'worklet';
+        const next = Math.max(0, Math.min(last, Math.round(target.get()) + step));
+        target.set(next);
+        progress.set(reduced ? next : withSpring(next, SPRING));
+      });
     },
     [last, progress, reduced, target],
   );
@@ -230,6 +247,9 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
   }, [last, open, panStart, progress, reduced, size, target]);
 
   const position = Math.min(index, last);
+  // 화면에 보이는 가까운 디스크만 이미지를 받고, 넘기면서 다음 것을 받습니다. 한 번 받은 것은 그대로 둡니다.
+  const [loadedUntil, setLoadedUntil] = useState(PRELOAD_AHEAD);
+  if (position + PRELOAD_AHEAD > loadedUntil) setLoadedUntil(position + PRELOAD_AHEAD);
   const track = tracks[position];
   const title = displayTitle(track);
   const names = credits(track);
@@ -240,7 +260,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     () => (
       <Pressable ref={toggleRef} role="button" aria-expanded={open} onPress={() => (open ? closeIndex() : setOpen(true))} style={styles.toggle}>
         <Text style={styles.toggleLabel}>목록</Text>
-        <Ionicons aria-hidden name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.colors.text} />
+        <Icon aria-hidden name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.colors.text} />
       </Pressable>
     ),
     [closeIndex, open, theme.colors.text],
@@ -286,7 +306,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     <Pressable role="button" onPress={onMore} style={styles.skip}>
       <Text style={styles.skipLabel}>건너뛰기</Text>
       <VisuallyHidden> 최신 앨범과 TOP 100으로</VisuallyHidden>
-      <Ionicons aria-hidden name="arrow-down" size={14} color={theme.colors.text} />
+      <Icon aria-hidden name="arrow-down" size={14} color={theme.colors.text} />
     </Pressable>
   );
 
@@ -303,16 +323,25 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     <View style={discBand}>
       <View pointerEvents="none" aria-hidden style={styles.discLayer}>
         {tracks.map((item, i) => (
-          <StageDisc key={item.id} track={item} position={i} progress={progress} size={size} spinning={playingId === item.id && i === position} />
+          <StageDisc
+            key={item.id}
+            track={item}
+            position={i}
+            progress={progress}
+            size={size}
+            spinning={playingId === item.id && i === position}
+            load={i <= loadedUntil}
+            important={i === position}
+          />
         ))}
       </View>
       <View style={[styles.hitRow, { height: size }]}>
         {position > 0 && (
-          <Pressable role="button" aria-label="이전 순위" onPress={() => moveTo(Math.round(target.get()) - 1)} style={[styles.hit, zone(width / 2 - 0.9 * size, size * 0.8)]} />
+          <Pressable role="button" aria-label="이전 순위" onPress={() => moveBy(-1)} style={[styles.hit, zone(width / 2 - 0.9 * size, size * 0.8)]} />
         )}
         <Pressable role="button" aria-label={`${title} 듣기`} onPress={() => onPlay(track)} style={[styles.hit, styles.hitRound, zone(width / 2, size)]} />
         {position < last && (
-          <Pressable role="button" aria-label="다음 순위" onPress={() => moveTo(Math.round(target.get()) + 1)} style={[styles.hit, zone(width / 2 + 1.08 * size, size)]} />
+          <Pressable role="button" aria-label="다음 순위" onPress={() => moveBy(1)} style={[styles.hit, zone(width / 2 + 1.08 * size, size)]} />
         )}
       </View>
     </View>

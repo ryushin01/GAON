@@ -5,7 +5,7 @@ const mockExchange = jest.fn();
 jest.mock('@/shared/api', () => ({
   AUTH_CALLBACK_URL: 'gaon://auth-callback',
   isDesktopApp: () => false,
-  supabase: { auth: { exchangeCodeForSession: (...args: unknown[]) => mockExchange(...args) } },
+  getSupabase: async () => ({ auth: { exchangeCodeForSession: (...args: unknown[]) => mockExchange(...args) } }),
 }));
 
 describe('completeSignIn', () => {

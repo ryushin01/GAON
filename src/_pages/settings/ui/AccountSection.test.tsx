@@ -9,11 +9,12 @@ const mockSignInWithOAuth = jest.fn();
 jest.mock('@/shared/api', () => ({
   AUTH_CALLBACK_URL: 'gaon://auth-callback',
   isDesktopApp: () => false,
-  supabase: {
+  getSupabase: async () => ({
     auth: { signInWithOAuth: (...args: unknown[]) => mockSignInWithOAuth(...args), signOut: jest.fn().mockResolvedValue({ error: null }) },
     rpc: jest.fn(),
-  },
+  }),
 }));
+jest.mock('@/shared/config', () => ({ ...jest.requireActual('@/shared/config'), SUPABASE_ENABLED: true }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn().mockResolvedValue({ type: 'cancel' }) }));
 
 describe('AccountSection', () => {

@@ -79,6 +79,18 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 제목 글꼴은 Nanum Myeongjo(OFL)입니다. 앱은 `assets/fonts/NanumMyeongjo-Regular.ttf` 원본을, 웹과 PC 앱은 KS X 1001 한글과 라틴 문자만 남긴 `GaonSerif-subset.woff2`를 씁니다. OFL의 예약 이름 때문에 글자를 줄인 파일은 글꼴 이름을 GaonSerif로 바꿨습니다.
 
+## 아이콘
+
+아이콘은 `shared/ui`의 `Icon`으로 그립니다. Ionicons에서 쓰는 아이콘만 남긴 8KB 글꼴(`assets/fonts/GaonIcons.ttf`)이라, `@expo/vector-icons`에서 직접 가져오지 않습니다. 패키지 입구에서 가져오면 모든 아이콘 묶음의 글리프 표가 함께 실립니다.
+
+새 아이콘은 `scripts/subset-icons.py`의 `ICONS`에 이름을 넣고 `python scripts/subset-icons.py`(fontTools 필요)로 글꼴과 `iconGlyphs.ts`를 다시 만듭니다. 목록에 없는 이름은 타입 검사에서 걸립니다.
+
+## 첫 화면 성능
+
+- 카탈로그는 앱 입구(`src/_app/prefetch.ts`)에서 바로 요청하고, Pages 배포는 HTML에 미리 받기 태그를 넣습니다.
+- Supabase SDK는 로그인 키가 있는 빌드에서 처음 필요할 때만 받습니다(`getSupabase`).
+- 홈 디스크는 지금 순위에서 두 칸 앞까지만 이미지를 받고, 가운데 디스크를 먼저 받습니다.
+
 ## 품질 기준
 
 - 구조는 `pnpm lint:fsd`(Steiger)로 검사합니다. 예외는 `steiger.config.ts`에 이유와 함께 적습니다.

@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect } from 'react';
 import { Platform, View, type ViewStyle } from 'react-native';
@@ -12,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { Icon } from './Icon';
 import { useLiveReducedMotion } from './useLiveReducedMotion';
 
 type Props = {
@@ -24,12 +24,14 @@ type Props = {
   spinning?: boolean;
   /** 공중에 놓인 듯 비스듬히 보여 줍니다. */
   tilted?: boolean;
+  /** 첫 화면의 가장 중요한 이미지면 high로 먼저 받습니다. */
+  priority?: 'low' | 'normal' | 'high';
 };
 
 const SPIN_MS = 9000;
 
 /** 앨범 아트를 입힌 디스크입니다. */
-export function Disc({ uri, size, label, spinning = false, tilted = false }: Props) {
+export function Disc({ uri, size, label, spinning = false, tilted = false, priority = 'normal' }: Props) {
   const { theme } = useUnistyles();
   const reduceMotion = useLiveReducedMotion();
   const angle = useSharedValue(0);
@@ -61,9 +63,9 @@ export function Disc({ uri, size, label, spinning = false, tilted = false }: Pro
       <Animated.View style={[spinLayer, spin]}>
         <View style={styles.face}>
           {uri ? (
-            <Image accessible={Boolean(label)} accessibilityLabel={label} source={{ uri }} style={imageStyle} contentFit="cover" transition={120} recyclingKey={uri} />
+            <Image accessible={Boolean(label)} accessibilityLabel={label} source={{ uri }} priority={priority} style={imageStyle} contentFit="cover" transition={120} recyclingKey={uri} />
           ) : (
-            <Ionicons aria-hidden name="musical-notes" size={size ? Math.max(16, size * 0.3) : 48} color={theme.colors.textMuted} />
+            <Icon aria-hidden name="musical-notes" size={size ? Math.max(16, size * 0.3) : 48} color={theme.colors.textMuted} />
           )}
         </View>
       </Animated.View>

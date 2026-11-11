@@ -4,7 +4,8 @@ import { AppState, Platform } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { supabase } from '@/shared/api';
+import { getSupabase } from '@/shared/api';
+import { SUPABASE_ENABLED } from '@/shared/config';
 import { secureStorage } from '@/shared/lib';
 
 /**
@@ -39,7 +40,7 @@ const useLocalAuth = create<LocalAuth>()(
 );
 
 let supabaseSession: Session | null = null;
-let supabaseReady = !supabase;
+let supabaseReady = !SUPABASE_ENABLED;
 
 function fromSupabase(session: Session): AppSession {
   const meta = session.user.user_metadata as Record<string, unknown>;
@@ -81,25 +82,27 @@ export function startSession() {
     });
   if (useLocalAuth.persist.hasHydrated()) resolve();
   else useLocalAuth.persist.onFinishHydration(resolve);
-  if (!supabase) return;
-  const client = supabase;
-  void client.auth.getSession().then(({ data }) => {
-    supabaseSession = data.session;
-    supabaseReady = true;
-    resolve();
-  });
-  client.auth.onAuthStateChange((_event, session) => {
-    supabaseSession = session;
-    supabaseReady = true;
-    resolve();
-  });
-  // 앱이 화면에 있을 때만 로그인을 갱신합니다.
-  if (Platform.OS !== 'web') {
-    AppState.addEventListener('change', (state) => {
-      if (state === 'active') void client.auth.startAutoRefresh();
-      else void client.auth.stopAutoRefresh();
+  if (!SUPABASE_ENABLED) return;
+  void getSupabase().then((client) => {
+    if (!client) return;
+    void client.auth.getSession().then(({ data }) => {
+      supabaseSession = data.session;
+      supabaseReady = true;
+      resolve();
     });
-  }
+    client.auth.onAuthStateChange((_event, session) => {
+      supabaseSession = session;
+      supabaseReady = true;
+      resolve();
+    });
+    // 앱이 화면에 있을 때만 로그인을 갱신합니다.
+    if (Platform.OS !== 'web') {
+      AppState.addEventListener('change', (state) => {
+        if (state === 'active') void client.auth.startAutoRefresh();
+        else void client.auth.stopAutoRefresh();
+      });
+    }
+  });
 }
 
 export function setDemoSession(provider: string | null) {

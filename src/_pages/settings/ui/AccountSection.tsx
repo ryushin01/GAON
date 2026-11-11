@@ -1,17 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import { Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { useSessionStore } from '@/entities/session';
-import { supabase } from '@/shared/api';
-import { OWNER_GITHUB_LOGIN, PRIVACY_POLICY_URL } from '@/shared/config';
-import { AppButton, AppText, ConfirmDialog } from '@/shared/ui';
+import { OWNER_GITHUB_LOGIN, PRIVACY_POLICY_URL, SUPABASE_ENABLED } from '@/shared/config';
+import { AppButton, AppText, ConfirmDialog, Icon, type IconName } from '@/shared/ui';
 
 import { deleteAccount, signIn, signInOwner, signOut, type SocialProvider } from '../model/signIn';
 
-type Brand = { provider: SocialProvider; label: string; icon: ComponentProps<typeof Ionicons>['name']; bg: string; fg: string; border?: string };
+type Brand = { provider: SocialProvider; label: string; icon: IconName; bg: string; fg: string; border?: string };
 
 /** 각 서비스의 로그인 버튼 색입니다. 테마와 상관없이 그대로 씁니다. */
 const BRANDS: Brand[] = [
@@ -42,7 +40,7 @@ export function AccountSection({ onSignedOut, children }: Props) {
   const [token, setToken] = useState('');
   // 상태는 다음 렌더에야 바뀌어, 빠른 연속 누르기를 막으려고 따로 잠급니다.
   const lock = useRef(false);
-  const demo = !supabase;
+  const demo = !SUPABASE_ENABLED;
 
   if (!ready) return null;
 
@@ -62,7 +60,7 @@ export function AccountSection({ onSignedOut, children }: Props) {
   };
 
   // 실제로 개인정보를 받는 빌드에서만 처리방침을 보여 줍니다.
-  const privacy = supabase ? (
+  const privacy = SUPABASE_ENABLED ? (
     <Pressable role="link" style={styles.link} onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}>
       <AppText variant="caption" style={styles.underline}>개인정보 처리방침</AppText>
     </Pressable>
@@ -89,7 +87,7 @@ export function AccountSection({ onSignedOut, children }: Props) {
                 onPress={() => void run(brand.provider, () => signIn(brand.provider))}
                 style={({ pressed }) => [styles.brand, { backgroundColor: brand.bg, borderColor: brand.border ?? brand.bg }, pressed && styles.pressed, busy !== null && busy !== brand.provider && styles.dim]}
               >
-                <Ionicons aria-hidden name={brand.icon} size={18} color={brand.fg} />
+                <Icon aria-hidden name={brand.icon} size={18} color={brand.fg} />
                 <Text style={[styles.brandLabel, { color: brand.fg }]}>{busy === brand.provider ? '로그인 중…' : label}</Text>
               </Pressable>
             );
@@ -100,7 +98,7 @@ export function AccountSection({ onSignedOut, children }: Props) {
             <Pressable role="button" aria-label="소유자 로그인" aria-expanded={ownerOpen} onPress={() => setOwnerOpen(!ownerOpen)} style={styles.link}>
               <View style={styles.inline}>
                 <AppText variant="caption" style={styles.underline}>소유자 로그인</AppText>
-                <Ionicons aria-hidden name={ownerOpen ? 'chevron-up' : 'chevron-down'} size={14} color={theme.colors.text} />
+                <Icon aria-hidden name={ownerOpen ? 'chevron-up' : 'chevron-down'} size={14} color={theme.colors.text} />
               </View>
             </Pressable>
             {ownerOpen && (

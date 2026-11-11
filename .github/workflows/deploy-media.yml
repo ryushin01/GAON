@@ -47,6 +47,9 @@ jobs:
         run: |
           node -e "const f='app.json',c=require('./'+f);c.expo.experiments.baseUrl='/GAON';require('fs').writeFileSync(f,JSON.stringify(c))"
           pnpm exec expo export --platform web --output-dir web-out
+          # 화면 코드를 받는 동안 카탈로그도 함께 받습니다. Pages 경로가 정해진 이 빌드에서만 넣습니다.
+          sed -i 's#</head>#<link rel="preload" href="/GAON/media/catalog.json" as="fetch" crossorigin="anonymous" /></head>#' web-out/index.html
+          grep -q 'media/catalog.json' web-out/index.html
           cp -R web-out/. site/
           cp site/index.html site/404.html
           touch site/.nojekyll

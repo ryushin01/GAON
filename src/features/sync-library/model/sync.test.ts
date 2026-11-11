@@ -7,7 +7,7 @@ const mockRead = jest.fn();
 const mockWrite = jest.fn();
 
 jest.mock('@/shared/api', () => ({
-  supabase: null,
+  getSupabase: async () => null,
   forgetLibraryGist: jest.fn(),
   readLibraryGist: (...args: unknown[]) => mockRead(...args),
   writeLibraryGist: (...args: unknown[]) => mockWrite(...args),

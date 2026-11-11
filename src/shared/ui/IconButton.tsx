@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
 import { Pressable, Text, type PressableProps } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { Icon, type IconName } from './Icon';
+
 type Props = Omit<PressableProps, 'children' | 'aria-label'> & {
-  icon: ComponentProps<typeof Ionicons>['name'];
+  icon: IconName;
   label: string;
   size?: number;
   color?: string;
@@ -27,7 +27,7 @@ export function IconButton({ icon, label, size = 24, color, filled = false, badg
       hitSlop={4}
       style={({ pressed }) => [styles.button, filled && styles.filled, pressed && styles.pressed, disabled && styles.disabled]}
     >
-      <Ionicons aria-hidden name={icon} size={size} color={iconColor} />
+      <Icon aria-hidden name={icon} size={size} color={iconColor} />
       {badge ? <Text aria-hidden style={[styles.badge, { color: iconColor }]}>{badge}</Text> : null}
     </Pressable>
   );
