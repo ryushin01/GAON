@@ -26,12 +26,14 @@ type Props = {
   tilted?: boolean;
   /** 첫 화면의 가장 중요한 이미지면 high로 먼저 받습니다. */
   priority?: 'low' | 'normal' | 'high';
+  /** 이미지를 다 받았을 때 부릅니다. */
+  onLoad?: () => void;
 };
 
 const SPIN_MS = 9000;
 
 /** 앨범 아트를 입힌 디스크입니다. */
-export function Disc({ uri, size, label, spinning = false, tilted = false, priority = 'normal' }: Props) {
+export function Disc({ uri, size, label, spinning = false, tilted = false, priority = 'normal', onLoad }: Props) {
   const { theme } = useUnistyles();
   const reduceMotion = useLiveReducedMotion();
   const angle = useSharedValue(0);
@@ -63,7 +65,7 @@ export function Disc({ uri, size, label, spinning = false, tilted = false, prior
       <Animated.View style={[spinLayer, spin]}>
         <View style={styles.face}>
           {uri ? (
-            <Image accessible={Boolean(label)} accessibilityLabel={label} source={{ uri }} priority={priority} style={imageStyle} contentFit="cover" transition={120} recyclingKey={uri} />
+            <Image accessible={Boolean(label)} accessibilityLabel={label} source={{ uri }} priority={priority} onLoad={onLoad} style={imageStyle} contentFit="cover" transition={120} recyclingKey={uri} />
           ) : (
             <Icon aria-hidden name="musical-notes" size={size ? Math.max(16, size * 0.3) : 48} color={theme.colors.textMuted} />
           )}

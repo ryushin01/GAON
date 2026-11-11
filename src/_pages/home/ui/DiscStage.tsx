@@ -17,7 +17,7 @@ import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
 import { DISPLAY_FONT, SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
-import { formatCount } from '@/shared/lib';
+import { formatCount, markFirstImage, useFirstImage } from '@/shared/lib';
 import { AppText, Disc, Icon, MetaRow, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 
 import { nearby, withNearby } from '../lib/loadedDiscs';
@@ -45,6 +45,8 @@ const WHEEL_STEP = 560;
 /** 동작 줄이기에서는 이만큼 굴리면 한 칸만 넘어갑니다. */
 const REDUCED_WHEEL_STEP = 100;
 const SNAP_DELAY_MS = 160;
+/** 가운데 디스크가 오지 않아도 이 시간이 지나면 나머지 이미지를 받습니다. */
+const FIRST_IMAGE_WAIT_MS = 4000;
 
 const SPRING = { damping: 26, stiffness: 130, mass: 1 };
 /** 이보다 낮은 창은 한 화면에 담기 어려워 세로로 스크롤합니다. */
@@ -74,7 +76,7 @@ function StageDisc({ track, position, progress, size, spinning, load, important 
   });
   return (
     <Animated.View style={[stageDiscStyle, style]}>
-      <Disc uri={load ? track.artUri : undefined} size={size} tilted spinning={spinning} priority={important ? 'high' : 'normal'} />
+      <Disc uri={load ? track.artUri : undefined} size={size} tilted spinning={spinning} priority={important ? 'high' : 'normal'} onLoad={important ? markFirstImage : undefined} />
     </Animated.View>
   );
 }
@@ -250,6 +252,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
   // 화면에 보이는 가까운 디스크만 이미지를 받고, 넘기면서 다음 것을 받습니다. 한 번 받은 것은 그대로 둡니다.
   // 목록에서 멀리 건너뛰어도 건너뛴 디스크는 받지 않도록, 실제로 가까이 온 순위만 기록합니다.
   const [loaded, setLoaded] = useState<ReadonlySet<number>>(() => new Set(nearby(0, last)));
+  const firstImageReady = useFirstImage(FIRST_IMAGE_WAIT_MS);
   const nextLoaded = withNearby(loaded, position, last);
   if (nextLoaded !== loaded) setLoaded(nextLoaded);
   const track = tracks[position];
@@ -332,7 +335,8 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
             progress={progress}
             size={size}
             spinning={playingId === item.id && i === position}
-            load={loaded.has(i)}
+            // 가운데 디스크를 혼자 먼저 받고, 옆 디스크는 그 다음에 받습니다.
+            load={loaded.has(i) && (i === position || firstImageReady)}
             important={i === position}
           />
         ))}

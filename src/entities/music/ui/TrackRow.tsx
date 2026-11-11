@@ -19,11 +19,13 @@ type Props = {
   leading?: ReactNode;
   trailing?: ReactNode;
   showArt?: boolean;
+  /** false면 이미지를 아직 받지 않습니다. 첫 화면의 중요한 이미지를 먼저 받을 때 씁니다. */
+  artReady?: boolean;
   /** 부모가 role="list"일 때만 켭니다. */
   listItem?: boolean;
 };
 
-export function TrackRow({ track, rank, active = false, onPress, leading, trailing, showArt = true, listItem = false }: Props) {
+export function TrackRow({ track, rank, active = false, onPress, leading, trailing, showArt = true, listItem = false, artReady = true }: Props) {
   const { theme } = useUnistyles();
   const { width } = useWindowDimensions();
   const title = displayTitle(track);
@@ -43,7 +45,7 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
         onPress={onPress}
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
       >
-        {showArt && <AlbumArt uri={track.artUri} size={width < WIDE_LAYOUT_MIN_WIDTH ? 44 : 52} />}
+        {showArt && <AlbumArt uri={artReady ? track.artUri : undefined} size={width < WIDE_LAYOUT_MIN_WIDTH ? 44 : 52} />}
         <View style={styles.text}>
           <View style={styles.titleRow}>
             {/* 색만으로 구분하지 않도록 재생 중 표시를 함께 보여 줍니다. */}
