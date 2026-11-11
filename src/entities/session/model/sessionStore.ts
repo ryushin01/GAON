@@ -92,23 +92,25 @@ export function startSession() {
         resolve();
         return;
       }
-      // 저장된 세션을 읽지 못해도 로그아웃한 상태로 준비를 끝내, 계정 구역이 비지 않게 합니다.
+      // 로그인 이벤트가 더 새로운 정보라, 이벤트를 받은 뒤 도착한 저장 세션은 쓰지 않습니다.
+      let eventSeen = false;
+      client.auth.onAuthStateChange((_event, session) => {
+        eventSeen = true;
+        supabaseSession = session;
+        supabaseReady = true;
+        resolve();
+      });
+      // 저장된 세션을 읽지 못해도(예외든 오류 응답이든) 로그아웃한 상태로 준비를 끝내, 계정 구역이 비지 않게 합니다.
       void client.auth
         .getSession()
-        .then(({ data }) => {
-          supabaseSession = data.session;
+        .then(({ data, error }) => {
+          if (!error && !eventSeen) supabaseSession = data.session;
         })
-        // 읽지 못하면 그대로 둡니다. 그 사이 로그인 이벤트로 받은 세션을 지우지 않습니다.
         .catch(() => undefined)
         .finally(() => {
           supabaseReady = true;
           resolve();
         });
-      client.auth.onAuthStateChange((_event, session) => {
-        supabaseSession = session;
-        supabaseReady = true;
-        resolve();
-      });
       // 앱이 화면에 있을 때만 로그인을 갱신합니다.
       if (Platform.OS !== 'web') {
         AppState.addEventListener('change', (state) => {
