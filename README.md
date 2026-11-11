@@ -118,4 +118,5 @@ src/
 | [개발 가이드](docs/development.md) | 환경 변수, 데모 미디어, 네이티브 빌드, 테스트와 접근성 기준 |
 | [CI · 배포](docs/ci-deploy.md) | GitHub Actions, 공개 미디어, PC 설치본 |
 | [로그인과 동기화](docs/auth.md) | Supabase와 카카오·Google·GitHub 로그인 설정, 동기화 규칙 |
+| [시퀀스 다이어그램](docs/sequence-diagrams.md) | 비트 퍼펙트 재생(PC 앱), 로그인과 보관함 동기화, 첫 화면과 스트리밍 |
 | [버전 기록](CHANGELOG.md) | 버전별 변경 내용 |
