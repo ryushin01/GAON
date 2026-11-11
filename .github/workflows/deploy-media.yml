@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - scripts/generate-media.py
+      - scripts/disc_labels.py
       - src/**
       - app/**
       - public/**
