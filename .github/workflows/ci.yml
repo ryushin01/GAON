@@ -28,7 +28,15 @@ jobs:
       - run: python scripts/generate-media.py public-media
       - run: pnpm build:native
       - run: pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/album-28-1.flac
-      - run: pnpm exec playwright install --with-deps chromium
+      # 실행기의 apt 저장소가 잠시 안 될 때가 있어 몇 번 다시 시도하고, 끝내 안 되면 실행기에 이미 있는 라이브러리를 믿고 브라우저만 받습니다.
+      - name: Playwright 브라우저 설치
+        run: |
+          for attempt in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && exit 0
+            echo "::warning::의존 패키지 설치 실패 (${attempt}/3)"
+            sleep $((attempt * 30))
+          done
+          pnpm exec playwright install chromium
       - run: pnpm build:web
         env:
           EXPO_PUBLIC_MEDIA_BASE_URL: http://localhost:8787
