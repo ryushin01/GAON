@@ -294,6 +294,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
   const discBand = wide ? styles.discsWide : [styles.discs, { minHeight: size * 1.04 }];
 
   // 가운데 디스크를 누르면 재생하고, 양옆 디스크를 누르면 그쪽으로 넘어갑니다.
+  // 넘어가는 중에 또 눌러도 한 칸씩 더 가도록 화면의 순위가 아니라 목표 순위를 기준으로 합니다.
   const zone = (center: number, zoneSize: number) => {
     const left = Math.max(0, center - zoneSize / 2);
     return { left, width: Math.min(width, center + zoneSize / 2) - left };
@@ -307,11 +308,11 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
       </View>
       <View style={[styles.hitRow, { height: size }]}>
         {position > 0 && (
-          <Pressable role="button" aria-label="이전 순위" onPress={() => moveTo(position - 1)} style={[styles.hit, zone(width / 2 - 0.9 * size, size * 0.8)]} />
+          <Pressable role="button" aria-label="이전 순위" onPress={() => moveTo(Math.round(target.get()) - 1)} style={[styles.hit, zone(width / 2 - 0.9 * size, size * 0.8)]} />
         )}
         <Pressable role="button" aria-label={`${title} 듣기`} onPress={() => onPlay(track)} style={[styles.hit, styles.hitRound, zone(width / 2, size)]} />
         {position < last && (
-          <Pressable role="button" aria-label="다음 순위" onPress={() => moveTo(position + 1)} style={[styles.hit, zone(width / 2 + 1.08 * size, size)]} />
+          <Pressable role="button" aria-label="다음 순위" onPress={() => moveTo(Math.round(target.get()) + 1)} style={[styles.hit, zone(width / 2 + 1.08 * size, size)]} />
         )}
       </View>
     </View>
