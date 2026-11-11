@@ -172,6 +172,19 @@ test('동작 줄이기에서도 디스크를 넘길 수 있고 인트로가 없�
   await expect(page.getByRole('heading', { name: '따뜻한 여름', level: 2 })).toBeVisible();
 });
 
+test('디스크를 넘긴 뒤 동작 줄이기를 켜도 보던 순위에 머뭅니다', async ({ page }) => {
+  await page.goto('/');
+  await expect(homeReady(page)).toBeVisible();
+  await page.getByRole('button', { name: '다음 순위' }).click();
+  await page.getByRole('button', { name: '다음 순위' }).click();
+  await expect(page.getByRole('heading', { name: 'Daydream', level: 2 })).toBeVisible();
+  await page.waitForTimeout(800);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForTimeout(500);
+  await expect(page.getByRole('heading', { name: 'Daydream', level: 2 })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Daydream 듣기' })).toBeVisible();
+});
+
 test('가운데 디스크를 누르면 재생합니다', async ({ page }) => {
   await page.goto('/');
   await expect(homeReady(page)).toBeVisible();

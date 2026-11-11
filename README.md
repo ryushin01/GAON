@@ -27,7 +27,7 @@
 
 | 다크 테마 | 설정 |
 |---|---|
-| ![다크 테마의 TOP 100 목록과 재생 중 표시](docs/images/dark-top100.jpg) | ![화면 테마와 음질 안내가 있는 다크 테마의 설정 화면](docs/images/dark-settings.jpg) |
+| ![다크 테마의 TOP 100 목록과 재생 중 표시](docs/images/dark-top100.jpg) | ![데모 로그인 버튼과 소유자 로그인, 화면 테마가 있는 다크 테마의 설정 화면](docs/images/dark-settings.jpg) |
 
 | 모바일 플레이어 | 내 FLAC |
 |---|---|
