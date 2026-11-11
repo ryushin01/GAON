@@ -13,7 +13,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { scheduleOnRN } from 'react-native-worklets';
+import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
 import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
@@ -127,6 +127,22 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
       const next = Math.max(0, Math.min(last, value));
       target.set(next);
       progress.set(reduced ? Math.round(next) : withSpring(next, SPRING));
+    },
+    [last, progress, reduced, target],
+  );
+
+  /**
+   * 지금 목표에서 한 칸씩 옮깁니다. 앱에서는 목표 값이 애니메이션 스레드에 있어,
+   * 빠르게 두 번 누를 때 같은 값을 읽지 않도록 그 스레드에서 읽고 바꾸기를 한 번에 합니다.
+   */
+  const moveBy = useCallback(
+    (step: number) => {
+      scheduleOnUI(() => {
+        'worklet';
+        const next = Math.max(0, Math.min(last, Math.round(target.get()) + step));
+        target.set(next);
+        progress.set(reduced ? next : withSpring(next, SPRING));
+      });
     },
     [last, progress, reduced, target],
   );
@@ -321,11 +337,11 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
       </View>
       <View style={[styles.hitRow, { height: size }]}>
         {position > 0 && (
-          <Pressable role="button" aria-label="이전 순위" onPress={() => moveTo(Math.round(target.get()) - 1)} style={[styles.hit, zone(width / 2 - 0.9 * size, size * 0.8)]} />
+          <Pressable role="button" aria-label="이전 순위" onPress={() => moveBy(-1)} style={[styles.hit, zone(width / 2 - 0.9 * size, size * 0.8)]} />
         )}
         <Pressable role="button" aria-label={`${title} 듣기`} onPress={() => onPlay(track)} style={[styles.hit, styles.hitRound, zone(width / 2, size)]} />
         {position < last && (
-          <Pressable role="button" aria-label="다음 순위" onPress={() => moveTo(Math.round(target.get()) + 1)} style={[styles.hit, zone(width / 2 + 1.08 * size, size)]} />
+          <Pressable role="button" aria-label="다음 순위" onPress={() => moveBy(1)} style={[styles.hit, zone(width / 2 + 1.08 * size, size)]} />
         )}
       </View>
     </View>
