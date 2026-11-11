@@ -92,11 +92,19 @@ export function startSession() {
         resolve();
         return;
       }
-      void client.auth.getSession().then(({ data }) => {
-        supabaseSession = data.session;
-        supabaseReady = true;
-        resolve();
-      });
+      // 저장된 세션을 읽지 못해도 로그아웃한 상태로 준비를 끝내, 계정 구역이 비지 않게 합니다.
+      void client.auth
+        .getSession()
+        .then(({ data }) => {
+          supabaseSession = data.session;
+        })
+        .catch(() => {
+          supabaseSession = null;
+        })
+        .finally(() => {
+          supabaseReady = true;
+          resolve();
+        });
       client.auth.onAuthStateChange((_event, session) => {
         supabaseSession = session;
         supabaseReady = true;
