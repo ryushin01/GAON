@@ -26,7 +26,7 @@ describe('AccountSection', () => {
   it('로그인하지 않았으면 세 가지 소셜 로그인을 보여 줍니다', async () => {
     await render(<AccountSection />);
     expect(screen.getByRole('button', { name: '카카오 로그인' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Google로 로그인' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Google 계정으로 로그인' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'GitHub로 로그인' })).toBeTruthy();
     expect(screen.getByRole('link', { name: '개인정보 처리방침' })).toBeTruthy();
   });

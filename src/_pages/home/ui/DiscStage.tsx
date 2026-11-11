@@ -20,6 +20,7 @@ import { SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatCount } from '@/shared/lib';
 import { AppText, Disc, Icon, MetaRow, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 
+import { nearby, withNearby } from '../lib/loadedDiscs';
 import { snapIndex, wheelPixels } from '../lib/wheel';
 import { TrackIndex } from './TrackIndex';
 
@@ -44,8 +45,7 @@ const WHEEL_STEP = 560;
 /** 동작 줄이기에서는 이만큼 굴리면 한 칸만 넘어갑니다. */
 const REDUCED_WHEEL_STEP = 100;
 const SNAP_DELAY_MS = 160;
-/** 지금 순위에서 이만큼 앞의 디스크까지 이미지를 미리 받습니다. */
-const PRELOAD_AHEAD = 2;
+
 const SPRING = { damping: 26, stiffness: 130, mass: 1 };
 /** 이보다 낮은 창은 한 화면에 담기 어려워 세로로 스크롤합니다. */
 const MIN_STAGE_HEIGHT = 560;
@@ -248,8 +248,10 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
 
   const position = Math.min(index, last);
   // 화면에 보이는 가까운 디스크만 이미지를 받고, 넘기면서 다음 것을 받습니다. 한 번 받은 것은 그대로 둡니다.
-  const [loadedUntil, setLoadedUntil] = useState(PRELOAD_AHEAD);
-  if (position + PRELOAD_AHEAD > loadedUntil) setLoadedUntil(position + PRELOAD_AHEAD);
+  // 목록에서 멀리 건너뛰어도 건너뛴 디스크는 받지 않도록, 실제로 가까이 온 순위만 기록합니다.
+  const [loaded, setLoaded] = useState<ReadonlySet<number>>(() => new Set(nearby(0, last)));
+  const nextLoaded = withNearby(loaded, position, last);
+  if (nextLoaded !== loaded) setLoaded(nextLoaded);
   const track = tracks[position];
   const title = displayTitle(track);
   const names = credits(track);
@@ -330,7 +332,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
             progress={progress}
             size={size}
             spinning={playingId === item.id && i === position}
-            load={i <= loadedUntil}
+            load={loaded.has(i)}
             important={i === position}
           />
         ))}

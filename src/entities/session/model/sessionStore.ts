@@ -83,26 +83,33 @@ export function startSession() {
   if (useLocalAuth.persist.hasHydrated()) resolve();
   else useLocalAuth.persist.onFinishHydration(resolve);
   if (!SUPABASE_ENABLED) return;
-  void getSupabase().then((client) => {
-    if (!client) return;
-    void client.auth.getSession().then(({ data }) => {
-      supabaseSession = data.session;
-      supabaseReady = true;
-      resolve();
-    });
-    client.auth.onAuthStateChange((_event, session) => {
-      supabaseSession = session;
-      supabaseReady = true;
-      resolve();
-    });
-    // 앱이 화면에 있을 때만 로그인을 갱신합니다.
-    if (Platform.OS !== 'web') {
-      AppState.addEventListener('change', (state) => {
-        if (state === 'active') void client.auth.startAutoRefresh();
-        else void client.auth.stopAutoRefresh();
+  void getSupabase()
+    .catch(() => null)
+    .then((client) => {
+      // SDK를 받지 못하면 로그인 없이 쓸 수 있게 준비를 끝냅니다. 다음에 다시 시도합니다.
+      if (!client) {
+        supabaseReady = true;
+        resolve();
+        return;
+      }
+      void client.auth.getSession().then(({ data }) => {
+        supabaseSession = data.session;
+        supabaseReady = true;
+        resolve();
       });
-    }
-  });
+      client.auth.onAuthStateChange((_event, session) => {
+        supabaseSession = session;
+        supabaseReady = true;
+        resolve();
+      });
+      // 앱이 화면에 있을 때만 로그인을 갱신합니다.
+      if (Platform.OS !== 'web') {
+        AppState.addEventListener('change', (state) => {
+          if (state === 'active') void client.auth.startAutoRefresh();
+          else void client.auth.stopAutoRefresh();
+        });
+      }
+    });
 }
 
 export function setDemoSession(provider: string | null) {
