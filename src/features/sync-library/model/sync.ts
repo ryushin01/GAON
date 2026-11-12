@@ -139,13 +139,14 @@ function whenHydrated(store: { persist: { hasHydrated: () => boolean; onFinishHy
   });
 }
 
-let started = false;
+let stop: (() => void) | null = null;
 
 /** 앱을 켤 때 한 번 부릅니다. 로그인하면 맞추고, 보관함이 바뀌면 잠시 뒤 올립니다. */
 export function startLibrarySync() {
-  if (started) return;
-  started = true;
+  if (stop) return;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let stopped = false;
+  let unsubscribeLibrary: (() => void) | undefined;
   const ready = Promise.all([whenHydrated(useLibraryStore), whenHydrated(useSyncMeta)]);
 
   let lastUser: string | undefined;
@@ -154,15 +155,21 @@ export function startLibrarySync() {
     const userId = session && session.kind !== 'demo' ? session.userId : undefined;
     if (userId === lastUser) return;
     lastUser = userId;
-    if (userId) void ready.then(syncNow);
+    if (userId) {
+      // 불러오기를 기다리는 사이에 멈췄으면 맞추지 않습니다.
+      void ready.then(() => {
+        if (!stopped) void syncNow();
+      });
+    }
     else useSyncStatus.setState({ state: 'idle', at: null, error: null });
   };
-  useSessionStore.subscribe(follow);
+  const unsubscribeSession = useSessionStore.subscribe(follow);
   follow();
 
   // 저장된 보관함을 불러오는 것은 사용자의 변경이 아니어서, 다 불러온 뒤부터 지켜봅니다.
-  void ready.then(() =>
-    useLibraryStore.subscribe((state, previous) => {
+  void ready.then(() => {
+    if (stopped) return;
+    unsubscribeLibrary = useLibraryStore.subscribe((state, previous) => {
       if (applying) return;
       if (state.likedIds === previous.likedIds && state.recentIds === previous.recentIds && state.playlists === previous.playlists) return;
       localVersion += 1;
@@ -170,17 +177,35 @@ export function startLibrarySync() {
       if (!canSync()) return;
       clearTimeout(timer);
       timer = setTimeout(() => void syncNow(), PUSH_DELAY_MS);
-    }),
-  );
+    });
+  });
 
   // 다른 기기에서 바꾼 내용을 다시 화면에 돌아왔을 때 받습니다.
+  let removeFocus: () => void;
   if (Platform.OS === 'web') {
-    document.addEventListener('visibilitychange', () => {
+    const onVisible = () => {
       if (document.visibilityState === 'visible' && canSync()) void syncNow();
-    });
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    removeFocus = () => document.removeEventListener('visibilitychange', onVisible);
   } else {
-    AppState.addEventListener('change', (state) => {
+    const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active' && canSync()) void syncNow();
     });
+    removeFocus = () => subscription.remove();
   }
+
+  stop = () => {
+    stopped = true;
+    clearTimeout(timer);
+    unsubscribeSession();
+    unsubscribeLibrary?.();
+    removeFocus();
+    stop = null;
+  };
+}
+
+/** 동기화를 멈추고 기다리던 업로드와 구독을 정리합니다. 테스트가 끝날 때 씁니다. */
+export function stopLibrarySync() {
+  stop?.();
 }
