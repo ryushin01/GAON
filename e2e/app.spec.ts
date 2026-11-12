@@ -207,7 +207,7 @@ test('앱 스크립트가 없어도 저장한 테마로 첫 화면을 표시합�
   await page.route('**/_expo/static/js/**', (route) => route.abort());
   await page.reload();
   await expect(page.locator('.boot')).toBeVisible();
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(12, 12, 11)');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(9, 9, 11)');
 });
 
 test('로그인 서버가 없으면 데모로 로그인하고 로그아웃합니다', async ({ page }) => {

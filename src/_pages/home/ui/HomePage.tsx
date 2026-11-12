@@ -162,6 +162,14 @@ export function HomePage() {
             </View>
           </>
         )}
+        {/* 순위 곡이 없어도 카탈로그 현황은 보여 줍니다. */}
+        {catalog && stageTracks.length === 0 && (
+          <View style={styles.rest}>
+            <Section eyebrow="STATUS" title="카탈로그 현황">
+              <CatalogStats catalog={catalog} />
+            </Section>
+          </View>
+        )}
       </ScrollView>
       {intro && <HomeIntro uri={stageTracks[0]?.discUri ?? stageTracks[0]?.artUri} ready={Boolean(catalog)} onDone={finishIntro} />}
     </Screen>

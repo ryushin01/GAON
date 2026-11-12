@@ -38,8 +38,8 @@ export function AppButton({ label, icon, variant = 'primary', hint, disabled, ..
     <Pressable
       {...rest}
       role="button"
-      // 설명을 붙여도 화면에 보이는 라벨이 이름이 되게 합니다.
-      aria-label={variant === 'command' ? label : undefined}
+      // command는 설명을 붙여도 화면에 보이는 라벨이 이름이 되게 합니다. 부르는 쪽이 이름을 주면 그 이름을 씁니다.
+      aria-label={rest['aria-label'] ?? (variant === 'command' ? label : undefined)}
       disabled={disabled}
       aria-disabled={disabled ?? undefined}
       style={({ pressed }) => [styles.base, styles[variant], pressed && styles.pressed, disabled && styles.disabled]}
