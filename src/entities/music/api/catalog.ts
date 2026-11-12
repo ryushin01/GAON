@@ -42,7 +42,12 @@ export function toCatalog(raw: RawCatalog, baseUrl: string = MEDIA_BASE_URL): Ca
 export async function fetchCatalog(): Promise<Catalog> {
   const response = await fetch(`${MEDIA_BASE_URL}/catalog.json`);
   if (!response.ok) throw new Error(`카탈로그를 불러오지 못했습니다. (${response.status})`);
-  return toCatalog((await response.json()) as RawCatalog);
+  const raw = (await response.json()) as Partial<RawCatalog> | null;
+  // 형식이 어긋나면 화면을 그리다 깨지는 대신 불러오기 실패로 안내합니다.
+  if (!raw || !Array.isArray(raw.artists) || !Array.isArray(raw.albums) || !Array.isArray(raw.tracks)) {
+    throw new Error('카탈로그 형식이 올바르지 않습니다.');
+  }
+  return toCatalog(raw as RawCatalog);
 }
 
 let early: Promise<Catalog> | null = null;
