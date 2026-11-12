@@ -1,7 +1,7 @@
 import { useLibraryStore } from '@/entities/library';
 import { setOwnerSession, startSession } from '@/entities/session';
 
-import { startLibrarySync, syncNow, useSyncStatus } from './sync';
+import { startLibrarySync, stopLibrarySync, syncNow, useSyncStatus } from './sync';
 
 const mockRead = jest.fn();
 const mockWrite = jest.fn();
@@ -21,6 +21,9 @@ describe('보관함 동기화 (소유자 Gist)', () => {
     startLibrarySync();
     await flush();
   });
+
+  // 좋아요를 바꿔 걸어 둔 업로드 타이머와 구독이 테스트 뒤에 남지 않게 합니다.
+  afterAll(() => stopLibrarySync());
 
   beforeEach(() => {
     mockRead.mockReset();
