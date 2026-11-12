@@ -102,6 +102,12 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 - 제목과 본문은 운영체제 글꼴을 써서 한글 웹 글꼴을 받지 않습니다.
 - 홈 디스크는 지금 순위에서 두 칸 앞까지만 이미지를 받습니다.
 
+## 의존성 갱신 (Dependabot)
+
+`.github/dependabot.yml`이 npm 패키지를 매주 확인해 부 버전·패치를 한 PR로 묶고, GitHub Actions는 매달 올립니다.
+
+Expo SDK가 버전을 정하는 패키지(`expo*`, `jest-expo`, `react`, `react-native*`, `@react-native-*`)는 Dependabot에서 뺐습니다. Dependabot이 올리면 SDK 권장 버전과 어긋나 네이티브 빌드나 Expo Go에서 깨질 수 있고, CI는 네이티브 빌드를 하지 않아 이를 잡지 못합니다. 이 패키지들은 `npx expo install --fix`(SDK를 올릴 때는 `npx expo install expo@^새버전 --fix`)로만 올리고 `npx expo install --check`로 확인합니다.
+
 ## 품질 기준
 
 - 구조는 `pnpm lint:fsd`(Steiger)로 검사합니다. 예외는 `steiger.config.ts`에 이유와 함께 적습니다.
