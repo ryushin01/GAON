@@ -4,9 +4,20 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Expo SDK가 버전을 맞춰 두는 패키지는 올리지 않습니다. React는 React Native에 든 렌더러와 버전이 같아야 하고,
+    # 네이티브 모듈은 SDK가 시험한 버전이어야 앱이 동작합니다. 이 패키지들은 SDK를 올릴 때 `npx expo install --fix`로 함께 올립니다.
+    ignore:
+      - dependency-name: 'expo'
+      - dependency-name: 'expo-*'
+      - dependency-name: '@expo/*'
+      - dependency-name: 'jest-expo'
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
+      - dependency-name: 'react-native'
+      - dependency-name: 'react-native-*'
+      - dependency-name: '@react-native/*'
+      - dependency-name: '@react-native-async-storage/*'
     groups:
-      expo:
-        patterns: ['expo', 'expo-*', '@expo/*', 'react-native', 'react-native-*', '@react-native/*']
       minor-and-patch:
         update-types: ['minor', 'patch']
   - package-ecosystem: github-actions
