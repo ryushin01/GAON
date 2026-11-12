@@ -4,7 +4,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
 import { next, PlayPauseButton, useCurrentTrack, usePlayerStore } from '@/features/player';
-import { AppText, Disc, IconButton, VisuallyHidden } from '@/shared/ui';
+import { AppText, Disc, IconButton, StatusDot, VisuallyHidden } from '@/shared/ui';
 
 function Progress() {
   const percent = usePlayerStore((s) => (s.duration > 0 ? Math.min(100, (s.currentTime / s.duration) * 100) : 0));
@@ -43,6 +43,11 @@ export function NowPlayingBar() {
         >
           <Disc uri={track.discUri ?? track.artUri} size={44} spinning={playing} />
           <View style={styles.text}>
+            {/* 재생 버튼의 이름이 같은 상태를 알려 주므로 여기서는 보조 기술에서 숨깁니다. */}
+            <View aria-hidden style={styles.state}>
+              <StatusDot tone={playing ? 'live' : 'idle'} />
+              <AppText variant="label" tone="onStageMuted">{playing ? '재생 중' : '일시정지'}</AppText>
+            </View>
             <AppText variant="subheading" tone="onStage" numberOfLines={1}>{title}</AppText>
             <View style={styles.sub}>
               <AppText variant="caption" tone="onStageMuted" numberOfLines={1} style={styles.artist}>{artists}</AppText>
@@ -59,13 +64,14 @@ export function NowPlayingBar() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  root: { backgroundColor: theme.colors.stage.bg },
+  root: { backgroundColor: theme.colors.panel, borderTopWidth: 1, borderTopColor: theme.colors.border },
   error: { padding: theme.spacing.md },
-  progress: { height: 2, backgroundColor: theme.colors.border },
+  progress: { height: 2, backgroundColor: theme.colors.surfaceStrong },
   progressFill: { height: '100%', backgroundColor: theme.colors.stage.accent },
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 60, paddingHorizontal: theme.spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 68, paddingHorizontal: theme.spacing.md },
   info: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, minHeight: 44 },
   text: { flex: 1, minWidth: 0 },
+  state: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sub: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   artist: { flexShrink: 1 },
 }));

@@ -7,7 +7,7 @@ import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
 import { OutputBadge, SeekBar, TransportControls, useCurrentTrack, usePlayerStore } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
-import { AppText, Disc, IconButton, PageFade, useMainRegion } from '@/shared/ui';
+import { AppText, Disc, DotGrid, IconButton, PageFade, StatusDot, useMainRegion } from '@/shared/ui';
 import { LyricsPanel } from './LyricsPanel';
 import { QueuePanel } from './QueuePanel';
 
@@ -56,7 +56,7 @@ export function PlayerPage() {
 
       <View style={styles.meta}>
         <View style={styles.metaText}>
-          <AppText variant="title" tone="onStage" numberOfLines={2} role="heading" aria-level={1}>{title}</AppText>
+          <AppText variant="display" tone="onStage" numberOfLines={2} role="heading" aria-level={1} style={styles.title}>{title}</AppText>
           <AppText tone="onStageMuted" numberOfLines={1}>{artistLine(track)} · {track.albumTitle}</AppText>
           <QualityBadge format={track.format} onStage />
           <OutputBadge />
@@ -99,9 +99,14 @@ export function PlayerPage() {
 
   return (
     <View ref={ref} role="main" nativeID={nativeID} tabIndex={-1} style={styles.root}>
+      <DotGrid />
       <PageFade>
         <View style={styles.header}>
           <IconButton icon="chevron-down" label="플레이어 닫기" color={text} onPress={close} />
+          <View aria-hidden style={styles.state}>
+            <StatusDot tone={playing ? 'live' : 'idle'} />
+            <AppText variant="label" tone="onStageMuted">{playing ? 'NOW PLAYING' : 'PAUSED'}</AppText>
+          </View>
         </View>
         {wide ? (
           <View style={styles.wide}>
@@ -123,9 +128,11 @@ export function PlayerPage() {
 
 const styles = StyleSheet.create((theme, rt) => ({
   root: { flex: 1, backgroundColor: theme.colors.stage.bg, paddingTop: rt.insets.top, paddingBottom: rt.insets.bottom },
-  header: { flexDirection: 'row', paddingHorizontal: theme.spacing.sm },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: theme.spacing.sm, paddingRight: theme.spacing.lg },
+  state: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  title: { fontSize: { xs: 34, md: 44 }, lineHeight: { xs: 40, md: 50 } },
   flex: { flex: 1, minHeight: 0 },
-  panelTitle: { paddingTop: theme.spacing.xs, borderTopWidth: 1, borderTopColor: theme.colors.rule },
+  panelTitle: { paddingTop: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.colors.border },
   column: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: theme.spacing.md },
   artFrame: { width: '100%', maxWidth: 400, alignSelf: 'center' },
   panel: { height: 340 },

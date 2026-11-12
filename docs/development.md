@@ -79,15 +79,14 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 색은 `shared/config/theme.ts`의 토큰으로만 씁니다. 기본값은 시스템 설정을 따르고, 설정 화면에서 라이트나 다크로 고르면 `features/change-theme`이 저장합니다. 플레이어와 하단 재생 바는 `stage` 색을 쓰며, `stage`는 각 테마의 바탕과 글자색으로 만들어 라이트·다크 테마를 따릅니다. Storybook은 상단 도구 모음에서 테마를 바꿔 볼 수 있습니다.
 
-글꼴은 모두 SIL OFL입니다. 이름은 `shared/config/theme.ts`에 있습니다.
+디자인은 데이터 관제 화면 스타일입니다(레퍼런스: The Lobby의 Overwatch). 점 격자 바탕(`DotGrid`), 네 귀퉁이 꺾쇠를 단 가는 테두리 패널(`Panel`), 넓게 띄운 고정폭 라벨(`AppText` `label`), 가늘고 촘촘한 큰 제목과 깜빡이는 커서(`Cursor`), 칸을 나눈 막대 계기(`SegmentMeter`), 상태 표시등(`StatusDot`), `> 라벨` 모양의 명령 버튼(`AppButton` `command`)을 씁니다. 준비됨과 Hi-Res는 신호색(`signal`), 재생 중은 표시등 색(`live`)이며 늘 글자와 함께 보여 줍니다. 커서는 네 번만 깜빡이고 멈추며, 동작 줄이기에서는 깜빡이지 않습니다. 홈의 디스크 배치와 움직임, CD 라벨 그림은 이 스타일과 따로 둡니다.
 
 | 역할 | 글꼴 | 앱(iOS·Android) | 웹·PC 앱 |
 |---|---|---|---|
-| 제목 `DISPLAY_FONT` | Diphylleia, 웹은 앞에 Cormorant | `Diphylleia-Regular.ttf` | `Diphylleia-subset.woff2`, `Cormorant-latin.woff2` |
-| 본문 `SERIF_FONT` | Nanum Myeongjo | `NanumMyeongjo-Regular.ttf` | `GaonSerif-subset.woff2` |
-| 음질 수치 `MONO_FONT` | Nanum Gothic Coding | `NanumGothicCoding-Regular.ttf` | `GaonMono-subset.woff2` (라틴 문자만) |
+| 제목·본문 `SANS_FONT` | 운영체제 산세리프 | 운영체제 기본 글꼴 | system-ui, Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR |
+| 라벨·수치 `MONO_FONT` | Nanum Gothic Coding (SIL OFL) | `NanumGothicCoding-Regular.ttf` | `GaonMono-subset.woff2` (라틴 문자만) |
 
-앱은 원본을 번들에 넣고, 웹과 PC 앱은 KS X 1001 한글과 라틴 문자만 남긴 WOFF2를 씁니다(`python scripts/subset-fonts.py`). OFL의 예약 이름(Nanum) 때문에 나눔 글꼴을 줄인 파일은 이름을 GaonSerif, GaonMono로 바꿨습니다. 앱은 글꼴을 이어 쓸 수 없어 제목에 라틴 문자까지 든 Diphylleia 한 벌을 씁니다.
+한글 웹 글꼴을 받지 않아 첫 화면이 빠릅니다. 웹과 PC 앱의 고정폭 글꼴은 라틴 문자만 남긴 WOFF2입니다(`python scripts/subset-fonts.py`). OFL의 예약 이름(Nanum) 때문에 줄인 파일은 이름을 GaonMono로 바꿨습니다. 한글 라벨은 운영체제 글꼴로 나옵니다. `assets/fonts`의 Diphylleia와 Nanum Myeongjo는 CD 라벨을 그릴 때만 씁니다(`scripts/disc_labels.py`).
 
 ## 아이콘
 
@@ -99,7 +98,8 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 - 카탈로그는 앱 입구(`src/_app/prefetch.ts`)에서 바로 요청하고, Pages 배포는 HTML에 미리 받기 태그를 넣습니다.
 - Supabase SDK는 로그인 키가 있는 빌드에서 처음 필요할 때만 받습니다(`getSupabase`).
-- 홈의 가운데 디스크 이미지를 혼자 먼저 받습니다(`shared/lib/firstImage.ts`). 옆 디스크, 아래 구역의 이미지, 큰 한글 글꼴(본문·제목)은 그 이미지가 도착한 뒤에 받고, 오지 않으면 4초 뒤에 받습니다.
+- 홈의 가운데 디스크 이미지를 혼자 먼저 받습니다(`shared/lib/firstImage.ts`). 옆 디스크와 아래 구역의 이미지는 그 이미지가 도착한 뒤에 받고, 오지 않으면 4초 뒤에 받습니다.
+- 제목과 본문은 운영체제 글꼴을 써서 한글 웹 글꼴을 받지 않습니다.
 - 홈 디스크는 지금 순위에서 두 칸 앞까지만 이미지를 받습니다.
 
 ## 품질 기준

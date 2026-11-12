@@ -11,6 +11,7 @@ import { useFirstImage } from '@/shared/lib';
 import { AppButton, AppText, IconButton, Rail, Screen, Section, StateView, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 import { TrackActions } from '@/widgets/track-list';
 
+import { CatalogStats } from './CatalogStats';
 import { DiscStage } from './DiscStage';
 import { HomeIntro } from './HomeIntro';
 
@@ -78,7 +79,12 @@ export function HomePage() {
     <View style={styles.brand}>
       <View style={styles.brandText}>
         {/* 넓은 화면에서는 상단 메뉴에 로고와 설정이 있습니다. */}
-        {!wide && <AppText variant="heading" style={styles.logo}>GAON</AppText>}
+        {!wide && (
+          <View style={styles.logoRow}>
+            <View aria-hidden style={styles.logoMark} />
+            <AppText variant="label" style={styles.logo}>GAON</AppText>
+          </View>
+        )}
         <VisuallyHidden><AppText role="heading" aria-level={1}>Hi-Res FLAC 전용 스트리밍</AppText></VisuallyHidden>
       </View>
       {!wide && <IconButton icon="settings-outline" label="설정" onPress={() => router.push('/settings')} />}
@@ -122,7 +128,7 @@ export function HomePage() {
             />
 
             <View ref={moreRef} tabIndex={-1} style={styles.rest} onLayout={(event) => (moreY.current = event.nativeEvent.layout.y)}>
-              <Section title="최신 앨범">
+              <Section eyebrow="01 / LATEST" title="최신 앨범">
                 <Rail>
                   {albums.map((album) => (
                     <AlbumCard key={album.id} album={album} artReady={firstImageReady} onPress={() => router.push(`/album/${album.id}`)} />
@@ -130,7 +136,7 @@ export function HomePage() {
                 </Rail>
               </Section>
 
-              <Section title="TOP 100" actionLabel="전체 보기" actionHint="TOP 100 전체 보기" onAction={() => router.navigate('/chart')}>
+              <Section eyebrow="02 / CHART" title="TOP 100" actionLabel="전체 보기" actionHint="TOP 100 전체 보기" onAction={() => router.navigate('/chart')}>
                 <View role="list">
                   {top.slice(0, 5).map((track) => (
                     <TrackRow
@@ -146,11 +152,23 @@ export function HomePage() {
                   ))}
                 </View>
                 <View style={styles.playAll}>
-                  <AppButton variant="secondary" label="TOP 100 전체 재생" icon="play" onPress={() => void playTracks(top)} />
+                  <AppButton variant="command" hint="Command Input" label="TOP 100 전체 재생" onPress={() => void playTracks(top)} />
                 </View>
+              </Section>
+
+              <Section eyebrow="03 / STATUS" title="카탈로그 현황">
+                <CatalogStats catalog={catalog} />
               </Section>
             </View>
           </>
+        )}
+        {/* 순위 곡이 없어도 카탈로그 현황은 보여 줍니다. */}
+        {catalog && stageTracks.length === 0 && (
+          <View style={styles.rest}>
+            <Section eyebrow="STATUS" title="카탈로그 현황">
+              <CatalogStats catalog={catalog} />
+            </Section>
+          </View>
         )}
       </ScrollView>
       {intro && <HomeIntro uri={stageTracks[0]?.discUri ?? stageTracks[0]?.artUri} ready={Boolean(catalog)} onDone={finishIntro} />}
@@ -162,7 +180,9 @@ const styles = StyleSheet.create((theme) => ({
   fill: { flex: 1, minHeight: 0 },
   brand: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xs },
   brandText: { flex: 1, minWidth: 0 },
-  logo: { letterSpacing: -0.4 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
+  logoMark: { width: 8, height: 8, backgroundColor: theme.colors.text },
+  logo: { fontWeight: '700', letterSpacing: 3 },
   rest: { width: '100%', maxWidth: 1100, alignSelf: 'center', paddingBottom: theme.spacing.xxl },
-  playAll: { alignItems: 'center', paddingVertical: theme.spacing.md },
+  playAll: { alignItems: 'stretch', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
 }));

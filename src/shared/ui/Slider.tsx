@@ -119,14 +119,13 @@ export function Slider({ value, max, label, valueText, onCommit, onPreview, step
 
 const styles = StyleSheet.create((theme) => ({
   hit: { height: 44, justifyContent: 'center' },
-  track: { height: 4, borderRadius: 2, backgroundColor: theme.colors.stage.surface, overflow: 'hidden' },
+  track: { height: 4, backgroundColor: theme.colors.stage.surface, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: theme.colors.stage.accent },
   thumb: {
     position: 'absolute',
-    width: 14,
-    height: 14,
-    marginLeft: -7,
-    borderRadius: 7,
+    width: 4,
+    height: 18,
+    marginLeft: -2,
     backgroundColor: theme.colors.stage.text,
   },
 }));

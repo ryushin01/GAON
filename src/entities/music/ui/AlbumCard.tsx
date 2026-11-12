@@ -24,8 +24,9 @@ export function AlbumCard({ album, size = 196, onPress, artReady = true }: Props
     >
       <Disc uri={artReady ? (album.discUri ?? album.artUri) : undefined} size={size} />
       <View style={styles.text}>
-        <AppText variant="subheading" numberOfLines={1} style={styles.center}>{album.title}</AppText>
-        <AppText variant="caption" tone="muted" numberOfLines={1} style={styles.center}>{artists}</AppText>
+        <AppText variant="label" tone="muted" aria-hidden numberOfLines={1}>{`${album.albumType} · ${album.released.slice(0, 4)}`}</AppText>
+        <AppText variant="subheading" numberOfLines={1}>{album.title}</AppText>
+        <AppText variant="caption" tone="muted" numberOfLines={1}>{artists}</AppText>
         <VisuallyHidden>앨범, {formatDate(album.released)} 발매</VisuallyHidden>
       </View>
     </Pressable>
@@ -34,7 +35,6 @@ export function AlbumCard({ album, size = 196, onPress, artReady = true }: Props
 
 const styles = StyleSheet.create((theme) => ({
   card: { gap: theme.spacing.sm },
-  text: { gap: 2 },
-  center: { textAlign: 'center' },
+  text: { gap: 2, paddingTop: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.colors.border },
   pressed: { opacity: 0.7 },
 }));

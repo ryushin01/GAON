@@ -45,5 +45,5 @@ export function TransportControls() {
 
 const styles = StyleSheet.create((theme) => ({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  play: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.stage.text },
+  play: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.stage.text },
 }));

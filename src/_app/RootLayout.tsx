@@ -13,8 +13,7 @@ import { startSession } from '@/entities/session';
 import { useThemeStore } from '@/features/change-theme';
 import { restoreLocalArt } from '@/features/import-local';
 import { startLibrarySync } from '@/features/sync-library';
-import { whenFirstImage } from '@/shared/lib';
-import { PaperGrain, SkipLink } from '@/shared/ui';
+import { SkipLink } from '@/shared/ui';
 
 import { FONT_SOURCES } from './fontSources';
 
@@ -25,10 +24,6 @@ const subscribeThemeHydration = (onChange: () => void) => useThemeStore.persist.
 // 로그인을 설정한 빌드에서만 저장된 로그인을 읽고 보관함 동기화를 시작합니다.
 startSession();
 startLibrarySync();
-
-/** 홈의 첫 이미지 다음에 받는 큰 한글 글꼴입니다. 그 이미지가 없으면 이 시간 뒤에 받습니다. */
-const LARGE_FONTS = ['GaonSerif', 'Diphylleia'];
-const FIRST_IMAGE_WAIT_MS = 4000;
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2 } },
@@ -72,29 +67,9 @@ export function RootLayout() {
   }, [rt.themeName, theme.colors.bg]);
 
   // 글꼴을 기다리지 않고 먼저 그린 뒤, 받으면 바꿉니다. 받지 못해도 대체 글꼴로 보입니다.
-  // 웹은 큰 한글 글꼴을 홈의 첫 디스크 이미지 다음에 받아, 그 이미지와 대역폭을 나누지 않습니다.
   useEffect(() => {
-    let cancelled = false;
-    const load = (names: string[]) => {
-      const fonts = Object.fromEntries(
-        Object.entries(FONT_SOURCES)
-          .filter(([name]) => names.includes(name))
-          .map(([name, uri]) => [name, { uri, display: Font.FontDisplay.SWAP }]),
-      );
-      Font.loadAsync(fonts).catch(() => undefined);
-    };
-    const names = Object.keys(FONT_SOURCES);
-    if (Platform.OS !== 'web') {
-      load(names);
-      return;
-    }
-    load(names.filter((name) => !LARGE_FONTS.includes(name)));
-    void whenFirstImage(FIRST_IMAGE_WAIT_MS).then(() => {
-      if (!cancelled) load(LARGE_FONTS);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const fonts = Object.fromEntries(Object.entries(FONT_SOURCES).map(([name, uri]) => [name, { uri, display: Font.FontDisplay.SWAP }]));
+    Font.loadAsync(fonts).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -115,7 +90,6 @@ export function RootLayout() {
           <Stack.Screen name="player" options={{ presentation: 'fullScreenModal', animation: reduceMotion ? 'none' : 'slide_from_bottom' }} />
           <Stack.Screen name="+not-found" />
         </Stack>
-        <PaperGrain />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

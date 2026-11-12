@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { DotGrid } from './DotGrid';
 import { PageFade } from './PageFade';
 import { useMainRegion } from './useMainRegion';
 
@@ -17,6 +18,7 @@ export function Screen({ children, scroll = true, fullBleed = false }: Props) {
   const { ref, nativeID } = useMainRegion();
   return (
     <View ref={ref} role="main" nativeID={nativeID} tabIndex={-1} style={styles.root}>
+      <DotGrid />
       <PageFade>
         {scroll ? (
           <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>

@@ -68,5 +68,5 @@ const styles = StyleSheet.create((theme) => ({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 200 },
   content: { gap: theme.spacing.md, paddingVertical: theme.spacing.lg },
   line: { textAlign: 'center' },
-  lineActive: { fontWeight: '800' },
+  lineActive: { fontWeight: '700' },
 }));

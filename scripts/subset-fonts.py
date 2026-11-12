@@ -1,4 +1,4 @@
-"""웹과 PC 앱에서 쓰는 글꼴을 KS X 1001 한글 2,350자와 라틴 문자만 남겨 줄입니다.
+"""웹과 PC 앱에서 쓰는 글꼴을 필요한 글자만 남겨 줄입니다. 한글이 든 글꼴은 KS X 1001 한글 2,350자를 남깁니다.
 
 원본 TTF는 앱(iOS·Android)이 그대로 씁니다. 웹은 원본이 수 MB라 줄인 woff2를 씁니다.
 OFL의 예약 이름(Nanum)이 있는 글꼴은 줄인 파일의 이름을 바꿉니다.
@@ -17,7 +17,6 @@ FONTS = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 # (원본, 결과, 바꿀 이름 또는 None, 한글 포함 여부)
 # 고정폭 글꼴은 음질 표시(FLAC 24bit/192kHz)처럼 영문·숫자에만 쓰므로 라틴 문자만 남깁니다.
 TARGETS = [
-    ("Diphylleia-Regular.ttf", "Diphylleia-subset.woff2", None, True),
     ("NanumGothicCoding-Regular.ttf", "GaonMono-subset.woff2", "GaonMono", False),
 ]
 

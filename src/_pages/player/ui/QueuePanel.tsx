@@ -46,7 +46,7 @@ export function QueuePanel() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  row: { flexDirection: 'row', alignItems: 'center', borderRadius: theme.radius.md },
+  row: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   current: { backgroundColor: theme.colors.stage.surface },
   main: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, padding: theme.spacing.sm },
   text: { flex: 1, minWidth: 0 },

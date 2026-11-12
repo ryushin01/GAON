@@ -34,7 +34,7 @@ export function IconButton({ icon, label, size = 24, color, filled = false, badg
 }
 
 const styles = StyleSheet.create((theme) => ({
-  button: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: theme.radius.pill },
+  button: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   filled: { backgroundColor: theme.colors.primary },
   badge: { position: 'absolute', bottom: 0, fontSize: 11, lineHeight: 13, fontWeight: '800' },
   pressed: { opacity: 0.6 },
