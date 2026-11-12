@@ -56,9 +56,31 @@ export async function readLibraryGist(token: string): Promise<{ data: unknown; u
   const gist = cachedId ? await call<Gist>(token, `/gists/${cachedId}`) : await findGist(token);
   if (!gist) return null;
   cachedId = gist.id;
-  const content = gist.files[FILE]?.content;
+  const file = gist.files[FILE];
+  const content = await fileContent(file);
   if (!content) return null;
-  return { data: JSON.parse(content) as unknown, updatedAt: gist.updated_at };
+  return { data: parseJson(content), updatedAt: gist.updated_at };
+}
+
+/**
+ * GitHub API는 1MB가 넘는 파일을 잘라서(truncated) 보냅니다. 잘렸으면 원본(raw_url)을 따로 받습니다.
+ * 잘린 내용을 그대로 읽으면 JSON이 깨지거나 보관함 일부를 잃습니다.
+ */
+async function fileContent(file: GistFile | undefined): Promise<string | undefined> {
+  if (!file?.truncated) return file?.content;
+  if (!file.raw_url) throw new GitHubError('보관함 파일이 너무 커서 읽지 못했습니다.', 0);
+  const response = await fetch(file.raw_url);
+  if (!response.ok) throw new GitHubError(`보관함 파일을 받지 못했습니다. (${response.status})`, response.status);
+  return response.text();
+}
+
+/** Gist는 사용자가 직접 고칠 수 있어 JSON이 아닐 수 있습니다. */
+function parseJson(content: string): unknown {
+  try {
+    return JSON.parse(content) as unknown;
+  } catch {
+    throw new GitHubError('보관함 파일 내용이 올바르지 않습니다. Gist의 gaon-library.json을 확인해 주세요.', 0);
+  }
 }
 
 /** 보관함을 저장하고 저장 시각을 돌려줍니다. Gist가 없으면 비공개로 만듭니다. */

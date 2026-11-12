@@ -5,7 +5,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useReducedMotion } from 'react-native-reanimated';
 import { useUnistyles } from 'react-native-unistyles';
 
 import { useLibraryStore } from '@/entities/library';
@@ -13,7 +12,7 @@ import { startSession } from '@/entities/session';
 import { useThemeStore } from '@/features/change-theme';
 import { restoreLocalArt } from '@/features/import-local';
 import { startLibrarySync } from '@/features/sync-library';
-import { SkipLink } from '@/shared/ui';
+import { SkipLink, useLiveReducedMotion } from '@/shared/ui';
 
 import { FONT_SOURCES } from './fontSources';
 
@@ -50,7 +49,8 @@ export function pageTitle(pathname: string): string {
 export function RootLayout() {
   const { rt, theme } = useUnistyles();
   const pathname = usePathname();
-  const reduceMotion = useReducedMotion();
+  // 사용 중에 바꾼 동작 줄이기 설정도 화면 전환에 바로 반영합니다.
+  const reduceMotion = useLiveReducedMotion();
   const themeReady = useSyncExternalStore(subscribeThemeHydration, useThemeStore.persist.hasHydrated);
 
   // 웹과 PC 앱에서 화면마다 제목이 달라야 합니다.

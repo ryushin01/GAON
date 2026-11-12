@@ -41,4 +41,26 @@ describe('GitHub 보관함', () => {
     expect(fetchMock.mock.calls[2][0]).toBe('https://api.github.com/gists/g1');
     expect(fetchMock.mock.calls[2][1].method).toBe('PATCH');
   });
+
+  it('1MB가 넘어 잘린 파일은 원본(raw_url)을 따로 받아 읽습니다', async () => {
+    fetchMock
+      .mockReturnValueOnce(json([{ id: 'g1', updated_at: 'x', files: { 'gaon-library.json': {} } }]))
+      .mockReturnValueOnce(
+        json({
+          id: 'g1',
+          updated_at: '2026-11-13T00:00:00Z',
+          files: { 'gaon-library.json': { content: '{"likedIds":["a"', truncated: true, raw_url: 'https://gist.example/raw' } },
+        }),
+      )
+      .mockReturnValueOnce(Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve('{"likedIds":["a","b"]}') } as Response));
+    await expect(readLibraryGist('t')).resolves.toEqual({ data: { likedIds: ['a', 'b'] }, updatedAt: '2026-11-13T00:00:00Z' });
+    expect(fetchMock.mock.calls[2][0]).toBe('https://gist.example/raw');
+  });
+
+  it('사용자가 고쳐 JSON이 깨졌으면 이해할 수 있는 오류를 냅니다', async () => {
+    fetchMock
+      .mockReturnValueOnce(json([{ id: 'g1', updated_at: 'x', files: { 'gaon-library.json': {} } }]))
+      .mockReturnValueOnce(json({ id: 'g1', updated_at: 'x', files: { 'gaon-library.json': { content: '{oops' } } }));
+    await expect(readLibraryGist('t')).rejects.toThrow('보관함 파일 내용이 올바르지 않습니다.');
+  });
 });

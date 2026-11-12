@@ -1,5 +1,9 @@
 # 버전 기록
 
+## 다음 버전
+
+- 버그: 잘린 보관함 Gist, 깨진 JSON, 카탈로그 형식, 동작 줄이기 훅 통일
+
 ## [0.8.0](https://github.com/ryushin01/GAON/releases/tag/v0.8.0) - 2026-11-12
 
 - Dependabot: npm 패키지 매주(Expo·React Native는 한 묶음), GitHub Actions 매월 업데이트 PR
