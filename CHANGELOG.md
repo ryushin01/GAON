@@ -2,6 +2,7 @@
 
 ## 다음 버전
 
+- Dependabot: npm 패키지 매주(Expo·React Native는 한 묶음), GitHub Actions 매월 업데이트 PR
 - 제목을 원을 따라 되풀이한 CD 라벨에도 가수와 음질, 품번을 넣었습니다.
 
 ## [0.7.5](https://github.com/ryushin01/GAON/releases/tag/v0.7.5) - 2026-11-11
