@@ -155,7 +155,12 @@ export function startLibrarySync() {
     const userId = session && session.kind !== 'demo' ? session.userId : undefined;
     if (userId === lastUser) return;
     lastUser = userId;
-    if (userId) void ready.then(syncNow);
+    if (userId) {
+      // 불러오기를 기다리는 사이에 멈췄으면 맞추지 않습니다.
+      void ready.then(() => {
+        if (!stopped) void syncNow();
+      });
+    }
     else useSyncStatus.setState({ state: 'idle', at: null, error: null });
   };
   const unsubscribeSession = useSessionStore.subscribe(follow);
