@@ -35,16 +35,19 @@ export function ArtistPage() {
         tracks={tracks}
         header={
           <View>
-            <ScreenHeader title={artist.name} back />
+            <ScreenHeader eyebrow="GAON / ARTIST" title={artist.name} back />
             <AppText tone="muted" style={styles.role}>{artist.role}</AppText>
-            <Section title="앨범">
+            <Section eyebrow="DISCOGRAPHY" title="앨범">
               <Rail>
                 {albums.map((album) => (
                   <AlbumCard key={album.id} album={album} size={130} onPress={() => router.push(`/album/${album.id}`)} />
                 ))}
               </Rail>
             </Section>
-            <AppText variant="heading" role="heading" aria-level={2} style={styles.heading}>곡</AppText>
+            <View style={styles.headingRow}>
+              <View aria-hidden style={styles.mark} />
+              <AppText variant="heading" role="heading" aria-level={2}>곡</AppText>
+            </View>
           </View>
         }
       />
@@ -54,5 +57,6 @@ export function ArtistPage() {
 
 const styles = StyleSheet.create((theme) => ({
   role: { paddingHorizontal: theme.spacing.lg },
-  heading: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.xl },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.xl, paddingBottom: theme.spacing.sm, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  mark: { width: 8, height: 8, backgroundColor: theme.colors.text },
 }));

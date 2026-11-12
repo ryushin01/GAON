@@ -36,6 +36,7 @@ export function AlbumPage() {
             <View style={styles.back}>
               <IconButton icon="chevron-back" label="뒤로" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
             </View>
+            <AppText variant="label" tone="muted" style={styles.eyebrow}>{`GAON / ALBUM / ${album.albumType}`}</AppText>
             <AppText variant="display" role="heading" aria-level={1} style={styles.title}>{album.title}</AppText>
             <View style={styles.info}>
               <MetaRow label="가수">
@@ -62,7 +63,8 @@ export function AlbumPage() {
 
 const styles = StyleSheet.create((theme) => ({
   back: { flexDirection: 'row', paddingHorizontal: theme.spacing.sm },
-  title: { textAlign: 'center', paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md },
+  eyebrow: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm },
+  title: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md },
   info: { paddingHorizontal: theme.spacing.lg },
   art: { width: '100%', maxWidth: 320, alignSelf: 'center', paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.xl },
   // 표 행 높이를 지키면서 누르는 영역은 44px 이상으로 둡니다.

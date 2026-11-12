@@ -32,7 +32,7 @@ export function TrackPage() {
 
   return (
     <Screen>
-      <ScreenHeader title="곡 정보" back />
+      <ScreenHeader eyebrow="GAON / TRACK" title="곡 정보" back />
       <View style={styles.summary}>
         <View style={styles.art}><Disc uri={track.discUri ?? track.artUri} label={`${track.albumTitle} 앨범 아트`} /></View>
         <AppText variant="display" role="heading" aria-level={2} style={styles.centered}>{title}</AppText>
@@ -44,7 +44,7 @@ export function TrackPage() {
         </View>
       </View>
 
-      <Section title="상세 정보">
+      <Section eyebrow="METADATA" title="상세 정보">
         <View style={styles.info}>
           {track.albumId ? (
             <MetaRow label="앨범">
@@ -66,7 +66,7 @@ export function TrackPage() {
       </Section>
 
       {(track.lyricists.length > 0 || track.composers.length > 0 || track.arrangers.length > 0) && (
-        <Section title="참여 정보">
+        <Section eyebrow="CREDITS" title="참여 정보">
           <View style={styles.info}>
             <Row label="작사" value={track.lyricists.join(', ')} />
             <Row label="작곡" value={track.composers.join(', ')} />
@@ -76,7 +76,7 @@ export function TrackPage() {
       )}
 
       {track.lyrics.length > 0 && (
-        <Section title="가사">
+        <Section eyebrow="LYRICS" title="가사">
           <View style={styles.lyrics}>
             {track.lyrics.map((line, i) => (
               <AppText key={`${i}-${line.text}`}>{line.text}</AppText>
@@ -94,9 +94,9 @@ const styles = StyleSheet.create((theme) => ({
   centered: { textAlign: 'center' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginTop: theme.spacing.xs },
   badge: { alignSelf: 'center' },
-  // 구역 제목의 먹선과 첫 행의 먹선이 겹쳐 한 줄로 보이게 합니다.
+  // 구역 제목의 선과 첫 행의 선이 겹쳐 한 줄로 보이게 합니다.
   info: { paddingHorizontal: theme.spacing.lg, marginTop: -(theme.spacing.lg + 1) },
-  lyrics: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
+  lyrics: { gap: theme.spacing.sm, marginHorizontal: theme.spacing.lg, paddingLeft: theme.spacing.md, borderLeftWidth: 1, borderLeftColor: theme.colors.border },
   link: { minHeight: 44, justifyContent: 'center', marginVertical: -11 },
   linkText: { textDecorationLine: 'underline' },
 }));

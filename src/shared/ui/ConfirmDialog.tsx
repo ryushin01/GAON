@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { AppButton } from './AppButton';
 import { AppText } from './AppText';
+import { Corners } from './Panel';
 
 type Props = {
   visible: boolean;
@@ -19,7 +20,8 @@ export function ConfirmDialog({ visible, title, description, confirmLabel, onCon
     <Modal aria-label={title} visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
-          <AppText variant="subheading" role="heading" aria-level={2}>{title}</AppText>
+          <Corners />
+          <AppText variant="heading" role="heading" aria-level={2}>{title}</AppText>
           {description ? <AppText tone="muted">{description}</AppText> : null}
           <View style={styles.actions}>
             <AppButton label="취소" variant="secondary" onPress={onCancel} />
@@ -32,7 +34,7 @@ export function ConfirmDialog({ visible, title, description, confirmLabel, onCon
 }
 
 const styles = StyleSheet.create((theme) => ({
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(10, 10, 10, 0.55)' },
-  sheet: { width: '100%', maxWidth: 360, gap: theme.spacing.md, padding: theme.spacing.lg, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
+  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(9, 9, 11, 0.7)' },
+  sheet: { width: '100%', maxWidth: 360, gap: theme.spacing.md, padding: theme.spacing.xl, backgroundColor: theme.colors.panel, borderWidth: 1, borderColor: theme.colors.border },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: theme.spacing.sm },
 }));

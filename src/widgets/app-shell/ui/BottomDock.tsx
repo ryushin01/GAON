@@ -30,9 +30,9 @@ export function BottomDock() {
 const styles = StyleSheet.create((theme, rt) => ({
   tabs: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.bg,
+    backgroundColor: theme.colors.panel,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.rule,
+    borderTopColor: theme.colors.border,
     paddingBottom: rt.insets.bottom,
   },
 }));

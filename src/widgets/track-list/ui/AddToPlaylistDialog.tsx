@@ -81,7 +81,7 @@ export function AddToPlaylistDialog({ visible, trackIds, onClose }: Props) {
 
 const styles = StyleSheet.create((theme) => ({
   backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg, backgroundColor: 'rgba(10, 10, 10, 0.55)' },
-  sheet: { width: '100%', maxWidth: 420, maxHeight: '85%', gap: theme.spacing.md, padding: theme.spacing.lg, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
+  sheet: { width: '100%', maxWidth: 420, maxHeight: '85%', gap: theme.spacing.md, padding: theme.spacing.lg, backgroundColor: theme.colors.panel, borderWidth: 1, borderColor: theme.colors.border },
   header: { flexDirection: 'row', alignItems: 'center' },
   flex: { flex: 1 },
   list: { flexGrow: 0 },

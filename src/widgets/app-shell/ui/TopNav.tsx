@@ -3,34 +3,67 @@ import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { DISPLAY_FONT } from '@/shared/config';
-import { useNavSlot } from '@/shared/ui';
+import { useCurrentTrack, usePlayerStore } from '@/features/player';
+import { MONO_FONT } from '@/shared/config';
+import { StatusDot, useNavSlot } from '@/shared/ui';
 
 import { NavLink } from './NavLink';
 import { isActive, NAV_ITEMS } from '../config/nav';
 
-/** 넓은 화면의 상단 메뉴입니다. 로고와 메뉴를 가운데에 모아 본문을 가리지 않습니다. */
-export function TopNav({ overlay = false }: { overlay?: boolean }) {
+/** 넓은 화면의 상단 관제 막대입니다. 왼쪽에 로고와 메뉴, 오른쪽에 재생 상태를 둡니다. */
+export function TopNav() {
   const pathname = usePathname();
   const slot: ReactNode = useNavSlot((s) => s.node);
   const booting = useNavSlot((s) => s.booting) && pathname === '/';
+  const track = useCurrentTrack();
+  const playing = usePlayerStore((s) => s.playing);
   return (
-    <View role="navigation" aria-label="주요 메뉴" style={[styles.root, overlay && styles.overlay]}>
-      <Text style={styles.logo}>GAON</Text>
-      {booting && <Text style={styles.booting}>재생 준비 중</Text>}
-      {!booting && NAV_ITEMS.map((item) => (
-        <NavLink key={item.name} label={item.label} active={isActive(pathname, item.href)} onPress={() => router.navigate(item.href)} />
-      ))}
-      {!booting && <NavLink label="설정" active={pathname.startsWith('/settings')} onPress={() => router.navigate('/settings')} />}
-      {!booting && slot}
+    <View role="banner" style={styles.root}>
+      <View role="navigation" aria-label="주요 메뉴" style={styles.left}>
+        <View style={styles.logo}>
+          <View aria-hidden style={styles.logoMark} />
+          <Text style={styles.logoText}>GAON</Text>
+        </View>
+        <View aria-hidden style={styles.divider} />
+        {booting && <Text style={styles.status}>{'> 재생 준비 중'}</Text>}
+        {!booting && NAV_ITEMS.map((item) => (
+          <NavLink key={item.name} label={item.label} active={isActive(pathname, item.href)} onPress={() => router.navigate(item.href)} />
+        ))}
+        {!booting && <NavLink label="설정" active={pathname.startsWith('/settings')} onPress={() => router.navigate('/settings')} />}
+      </View>
+      <View style={styles.right}>
+        {!booting && slot}
+        <View aria-hidden style={styles.divider} />
+        <View style={styles.state}>
+          <StatusDot tone={playing ? 'live' : track ? 'signal' : 'idle'} />
+          <Text style={[styles.status, playing && styles.live]}>{playing ? '재생 중' : track ? '일시정지' : '대기'}</Text>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
-  root: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.md, minHeight: 56, paddingTop: rt.insets.top, backgroundColor: theme.colors.bg },
-  // 홈에서는 디스크 위에 떠 있습니다. 가운데만 차지해 왼쪽 정보표를 가리지 않고, 아래로 스크롤한 내용 위에서도 읽히게 바탕을 깝니다.
-  overlay: { position: 'absolute', top: 0, alignSelf: 'center', zIndex: 20, paddingHorizontal: theme.spacing.lg },
-  booting: { color: theme.colors.text, fontSize: 14, fontWeight: '500', letterSpacing: -0.2 },
-  logo: { color: theme.colors.text, fontFamily: DISPLAY_FONT, fontSize: 22, letterSpacing: -0.4, marginRight: theme.spacing.md },
+  root: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+    minHeight: 52,
+    paddingTop: rt.insets.top,
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.panel,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    zIndex: 20,
+  },
+  left: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, flexShrink: 1 },
+  right: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  logo: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingRight: theme.spacing.sm },
+  logoMark: { width: 8, height: 8, backgroundColor: theme.colors.text },
+  logoText: { color: theme.colors.text, fontFamily: MONO_FONT, fontSize: 13, fontWeight: '700', letterSpacing: 3 },
+  divider: { width: 1, height: 16, backgroundColor: theme.colors.border, marginHorizontal: theme.spacing.xs },
+  state: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  status: { color: theme.colors.textMuted, fontFamily: MONO_FONT, fontSize: 12, letterSpacing: 1.2 },
+  live: { color: theme.colors.live },
 }));

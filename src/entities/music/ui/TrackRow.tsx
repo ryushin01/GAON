@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { MONO_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AlbumArt, AppText, Icon, VisuallyHidden } from '@/shared/ui';
 
 import { artistLine, displayTitle } from '../model/format';
@@ -35,7 +35,7 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
       {leading}
       {rank != null && (
         <View style={styles.rankBox}>
-          <AppText variant="heading" style={styles.rank}>{rank}</AppText>
+          <AppText style={styles.rank}>{rank}</AppText>
           <RankChange change={track.rankChange} isNew={track.isNew} />
         </View>
       )}
@@ -63,11 +63,11 @@ export function TrackRow({ track, rank, active = false, onPress, leading, traili
 }
 
 const styles = StyleSheet.create((theme) => ({
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, marginHorizontal: theme.spacing.lg, gap: theme.spacing.xs, borderBottomWidth: 1, borderBottomColor: theme.colors.rule },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 72, marginHorizontal: theme.spacing.lg, gap: theme.spacing.xs, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   rowActive: { backgroundColor: theme.colors.primaryMuted },
   rankBox: { width: { xs: 34, md: 44 }, alignItems: 'center' },
   // 좁은 칸에서도 세 자리 순위가 넘치지 않게 합니다.
-  rank: { textAlign: 'center', fontSize: { xs: 20, md: 24 } },
+  rank: { textAlign: 'center', color: theme.colors.text, fontFamily: MONO_FONT, fontSize: { xs: 15, md: 17 }, lineHeight: 22, fontWeight: '700', fontVariant: ['tabular-nums'] },
   main: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: { xs: theme.spacing.sm, md: theme.spacing.md }, paddingVertical: theme.spacing.sm, paddingHorizontal: { xs: 0, md: theme.spacing.xs } },
   text: { flex: 1, minWidth: 0, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },

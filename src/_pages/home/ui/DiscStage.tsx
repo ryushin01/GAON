@@ -16,9 +16,9 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
-import { DISPLAY_FONT, SERIF_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { MONO_FONT, SANS_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatCount, markFirstImage, useFirstImage } from '@/shared/lib';
-import { AppText, Disc, Icon, MetaRow, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
+import { AppText, Disc, Icon, MetaRow, Panel, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 
 import { nearby, withNearby } from '../lib/loadedDiscs';
 import { snapIndex, wheelPixels } from '../lib/wheel';
@@ -276,15 +276,20 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     return () => setNavNode(null);
   }, [active, setNavNode, toggle, wide]);
 
+  const rankNo = track.rank ?? position + 1;
   const info = (
     <View aria-live="polite" style={wide ? styles.infoWide : styles.info}>
       <Animated.View key={track.id} entering={enter}>
+        <View aria-hidden style={styles.eyebrow}>
+          <AppText variant="label" tone="muted">{`TOP ${String(rankNo).padStart(2, '0')} / ${String(tracks.length).padStart(2, '0')}`}</AppText>
+          <AppText variant="label" tone="signal">{formatQualityShort(track.format)}</AppText>
+        </View>
         <Pressable role="link" onPress={() => onOpen(track)}>
           <Text role="heading" aria-level={2} numberOfLines={2} style={styles.title}>{title}</Text>
         </Pressable>
         <MetaRow label="가수">{track.artists.join(', ')}</MetaRow>
         <MetaRow label="발매">{track.released?.slice(0, 4) ?? '-'}</MetaRow>
-        <MetaRow label="순위">{`${track.rank ?? position + 1}위`}</MetaRow>
+        <MetaRow label="순위">{`${rankNo}위`}</MetaRow>
         {names.length > 0 && (
           <MetaRow label="참여">
             <AppText numberOfLines={wide ? 4 : 1} style={styles.credits}>{names.join(wide ? '\n' : ', ')}</AppText>
@@ -298,8 +303,10 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
     <View style={wide ? styles.quotesWide : styles.quotes}>
       {quotes.map((quote) => (
         <Animated.View key={`${track.id}-${quote.stat}`} entering={enter} style={styles.quote}>
-          <AppText variant="caption" style={styles.center}>{quote.stat}</AppText>
-          <AppText variant="label" style={styles.quoteSource}>{quote.source}</AppText>
+          <View style={styles.quoteHead}>
+            <AppText variant="label" tone="signal">{quote.stat}</AppText>
+            <AppText variant="label" tone="muted">{`// ${quote.source}`}</AppText>
+          </View>
           <Text numberOfLines={2} style={styles.quoteText}>“{quote.text}”</Text>
         </Animated.View>
       ))}
@@ -309,6 +316,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
   // 디스크를 하나씩 넘기지 않고 아래의 최신 앨범과 TOP 100으로 바로 갑니다.
   const skip = onMore && (
     <Pressable role="button" onPress={onMore} style={styles.skip}>
+      <Text aria-hidden style={styles.skipLabel}>{'>'}</Text>
       <Text style={styles.skipLabel}>건너뛰기</Text>
       <VisuallyHidden> 최신 앨범과 TOP 100으로</VisuallyHidden>
       <Icon aria-hidden name="arrow-down" size={14} color={theme.colors.text} />
@@ -358,7 +366,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
       {discs}
       <View style={styles.leftWide}>
         {header}
-        {info}
+        <Panel style={styles.infoPanel}>{info}</Panel>
       </View>
       {skip && <View style={styles.skipWide}>{skip}</View>}
       {quoteRow}
@@ -401,20 +409,21 @@ const styles = StyleSheet.create((theme) => ({
   hitRow: { width: '100%' },
   hit: { position: 'absolute', top: 0, bottom: 0 },
   hitRound: { borderRadius: 9999 },
-  leftWide: { position: 'absolute', top: 0, left: 0, width: 312 },
+  leftWide: { position: 'absolute', top: theme.spacing.lg, left: theme.spacing.lg, width: 336 },
+  infoPanel: { paddingVertical: theme.spacing.lg, paddingHorizontal: theme.spacing.md },
   info: { paddingHorizontal: theme.spacing.lg },
   infoWide: { paddingHorizontal: theme.spacing.sm },
-  title: { fontFamily: DISPLAY_FONT, fontWeight: '400', color: theme.colors.text, textTransform: 'uppercase', fontSize: { xs: 30, md: 38 }, lineHeight: { xs: 38, md: 46 }, letterSpacing: { xs: -0.8, md: -1.4 }, paddingBottom: theme.spacing.xs },
+  eyebrow: { flexDirection: 'row', justifyContent: 'space-between', gap: theme.spacing.sm, paddingBottom: theme.spacing.xs },
+  title: { fontFamily: SANS_FONT, fontWeight: '300', color: theme.colors.text, fontSize: { xs: 30, md: 40 }, lineHeight: { xs: 36, md: 46 }, letterSpacing: { xs: -1.2, md: -2 }, paddingBottom: theme.spacing.sm },
   credits: { textAlign: 'right' },
-  center: { textAlign: 'center' },
   quotes: { alignItems: 'center', paddingHorizontal: theme.spacing.lg },
   quotesWide: { position: 'absolute', left: 0, right: 0, bottom: theme.spacing.xl, flexDirection: 'row', justifyContent: 'center', gap: 56, pointerEvents: 'none' },
-  quote: { width: 300, maxWidth: '100%', alignItems: 'center', gap: 2 },
-  quoteSource: { textAlign: 'center', fontSize: 11 },
-  quoteText: { fontFamily: SERIF_FONT, fontWeight: '400', color: theme.colors.text, textAlign: 'center', fontSize: 22, lineHeight: 27, letterSpacing: -0.6 },
+  quote: { width: 300, maxWidth: '100%', gap: 4, paddingLeft: theme.spacing.md, borderLeftWidth: 1, borderLeftColor: theme.colors.border },
+  quoteHead: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  quoteText: { fontFamily: SANS_FONT, fontWeight: '300', color: theme.colors.text, fontSize: 19, lineHeight: 26, letterSpacing: -0.6 },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.sm },
-  skip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.sm },
-  skipWide: { position: 'absolute', right: theme.spacing.sm, bottom: 112 },
-  skipLabel: { color: theme.colors.text, fontSize: 14, fontWeight: '500', letterSpacing: -0.2, textDecorationLine: 'underline' },
-  toggleLabel: { color: theme.colors.text, fontSize: 14, fontWeight: '500', letterSpacing: -0.2 },
+  skip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.rule, backgroundColor: theme.colors.panel },
+  skipWide: { position: 'absolute', right: theme.spacing.lg, bottom: 112 },
+  skipLabel: { color: theme.colors.text, fontFamily: MONO_FONT, fontSize: 12, fontWeight: '700', letterSpacing: 0.6 },
+  toggleLabel: { color: theme.colors.text, fontFamily: MONO_FONT, fontSize: 12, fontWeight: '500', letterSpacing: 1.2 },
 }));

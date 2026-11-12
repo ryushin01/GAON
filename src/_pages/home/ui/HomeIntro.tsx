@@ -4,7 +4,7 @@ import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDe
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { DISPLAY_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { MONO_FONT, SANS_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AppText, Disc } from '@/shared/ui';
 
 type Props = {
@@ -15,6 +15,13 @@ type Props = {
 };
 
 const TICK_MS = 28;
+/** 진행률에 따라 한 줄씩 늘어나는 준비 기록입니다. */
+const BOOT_LOG: [number, string][] = [
+  [0, '> 카탈로그 서버에 연결하는 중...'],
+  [24, '> Hi-Res FLAC 목록을 받는 중...'],
+  [52, '> 디스크 라벨을 맞추는 중...'],
+  [80, '> 출력 장치를 확인하는 중... OK'],
+];
 const EASE = Easing.bezier(0.625, 0.05, 0, 1);
 const FIRST_YEAR = 2016;
 
@@ -66,13 +73,19 @@ export function HomeIntro({ uri, ready, onDone }: Props) {
       {/* 넓은 화면은 상단 메뉴 자리에 같은 내용을 보여 줍니다. */}
       {width < WIDE_LAYOUT_MIN_WIDTH && (
         <View style={styles.top}>
-          <AppText variant="heading">GAON</AppText>
-          <AppText variant="caption">재생 준비 중</AppText>
+          <AppText variant="label">GAON</AppText>
+          <AppText variant="label" tone="muted">재생 준비 중</AppText>
         </View>
       )}
-      <AppText variant="caption" style={styles.left}>GAON</AppText>
-      <AppText variant="caption" style={styles.right}>{year}</AppText>
-      <AppText style={[styles.count, { left: Math.max(16, width / 2 - size / 2 - 180) }]}>{count}</AppText>
+      <AppText variant="label" tone="muted" style={styles.left}>GAON / BOOT</AppText>
+      <AppText variant="label" tone="muted" style={styles.right}>{year}</AppText>
+      <AppText style={[styles.count, { left: Math.max(16, width / 2 - size / 2 - 180) }]}>{String(count).padStart(3, '0')}</AppText>
+      <View style={styles.log}>
+        {BOOT_LOG.filter(([at]) => count >= at).map(([at, line]) => (
+          <AppText key={at} variant="mono" tone="muted">{line}</AppText>
+        ))}
+        {count >= 100 && <AppText variant="mono" tone="signal">{'> 재생 준비 완료'}</AppText>}
+      </View>
       <Animated.View style={[{ width: size }, disc]}>
         <Disc uri={ready ? uri : undefined} size={size} tilted />
       </Animated.View>
@@ -91,10 +104,11 @@ const LOGO_HEIGHT = 92;
 const overlayBase = { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 30, alignItems: 'center', justifyContent: 'center' } as const;
 
 const styles = StyleSheet.create((theme) => ({
-  top: { position: 'absolute', top: theme.spacing.xs, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
-  left: { position: 'absolute', left: theme.spacing.sm, top: '50%' },
-  right: { position: 'absolute', right: theme.spacing.sm, top: '50%' },
-  count: { position: 'absolute', top: '46%', fontFamily: DISPLAY_FONT, fontSize: 72, lineHeight: 84, letterSpacing: -2, color: theme.colors.text },
+  top: { position: 'absolute', top: theme.spacing.md, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
+  left: { position: 'absolute', left: theme.spacing.lg, top: '50%' },
+  right: { position: 'absolute', right: theme.spacing.lg, top: '50%' },
+  count: { position: 'absolute', top: '44%', fontFamily: MONO_FONT, fontSize: 64, lineHeight: 76, letterSpacing: -2, color: theme.colors.text, fontVariant: ['tabular-nums'] },
+  log: { position: 'absolute', left: theme.spacing.lg, bottom: theme.spacing.lg, gap: 2, display: { xs: 'none', md: 'flex' } },
   logoMask: { position: 'absolute', bottom: 40, height: LOGO_HEIGHT, overflow: 'hidden' },
-  logo: { fontFamily: DISPLAY_FONT, fontSize: 76, lineHeight: LOGO_HEIGHT, letterSpacing: -2, color: theme.colors.text },
+  logo: { fontFamily: SANS_FONT, fontWeight: '200', fontSize: 76, lineHeight: LOGO_HEIGHT, letterSpacing: -4, color: theme.colors.text },
 }));

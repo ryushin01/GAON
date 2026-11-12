@@ -25,8 +25,8 @@ export function ChartPage() {
           showRank
           header={
             <View>
-              <ScreenHeader title="TOP 100" />
-              <AppText variant="caption" tone="muted" style={styles.note}>모든 순위와 변동은 데모용 가상 데이터입니다.</AppText>
+              <ScreenHeader eyebrow="GAON / CHART" title="TOP 100" />
+              <AppText variant="mono" tone="muted" style={styles.note}>모든 순위와 변동은 데모용 가상 데이터입니다.</AppText>
               <View style={styles.chips}>
                 <Rail>
                   {genres.map((g) => (

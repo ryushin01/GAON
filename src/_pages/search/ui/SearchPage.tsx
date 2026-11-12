@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { MONO_FONT } from '@/shared/config';
+
 import { useLocalTracks } from '@/entities/library';
 import { AlbumCard, matchesQuery, TrackRow, useCatalog } from '@/entities/music';
 import { playTracks, useCurrentTrack } from '@/features/player';
@@ -35,8 +37,9 @@ export function SearchPage() {
 
   return (
     <Screen>
-      <ScreenHeader title="검색" />
+      <ScreenHeader eyebrow="GAON / QUERY" title="검색" />
       <View style={styles.field}>
+        <AppText aria-hidden variant="mono" style={styles.prompt}>{'>'}</AppText>
         <TextInput
           role="searchbox"
           aria-label="곡, 앨범, 가수 검색"
@@ -56,7 +59,7 @@ export function SearchPage() {
       {nothing ? <StateView title="검색 결과가 없습니다" description="다른 검색어를 입력해 보세요." /> : null}
 
       {artists.length > 0 && (
-        <Section title="가수">
+        <Section eyebrow="ARTISTS" title="가수">
           <Rail>
             {artists.map((artist) => (
               <Pressable
@@ -73,7 +76,7 @@ export function SearchPage() {
         </Section>
       )}
       {albums.length > 0 && (
-        <Section title="앨범">
+        <Section eyebrow="ALBUMS" title="앨범">
           <Rail>
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} size={130} onPress={() => router.push(`/album/${album.id}`)} />
@@ -82,7 +85,7 @@ export function SearchPage() {
         </Section>
       )}
       {tracks.length > 0 && (
-        <Section title={`곡 ${tracks.length}개`}>
+        <Section eyebrow="TRACKS" title={`곡 ${tracks.length}개`}>
           {tracks.length > TRACK_LIMIT && <AppText variant="caption" tone="muted" style={styles.limit}>앞의 {TRACK_LIMIT}곡만 보여 줍니다. 검색어를 더 자세히 입력해 보세요.</AppText>}
           <View role="list">
             {tracks.slice(0, TRACK_LIMIT).map((track) => (
@@ -107,13 +110,15 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: theme.spacing.lg,
+    gap: theme.spacing.sm,
     paddingLeft: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.textMuted,
-    borderRadius: theme.radius.md,
+    borderColor: theme.colors.rule,
+    backgroundColor: theme.colors.panel,
   },
-  input: { flex: 1, minHeight: 44, fontSize: 16, color: theme.colors.text },
+  prompt: { color: theme.colors.signal, fontWeight: '700' },
+  input: { flex: 1, minHeight: 52, fontFamily: MONO_FONT, fontSize: 16, color: theme.colors.text },
   notice: { padding: theme.spacing.lg },
   limit: { paddingHorizontal: theme.spacing.lg },
-  artist: { minHeight: 44, minWidth: 120, justifyContent: 'center', padding: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface },
+  artist: { minHeight: 44, minWidth: 140, justifyContent: 'center', gap: 2, padding: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.panel },
 }));

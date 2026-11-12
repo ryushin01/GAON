@@ -34,7 +34,7 @@ function Playlists() {
   };
   return (
     <View style={styles.pane}>
-      <AppText variant="caption">새 플레이리스트 이름</AppText>
+      <AppText variant="label" tone="muted" aria-hidden>새 플레이리스트 이름</AppText>
       <View style={styles.form}>
         <TextInput
           aria-label="새 플레이리스트 이름"
@@ -88,7 +88,7 @@ export function LibraryPage() {
 
   const tabs = (
     <View>
-      <ScreenHeader title="보관함" trailing={<IconButton icon="settings-outline" label="설정" onPress={() => router.push('/settings')} />} />
+      <ScreenHeader eyebrow="GAON / ARCHIVE" title="보관함" trailing={<IconButton icon="settings-outline" label="설정" onPress={() => router.push('/settings')} />} />
       <View style={styles.tabs}>
         {TABS.map((t) => (
           <Chip key={t.id} label={t.label} selected={t.id === tab} onPress={() => setTab(t.id)} />
@@ -144,6 +144,6 @@ const styles = StyleSheet.create((theme) => ({
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md },
   pane: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
   form: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  input: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: theme.spacing.md, fontSize: 16, color: theme.colors.text, borderWidth: 1, borderColor: theme.colors.textMuted, borderRadius: theme.radius.md },
-  playlist: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, minHeight: 52 },
+  input: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: theme.spacing.md, fontSize: 16, color: theme.colors.text, borderWidth: 1, borderColor: theme.colors.rule, backgroundColor: theme.colors.panel },
+  playlist: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, minHeight: 52, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
 }));
