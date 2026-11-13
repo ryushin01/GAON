@@ -236,7 +236,7 @@ export function removeFromQueue(trackId: string) {
   if (at === index) syncLockScreen(nextQueue[nextIndex]);
 }
 
-export function stop() {
+function stop() {
   if (playlist) {
     playlist.pause();
     playlist.clear();

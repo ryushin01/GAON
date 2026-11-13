@@ -3,6 +3,7 @@
 ## 다음 버전
 
 - 버그: 잘린 보관함 Gist, 깨진 JSON, 카탈로그 형식, 동작 줄이기 훅 통일
+- 정리: 슬라이스 밖에서 쓰지 않는 공개 내보내기(재생 `previous`·`seekTo`·`stop`·`togglePlay`·`setExclusiveOutput`, 카탈로그 `fetchCatalog`·`toCatalog`, 가져오기·동기화·테마 함수 등)와 모듈 안에서만 쓰는 값의 내보내기 정리(knip 기준)
 
 ## [0.8.0](https://github.com/ryushin01/GAON/releases/tag/v0.8.0) - 2026-11-12
 

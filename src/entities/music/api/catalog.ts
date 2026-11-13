@@ -39,7 +39,7 @@ export function toCatalog(raw: RawCatalog, baseUrl: string = MEDIA_BASE_URL): Ca
   };
 }
 
-export async function fetchCatalog(): Promise<Catalog> {
+async function fetchCatalog(): Promise<Catalog> {
   const response = await fetch(`${MEDIA_BASE_URL}/catalog.json`);
   if (!response.ok) throw new Error(`카탈로그를 불러오지 못했습니다. (${response.status})`);
   const raw = (await response.json()) as Partial<RawCatalog> | null;

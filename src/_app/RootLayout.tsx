@@ -41,7 +41,7 @@ const PAGE_TITLES: [RegExp, string][] = [
   [/^\/settings/, '설정'],
 ];
 
-export function pageTitle(pathname: string): string {
+function pageTitle(pathname: string): string {
   const match = PAGE_TITLES.find(([pattern]) => pattern.test(pathname));
   return match ? `${match[1]} - GAON` : 'GAON';
 }
