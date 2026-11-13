@@ -21,6 +21,7 @@
 2. 앱의 설정 > 계정 > 소유자 로그인에 토큰을 넣습니다.
 3. 앱이 GitHub API로 토큰 주인을 확인합니다. `src/shared/config/env.ts`의 `OWNER_GITHUB_LOGIN`과 다르면 거절합니다.
 4. 보관함은 `gaon-library.json` 파일 하나를 담은 비공개 Gist에 저장합니다. 처음 저장할 때 만들어집니다.
+   - GitHub API는 1MB가 넘는 파일을 잘라서 보내므로, 잘렸으면 원본(`raw_url`)을 따로 받습니다. Gist는 사용자가 직접 고칠 수 있어, 내용이 JSON이 아니면 "보관함 파일 내용이 올바르지 않습니다"로 안내합니다(`src/shared/api/github.ts`).
 
 토큰은 iOS·Android에서는 기기의 암호화 저장소(`expo-secure-store`)에, 웹과 PC 앱에서는 브라우저 저장소에 남고, 로그아웃하면 지워집니다. 권한이 Gist뿐이라 토큰이 새어도 저장소에는 접근할 수 없지만, 공용 기기에서는 쓰지 않습니다.
 
