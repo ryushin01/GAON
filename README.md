@@ -120,3 +120,14 @@ src/
 | [로그인과 동기화](docs/auth.md) | Supabase와 카카오·Google·GitHub 로그인 설정, 동기화 규칙 |
 | [시퀀스 다이어그램](docs/sequence-diagrams.md) | 비트 퍼펙트 재생(PC 앱), 로그인과 보관함 동기화, 첫 화면과 스트리밍 |
 | [버전 기록](CHANGELOG.md) | 버전별 변경 내용 |
+
+## 출처
+
+| 자료 | 저작자 | 사용 허락 | 원본 |
+|---|---|---|---|
+| Diphylleia 글꼴 (CD 라벨) | The Diphylleia Project Authors(JAMO) | SIL OFL 1.1 | [JAMO-TYPEFACE/Diphylleia](https://github.com/JAMO-TYPEFACE/Diphylleia) |
+| Nanum Myeongjo(나눔명조) 글꼴 (CD 라벨) | NHN(네이버), 디자인 FONTRIX | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Myeongjo) |
+| Nanum Gothic Coding(나눔고딕코딩) 글꼴 (라틴 문자만 남겨 GaonMono로 이름을 바꿔 씀) | NHN(네이버), 디자인 산돌커뮤니케이션 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Gothic+Coding) |
+| Ionicons 아이콘 | Ionic | MIT | [ionic-team/ionicons](https://github.com/ionic-team/ionicons) (쓰는 아이콘만 남겨 GaonIcons로 씀) |
+
+음원과 앨범 아트는 코드로 합성했고, 가수·곡·가사·순위는 가상 데이터입니다.
