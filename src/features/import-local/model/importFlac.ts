@@ -47,7 +47,7 @@ export function toLocalTrack(name: string, info: ReturnType<typeof parseFlac>): 
   };
 }
 
-export async function importRefs(refs: LocalFileRef[]): Promise<ImportResult> {
+async function importRefs(refs: LocalFileRef[]): Promise<ImportResult> {
   const result: ImportResult = { added: 0, rejected: [] };
   const tracks: Track[] = [];
   const art: Record<string, string> = {};

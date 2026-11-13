@@ -1,5 +1,5 @@
 /** 지금 순위에서 이만큼 앞의 디스크까지 이미지를 미리 받습니다. */
-export const PRELOAD_AHEAD = 2;
+const PRELOAD_AHEAD = 2;
 
 /** 지금 순위의 바로 앞 한 장과 뒤 두 장입니다. 화면에 보이는 디스크입니다. */
 export function nearby(position: number, last: number) {

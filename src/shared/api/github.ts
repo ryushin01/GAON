@@ -3,7 +3,7 @@ const API = 'https://api.github.com';
 const FILE = 'gaon-library.json';
 const DESCRIPTION = 'GAON 보관함 (앱이 관리합니다)';
 
-export class GitHubError extends Error {
+class GitHubError extends Error {
   constructor(
     message: string,
     readonly status: number,

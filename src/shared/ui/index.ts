@@ -4,7 +4,6 @@ export { AppText } from './AppText';
 export { Checkbox } from './Checkbox';
 export { Chip } from './Chip';
 export { ConfirmDialog } from './ConfirmDialog';
-export { Cursor } from './Cursor';
 export { Disc } from './Disc';
 export { DotGrid } from './DotGrid';
 export { Icon } from './Icon';
