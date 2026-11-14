@@ -2,7 +2,7 @@
   "expo": {
     "name": "GAON",
     "slug": "gaon",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "scheme": "gaon",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -18,7 +18,7 @@
     "android": {
       "package": "com.ryushin01.gaon",
       "adaptiveIcon": {
-        "backgroundColor": "#0047AB",
+        "backgroundColor": "#0b0b0b",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -37,7 +37,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0047AB",
+          "backgroundColor": "#0b0b0b",
           "image": "./assets/splash-icon.png",
           "imageWidth": 160
         }
