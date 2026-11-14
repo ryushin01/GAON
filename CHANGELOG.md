@@ -1,7 +1,8 @@
 # 버전 기록
 
-## 다음 버전
+## 0.8.1
 
+- 앱 아이콘·스플래시·파비콘을 스펙트럼 원으로: 검은 바탕(#0b0b0b)에 빛처럼 퍼지는 흰 스펙트럼과 레코드 원. 원본 `assets/brand/spectrum.svg`와 바탕을 뺀 마크(`spectrum-mark.png`)로 `scripts/generate-icons.py`가 iOS·데스크톱 설치본 아이콘(`icon.png`), 안드로이드 적응형 전경·배경·단색(가운데 원판은 비움), 스플래시, 웹 파비콘을 만들도록 바꿈. 적응형 아이콘과 스플래시 바탕색도 코발트(#0047AB)에서 #0b0b0b로. 첫 화면 머리의 '■ GAON' 글자 로고는 메뉴의 네모 글머리와 짝이라 그대로
 - 버그: 잘린 보관함 Gist, 깨진 JSON, 카탈로그 형식, 동작 줄이기 훅 통일
 - 정리: 슬라이스 밖에서 쓰지 않는 공개 내보내기(재생 `previous`·`seekTo`·`stop`·`togglePlay`·`setExclusiveOutput`, 카탈로그 `fetchCatalog`·`toCatalog`, 가져오기·동기화·테마 함수 등)와 모듈 안에서만 쓰는 값의 내보내기 정리(knip 기준)
 
