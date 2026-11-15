@@ -90,6 +90,7 @@ pnpm web                                          # 또는 pnpm ios, pnpm androi
 | `pnpm lint:fsd` | Feature-Sliced Design 구조 검사 (Steiger) |
 | `pnpm test:e2e` | 프로덕션 웹 빌드의 화면·접근성 검사 (먼저 `build:web` 필요) |
 | `pnpm test:desktop` | 설치본 실행 검사 (`GAON_EXECUTABLE` 필요) |
+| `pnpm screenshots` | README 화면 다시 찍기 (가상 음원 생성과 `build:web` 뒤) |
 | `pnpm storybook` | Storybook (`http://localhost:6006`) |
 
 ## 프로젝트 구조
