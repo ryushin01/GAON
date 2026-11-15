@@ -1,0 +1,17 @@
+{
+  "outDir": "public/fonts",
+  "scan": ["src", "app"],
+  "dataExtensions": ["json"],
+  "extra": "년월일시분초오전후요화수목금토만억조",
+  "fonts": [
+    {
+      "family": "GaonSans",
+      "slug": "gaon-sans",
+      "weights": {
+        "300": "scripts/fonts/hahmlet/Hahmlet-300.woff2",
+        "500": "scripts/fonts/hahmlet/Hahmlet-500.woff2",
+        "700": "scripts/fonts/hahmlet/Hahmlet-700.woff2"
+      }
+    }
+  ]
+}

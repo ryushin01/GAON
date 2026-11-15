@@ -5,11 +5,12 @@ const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 const radius = { sm: 0, md: 0, lg: 0, pill: 999 } as const;
 
 /**
- * 기본 글꼴입니다. 관제 화면처럼 가늘고 반듯한 운영체제 산세리프를 씁니다.
- * 한글 웹 글꼴을 따로 받지 않아 첫 화면이 빠릅니다. 앱은 운영체제 기본 글꼴을 씁니다.
+ * 기본 글꼴입니다. 웹과 PC 앱은 영문·숫자 Lexend, 한글 함렛(줄인 파일 이름 GaonSans, pnpm fonts로 만듦)이고,
+ * RootLayout이 글꼴 CSS를 붙이기 전에는 운영체제 산세리프로 보입니다.
+ * 모바일 앱은 글꼴 하나로 한글과 영문을 섞어 쓸 수 없어 운영체제 기본 글꼴을 그대로 씁니다.
  */
 export const SANS_FONT = Platform.select({
-  web: 'system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Segoe UI", sans-serif',
+  web: '"Lexend", "GaonSans", system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Segoe UI", sans-serif',
   default: undefined,
 });
 

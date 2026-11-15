@@ -1,7 +1,7 @@
 # GAON - 고해상도 음악 스트리밍
 
 [![CI](https://github.com/ryushin01/GAON/actions/workflows/ci.yml/badge.svg)](https://github.com/ryushin01/GAON/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-0.8.1-0A0A0A)
+![version](https://img.shields.io/badge/version-0.9.0-0A0A0A)
 
 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. iOS, Android, Windows, macOS에 설치해 들을 수 있고, 기기에 있는 FLAC 파일도 가져와 재생합니다.
 
@@ -121,6 +121,16 @@ src/
 | [시퀀스 다이어그램](docs/sequence-diagrams.md) | 비트 퍼펙트 재생(PC 앱), 로그인과 보관함 동기화, 첫 화면과 스트리밍 |
 | [버전 기록](CHANGELOG.md) | 버전별 변경 내용 |
 
+## 웹 폰트
+
+| 글꼴 | 쓰는 곳 | 굵기 |
+|---|---|---|
+| Lexend | 웹·PC 앱 영문·숫자 (제목·본문) | 100~900 가변 |
+| 함렛 | 웹·PC 앱 한글 (제목·본문) | 300·500·700 |
+| 나눔고딕코딩(GaonMono) | 라벨·수치 (웹·PC·모바일) | 400 |
+
+저작자·라이선스·원본은 아래 출처 표에 있습니다. 모두 같은 사이트에서 제공합니다. 함렛은 화면에 쓰는 글자만 담은 작은 파일을 먼저 받고 나머지 글자는 글자 묶음별 조각으로 나눠 그 글자를 쓸 때만 받습니다(`pnpm fonts`). 모바일 앱은 글꼴 하나로 한글과 영문을 섞어 쓸 수 없어 운영체제 기본 글꼴을 씁니다.
+
 ## 출처
 
 | 자료 | 저작자 | 사용 허락 | 원본 |
@@ -128,6 +138,8 @@ src/
 | Diphylleia 글꼴 (CD 라벨) | The Diphylleia Project Authors(JAMO) | SIL OFL 1.1 | [JAMO-TYPEFACE/Diphylleia](https://github.com/JAMO-TYPEFACE/Diphylleia) |
 | Nanum Myeongjo(나눔명조) 글꼴 (CD 라벨) | NHN(네이버), 디자인 FONTRIX | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Myeongjo) |
 | Nanum Gothic Coding(나눔고딕코딩) 글꼴 (라틴 문자만 남겨 GaonMono로 이름을 바꿔 씀) | NHN(네이버), 디자인 산돌커뮤니케이션 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Gothic+Coding) |
+| Lexend 글꼴 (웹·PC 앱 영문·숫자) | Bonnie Shaver-Troup, Thomas Jockin 외 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Lexend) |
+| 함렛(Hahmlet) 글꼴 (웹·PC 앱 한글, 줄인 파일 이름 GaonSans) | The Hahmlet Project Authors(Hypertype) | SIL OFL 1.1 | [hyper-type/hahmlet](https://github.com/hyper-type/hahmlet) |
 | Ionicons 아이콘 | Ionic | MIT | [ionic-team/ionicons](https://github.com/ionic-team/ionicons) (쓰는 아이콘만 남겨 GaonIcons로 씀) |
 
 음원과 앨범 아트는 코드로 합성했고, 가수·곡·가사·순위는 가상 데이터입니다.
