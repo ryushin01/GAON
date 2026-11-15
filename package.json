@@ -1,6 +1,6 @@
 {
   "name": "gaon",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "private": true,
   "packageManager": "pnpm@12.16.1",
   "description": "고해상도 FLAC 전용 음악 스트리밍 앱",
@@ -25,7 +25,8 @@
     "build:storybook": "storybook build",
     "build:native": "node scripts/build-native.mjs",
     "test:native": "node scripts/verify-native-audio.mjs",
-    "test:native:smoke": "node scripts/smoke-native-audio.mjs"
+    "test:native:smoke": "node scripts/smoke-native-audio.mjs",
+    "fonts": "node scripts/build-fonts.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -77,11 +78,14 @@
     "electron-builder": "^26.18.0",
     "eslint": "^9.39.5",
     "eslint-config-expo": "^58.0.4",
+    "fontverter": "2.0.0",
+    "harfbuzzjs": "1.6.4",
     "jest": "^30.5.2",
     "jest-expo": "~58.0.14",
     "prettier": "^3.9.10",
     "steiger": "^0.9.0",
     "storybook": "^10.6.6",
+    "subset-font": "2.9.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.7"
   },

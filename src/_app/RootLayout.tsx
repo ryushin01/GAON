@@ -14,6 +14,7 @@ import { restoreLocalArt } from '@/features/import-local';
 import { startLibrarySync } from '@/features/sync-library';
 import { SkipLink, useLiveReducedMotion } from '@/shared/ui';
 
+import { attachFonts } from './attachFonts';
 import { FONT_SOURCES } from './fontSources';
 
 // 저장한 테마를 읽은 뒤에 첫 화면을 그립니다. 시스템 테마가 잠깐 보이지 않게 합니다.
@@ -65,6 +66,24 @@ export function RootLayout() {
     document.body.style.backgroundColor = theme.colors.bg;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.colors.bg);
   }, [rt.themeName, theme.colors.bg]);
+
+  // 웹·PC 앱: 영문 Lexend와 한글 함렛(화면 글자 파일)을 바로 붙이고, 나머지 한글 조각은 페이지를 다 받은 뒤 붙입니다.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const add = (href: string) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      document.head.append(link);
+      return link;
+    };
+    const links = [add('/fonts/lexend.css'), add('/fonts/gaon-sans.css')];
+    const cancel = attachFonts('/fonts/gaon-sans-rest.css');
+    return () => {
+      cancel();
+      links.forEach((link) => link.remove());
+    };
+  }, []);
 
   // 글꼴을 기다리지 않고 먼저 그린 뒤, 받으면 바꿉니다. 받지 못해도 대체 글꼴로 보입니다.
   useEffect(() => {
