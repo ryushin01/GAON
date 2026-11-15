@@ -87,7 +87,9 @@ export function RootLayout() {
 
   // 글꼴을 기다리지 않고 먼저 그린 뒤, 받으면 바꿉니다. 받지 못해도 대체 글꼴로 보입니다.
   useEffect(() => {
-    const fonts = Object.fromEntries(Object.entries(FONT_SOURCES).map(([name, uri]) => [name, { uri, display: Font.FontDisplay.SWAP }]));
+    // 웹·PC 앱은 LINE Seed(모바일 전용, 굵기마다 약 3.4MB)를 받지 않습니다.
+    const sources = Object.entries(FONT_SOURCES).filter(([name]) => Platform.OS !== 'web' || !name.startsWith('GaonSans-'));
+    const fonts = Object.fromEntries(sources.map(([name, uri]) => [name, { uri, display: Font.FontDisplay.SWAP }]));
     Font.loadAsync(fonts).catch(() => undefined);
   }, []);
 

@@ -7,12 +7,26 @@ const radius = { sm: 0, md: 0, lg: 0, pill: 999 } as const;
 /**
  * 기본 글꼴입니다. 웹과 PC 앱은 영문·숫자 Lexend, 한글 함렛(줄인 파일 이름 GaonSans, pnpm fonts로 만듦)이고,
  * RootLayout이 글꼴 CSS를 붙이기 전에는 운영체제 산세리프로 보입니다.
- * 모바일 앱은 글꼴 하나로 한글과 영문을 섞어 쓸 수 없어 운영체제 기본 글꼴을 그대로 씁니다.
+ * 모바일 앱은 글꼴 하나로 한글과 영문을 함께 그려야 해서 영문이 들어 있는 LINE Seed를 씁니다(sansFont).
  */
 export const SANS_FONT = Platform.select({
   web: '"Lexend", "GaonSans", system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Segoe UI", sans-serif',
   default: undefined,
 });
+
+type Weight = '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800';
+
+/**
+ * 기본 글꼴과 굵기를 함께 정합니다. 웹·PC는 글꼴 목록에 굵기를 그대로 주고,
+ * 모바일 앱은 굵기마다 따로 넣은 LINE Seed 파일을 고릅니다(fontWeight를 함께 주면 Android에서 이중으로 굵어짐).
+ * thin은 큰 제목처럼 가늘게 보여야 할 때만 Thin 파일을 쓰게 합니다(본문의 300은 Regular).
+ */
+export function sansFont(weight: Weight = '400', thin = false) {
+  if (Platform.OS === 'web') return { fontFamily: SANS_FONT, fontWeight: weight };
+  const value = Number(weight);
+  const fontFamily = value >= 600 ? 'GaonSans-Bold' : thin || value <= 200 ? 'GaonSans-Thin' : 'GaonSans-Regular';
+  return { fontFamily };
+}
 
 /** 라벨, 수치, 명령줄에 쓰는 고정폭 글꼴(Nanum Gothic Coding)입니다. */
 export const MONO_FONT = Platform.select({
