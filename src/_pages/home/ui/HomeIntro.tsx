@@ -4,7 +4,7 @@ import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withDe
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { MONO_FONT, SANS_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { MONO_FONT, sansFont, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AppText, Disc } from '@/shared/ui';
 
 type Props = {
@@ -110,5 +110,5 @@ const styles = StyleSheet.create((theme) => ({
   count: { position: 'absolute', top: '44%', fontFamily: MONO_FONT, fontSize: 64, lineHeight: 76, letterSpacing: -2, color: theme.colors.text, fontVariant: ['tabular-nums'] },
   log: { position: 'absolute', left: theme.spacing.lg, bottom: theme.spacing.lg, gap: 2, display: { xs: 'none', md: 'flex' } },
   logoMask: { position: 'absolute', bottom: 40, height: LOGO_HEIGHT, overflow: 'hidden' },
-  logo: { fontFamily: SANS_FONT, fontWeight: '200', fontSize: 76, lineHeight: LOGO_HEIGHT, letterSpacing: -4, color: theme.colors.text },
+  logo: { ...sansFont('200'), fontSize: 76, lineHeight: LOGO_HEIGHT, letterSpacing: -4, color: theme.colors.text },
 }));

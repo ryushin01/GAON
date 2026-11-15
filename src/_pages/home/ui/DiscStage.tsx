@@ -16,7 +16,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import { displayTitle, formatQualityShort, type Track } from '@/entities/music';
-import { MONO_FONT, SANS_FONT, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
+import { MONO_FONT, sansFont, WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { formatCount, markFirstImage, useFirstImage } from '@/shared/lib';
 import { AppText, Disc, Icon, MetaRow, Panel, useLiveReducedMotion, useNavSlot, VisuallyHidden } from '@/shared/ui';
 
@@ -414,13 +414,13 @@ const styles = StyleSheet.create((theme) => ({
   info: { paddingHorizontal: theme.spacing.lg },
   infoWide: { paddingHorizontal: theme.spacing.sm },
   eyebrow: { flexDirection: 'row', justifyContent: 'space-between', gap: theme.spacing.sm, paddingBottom: theme.spacing.xs },
-  title: { fontFamily: SANS_FONT, fontWeight: '300', color: theme.colors.text, fontSize: { xs: 30, md: 40 }, lineHeight: { xs: 36, md: 46 }, letterSpacing: { xs: -1.2, md: -2 }, paddingBottom: theme.spacing.sm },
+  title: { ...sansFont('300', true), color: theme.colors.text, fontSize: { xs: 30, md: 40 }, lineHeight: { xs: 36, md: 46 }, letterSpacing: { xs: -1.2, md: -2 }, paddingBottom: theme.spacing.sm },
   credits: { textAlign: 'right' },
   quotes: { alignItems: 'center', paddingHorizontal: theme.spacing.lg },
   quotesWide: { position: 'absolute', left: 0, right: 0, bottom: theme.spacing.xl, flexDirection: 'row', justifyContent: 'center', gap: 56, pointerEvents: 'none' },
   quote: { width: 300, maxWidth: '100%', gap: 4, paddingLeft: theme.spacing.md, borderLeftWidth: 1, borderLeftColor: theme.colors.border },
   quoteHead: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
-  quoteText: { fontFamily: SANS_FONT, fontWeight: '300', color: theme.colors.text, fontSize: 19, lineHeight: 26, letterSpacing: -0.6 },
+  quoteText: { ...sansFont('300'), color: theme.colors.text, fontSize: 19, lineHeight: 26, letterSpacing: -0.6 },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.sm },
   skip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.rule, backgroundColor: theme.colors.panel },
   skipWide: { position: 'absolute', right: theme.spacing.lg, bottom: 112 },

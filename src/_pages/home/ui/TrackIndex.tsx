@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { displayTitle, type Track } from '@/entities/music';
-import { MONO_FONT, SANS_FONT } from '@/shared/config';
+import { MONO_FONT, sansFont } from '@/shared/config';
 import { Corners } from '@/shared/ui';
 
 type Props = { tracks: Track[]; current: number; wide: boolean; onSelect: (index: number) => void; onClose: () => void };
@@ -40,7 +40,7 @@ const styles = StyleSheet.create((theme) => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, minHeight: 44, paddingHorizontal: theme.spacing.sm, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   rowSelected: { backgroundColor: theme.colors.primary },
   rank: { color: theme.colors.textMuted, fontFamily: MONO_FONT, fontSize: 12, letterSpacing: 0.6 },
-  title: { flex: 1, color: theme.colors.text, fontFamily: SANS_FONT, fontSize: 15, letterSpacing: -0.3 },
+  title: { flex: 1, color: theme.colors.text, ...sansFont(), fontSize: 15, letterSpacing: -0.3 },
   year: { color: theme.colors.textMuted, fontFamily: MONO_FONT, fontSize: 12 },
   textSelected: { color: theme.colors.onPrimary },
 }));
