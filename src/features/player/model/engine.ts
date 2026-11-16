@@ -203,15 +203,18 @@ async function load(ticket: number, { queue, index, base, shuffledWith }: Start)
   }
 }
 
+/** 지금의 셔플 설정으로 곡 목록의 큐를 만듭니다. */
+function buildStart(tracks: Track[], startId?: string): Start {
+  const { shuffle } = usePlayerStore.getState();
+  const first = tracks.find((t) => t.id === startId) ?? (shuffle ? shuffled(tracks)[0] : tracks[0]);
+  const queue = shuffle ? [first, ...shuffled(tracks.filter((t) => t.id !== first.id))] : tracks;
+  return { queue, index: queue.indexOf(first), base: tracks, shuffledWith: shuffle };
+}
+
 /** 곡 목록을 큐로 만들고 지정한 곡부터 재생합니다. */
 export function playTracks(tracks: Track[], startId?: string): Promise<void> {
   if (!tracks.length) return Promise.resolve();
-  return requestStart(() => {
-    const { shuffle } = usePlayerStore.getState();
-    const first = tracks.find((t) => t.id === startId) ?? (shuffle ? shuffled(tracks)[0] : tracks[0]);
-    const queue = shuffle ? [first, ...shuffled(tracks.filter((t) => t.id !== first.id))] : tracks;
-    return { queue, index: queue.indexOf(first), base: tracks, shuffledWith: shuffle };
-  });
+  return requestStart(() => buildStart(tracks, startId));
 }
 
 /** 앱을 다시 켜 복원한 큐를 그대로 재생기에 올립니다. targetId가 있으면 그 곡부터 재생합니다. */
@@ -350,15 +353,24 @@ export function toggleShuffle(): Promise<void> {
 
 /** 큐 끝에 곡을 더합니다. 재생 중인 곡이 없으면 바로 재생합니다. */
 export function addToQueue(tracks: Track[]): Promise<void> {
+  if (!tracks.length) return Promise.resolve();
   if (!usePlayerStore.getState().queue.length && !pendingStarts) return playTracks(tracks);
   const stopTicket = stops;
+  const requestTicket = request;
   return serial(async () => {
     // 그사이 재생을 멈췄으면 더하지 않습니다.
     if (stops !== stopTicket) return;
     const { queue } = usePlayerStore.getState();
     if (!queue.length) {
-      // 앞서 올리던 큐가 실패해 큐가 비었으면 새로 재생합니다.
-      void playTracks(tracks);
+      // 앞서 올리던 큐가 실패해 큐가 비었습니다. 더 나중에 고른 곡이 줄을 서 있으면 그 곡이 이기게 두고,
+      // 아니면 더하려던 곡으로 새로 재생합니다. 이 작업 안에서 바로 올려, 나중 요청보다 앞서지 않게 합니다.
+      if (request !== requestTicket) return;
+      pendingStarts += 1;
+      try {
+        await load(++request, buildStart(tracks));
+      } finally {
+        pendingStarts -= 1;
+      }
       return;
     }
     const fresh = tracks.filter((t) => !queue.some((q) => q.id === t.id));
@@ -378,30 +390,41 @@ export function addToQueue(tracks: Track[]): Promise<void> {
   });
 }
 
-/** 큐에서 곡을 뺍니다. 마지막 곡을 빼면 재생을 멈춥니다. */
+/** 재생 목록에서 고른 곡을 뺍니다. 그사이 새 큐가 올라왔거나 멈췄으면, 옛 큐에서 고른 곡을 새 큐에서 빼지 않습니다. */
 export function removeFromQueue(trackId: string): Promise<void> {
   const loadTicket = loads;
   return serial(() => {
-    // 그사이 새 큐가 올라왔거나 멈췄으면, 옛 큐에서 고른 곡을 새 큐에서 빼지 않습니다.
-    if (loads !== loadTicket) return;
-    const { queue, index } = usePlayerStore.getState();
-    const at = queue.findIndex((t) => t.id === trackId);
-    if (at < 0) return;
-    if (queue.length === 1) {
-      stop();
-      return;
-    }
-    if (playlist) {
-      rebuilding = true;
-      playlist.remove(at);
-      rebuilding = false;
-    }
-    baseQueue = baseQueue.filter((t) => t.id !== trackId);
-    const nextQueue = queue.filter((t) => t.id !== trackId);
-    const nextIndex = at < index ? index - 1 : Math.min(index, nextQueue.length - 1);
-    usePlayerStore.setState({ queue: nextQueue, index: nextIndex });
-    if (at === index) syncLockScreen(nextQueue[nextIndex]);
+    if (loads === loadTicket) removeNow(trackId);
   });
+}
+
+/**
+ * 곡을 어느 큐에 있든 뺍니다. 보관함에서 지운 곡처럼 다시 재생할 수 없는 곡에 씁니다.
+ * 앞서 줄을 선 큐 올리기가 끝난 뒤에 빼므로, 끝나기를 기다린 뒤 파일을 지웁니다.
+ */
+export function forgetTrack(trackId: string): Promise<void> {
+  return serial(() => removeNow(trackId));
+}
+
+/** 마지막 곡을 빼면 재생을 멈춥니다. */
+function removeNow(trackId: string) {
+  const { queue, index } = usePlayerStore.getState();
+  const at = queue.findIndex((t) => t.id === trackId);
+  if (at < 0) return;
+  if (queue.length === 1) {
+    stop();
+    return;
+  }
+  if (playlist) {
+    rebuilding = true;
+    playlist.remove(at);
+    rebuilding = false;
+  }
+  baseQueue = baseQueue.filter((t) => t.id !== trackId);
+  const nextQueue = queue.filter((t) => t.id !== trackId);
+  const nextIndex = at < index ? index - 1 : Math.min(index, nextQueue.length - 1);
+  usePlayerStore.setState({ queue: nextQueue, index: nextIndex });
+  if (at === index) syncLockScreen(nextQueue[nextIndex]);
 }
 
 function stop() {

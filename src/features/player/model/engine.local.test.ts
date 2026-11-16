@@ -1,6 +1,6 @@
 import type { Track } from '@/entities/music';
 
-import { playTracks, setExclusiveOutput, togglePlay, toggleShuffle } from './engine';
+import { addToQueue, forgetTrack, playTracks, removeFromQueue, setExclusiveOutput, togglePlay, toggleShuffle } from './engine';
 import { usePlayerStore } from './playerStore';
 
 /** 내 FLAC 주소를 테스트가 정한 때에 돌려주거나 실패시킵니다. */
@@ -102,5 +102,29 @@ describe('내 FLAC 재생 요청', () => {
     // 새 큐가 올라간 뒤 지금 큐에 있는 내 FLAC(x)만 남기고 정리합니다.
     expect(mockRelease).toHaveBeenCalledWith(['x']);
     expect(usePlayerStore.getState().shuffle).toBe(true);
+  });
+
+  it('큐가 빈 채로 차례가 온 곡 더하기는 나중에 고른 곡을 막지 않습니다', async () => {
+    const loading = playTracks([track('x', 'local')]);
+    await settle();
+    const adding = addToQueue([track('b')]);
+    const picking = playTracks([track('c')]);
+    mockPending.get('x')?.resolve('blob:x');
+    await Promise.all([loading, adding, picking]);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['c']);
+    expect(mockList.items).toEqual(['https://m/c.flac']);
+  });
+
+  it('보관함에서 지운 곡은 그사이 새 큐가 올라와도 큐에서 뺍니다', async () => {
+    const loading = playTracks([track('a', 'local'), track('x', 'local')]);
+    await settle();
+    mockPending.get('a')?.resolve('blob:a');
+    // 목록에서 고른 빼기는 새 큐가 올라오면 버리지만, 보관함 삭제는 올라온 큐에서도 뺍니다.
+    const removing = removeFromQueue('a');
+    const forgetting = forgetTrack('a');
+    mockPending.get('x')?.resolve('blob:x');
+    await Promise.all([loading, removing, forgetting]);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['x']);
+    expect(mockList.remove).toHaveBeenCalledWith(0);
   });
 });
