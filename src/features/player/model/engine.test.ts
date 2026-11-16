@@ -108,6 +108,22 @@ describe('player engine 경쟁과 복원', () => {
     expect(usePlayerStore.getState().index).toBe(2);
     expect(mockList.clear).toHaveBeenCalledTimes(1);
   });
+
+  it('곡을 올리는 사이에 셔플을 켜도 새로 고른 곡을 재생하고, 올린 뒤 섞습니다', async () => {
+    await playTracks(tracks, 'a');
+    jest.clearAllMocks();
+    const picking = playTracks(tracks.slice(1), 'c');
+    await toggleShuffle();
+    await picking;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const state = usePlayerStore.getState();
+    expect(state.shuffle).toBe(true);
+    expect(state.queue[state.index].id).toBe('c');
+    expect(state.queue[0].id).toBe('c');
+    expect(state.queue.map((t) => t.id).sort()).toEqual(['b', 'c', 'd']);
+    expect(mockList.play).toHaveBeenCalled();
+    expect(mockList.items).toHaveLength(3);
+  });
 });
 
 describe('복원한 큐', () => {

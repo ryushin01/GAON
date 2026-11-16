@@ -87,4 +87,19 @@ describe('내 FLAC 재생 요청', () => {
     await toggleShuffle();
     expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['a', 'b', 'c']);
   });
+
+  it('재생기가 있을 때 내 FLAC을 올리는 사이에 셔플을 바꿔도 요청을 버리지 않고 주소를 정리합니다', async () => {
+    await playTracks([track('a')]);
+    jest.clearAllMocks();
+    const picking = playTracks([track('x', 'local'), track('b')]);
+    await toggleShuffle();
+    mockPending.get('x')?.resolve('blob:x');
+    await picking;
+    await settle();
+    expect(mockList.items).toContain('blob:x');
+    expect(mockList.play).toHaveBeenCalled();
+    // 새 큐가 올라간 뒤 지금 큐에 있는 내 FLAC(x)만 남기고 정리합니다.
+    expect(mockRelease).toHaveBeenCalledWith(['x']);
+    expect(usePlayerStore.getState().shuffle).toBe(true);
+  });
 });

@@ -25,8 +25,15 @@ let rebuilding = false;
 let request = 0;
 /** 재생을 멈출 때마다 늘어납니다. 멈춘 뒤에 끝난 큐 추가가 재생을 다시 시작하지 않게 합니다. */
 let stops = 0;
-/** 복원한 큐를 재생기에 올리는 중인지입니다. 그동안 큐를 바꾸면 바뀐 큐로 다시 올립니다. */
+/**
+ * 큐를 재생기에 올리는 중인지입니다. 그동안 복원한 큐를 바꾸면 바뀐 큐로 다시 올리고,
+ * 셔플을 바꾸면 올리기가 끝난 뒤에 적용합니다.
+ */
 let starting = false;
+/** 재생기의 큐가 바뀔 때마다 늘어납니다. 셔플 재배치가 그사이 바뀐 큐를 옛 순서로 덮지 않게 합니다. */
+let queueVersion = 0;
+/** 셔플 재배치가 겹치면 마지막 것만 반영합니다. */
+let reorderTicket = 0;
 
 const lockMetadata = (track: Track) => ({
   title: displayTitle(track),
@@ -132,8 +139,9 @@ const baseFor = (queue: Track[]) => (describes(baseQueue, queue) ? baseQueue : q
 /**
  * 만들어 둔 큐를 재생기에 올리고 index의 곡부터 재생합니다.
  * base는 셔플 전의 원래 순서이고, 올리기에 성공했을 때만 기억합니다.
+ * shuffledWith는 큐를 만들 때의 셔플 설정입니다. 올리는 사이에 셔플을 바꿨으면 올린 뒤 적용합니다.
  */
-async function startQueue(queue: Track[], index: number, base: Track[] = queue): Promise<void> {
+async function startQueue(queue: Track[], index: number, base: Track[], shuffledWith: boolean): Promise<void> {
   const ticket = ++request;
   const start = queue[index];
   starting = true;
@@ -154,10 +162,13 @@ async function startQueue(queue: Track[], index: number, base: Track[] = queue):
     if (index > 0) list.skipTo(index);
     rebuilding = false;
     usePlayerStore.setState({ queue, index, currentTime: 0, duration: start.durationSec, error: null });
+    queueVersion += 1;
     releaseUnused(queue);
     useLibraryStore.getState().addRecent(start.id);
     syncLockScreen(start);
     list.play();
+    const { shuffle } = usePlayerStore.getState();
+    if (shuffle !== shuffledWith) void applyShuffle(shuffle);
   } catch (error) {
     rebuilding = false;
     if (ticket !== request) {
@@ -177,7 +188,7 @@ async function startQueue(queue: Track[], index: number, base: Track[] = queue):
 function updateRestored(queue: Track[], index: number) {
   const track = queue[index];
   usePlayerStore.setState({ queue, index, ...(track ? { currentTime: 0, duration: track.durationSec } : null) });
-  if (starting && track) void startQueue(queue, index, baseFor(queue));
+  if (starting && track) void startQueue(queue, index, baseFor(queue), usePlayerStore.getState().shuffle);
 }
 
 /** 곡 목록을 큐로 만들고 지정한 곡부터 재생합니다. */
@@ -186,14 +197,14 @@ export async function playTracks(tracks: Track[], startId?: string): Promise<voi
   const { shuffle } = usePlayerStore.getState();
   const start = tracks.find((t) => t.id === startId) ?? (shuffle ? shuffled(tracks)[0] : tracks[0]);
   const queue = shuffle ? [start, ...shuffled(tracks.filter((t) => t.id !== start.id))] : tracks;
-  await startQueue(queue, queue.indexOf(start), tracks);
+  await startQueue(queue, queue.indexOf(start), tracks, shuffle);
 }
 
 export function togglePlay() {
   if (!playlist) {
     // 앱을 다시 켜 복원한 큐는 재생기가 없으니, 누르면 그 곡부터 이어 듣습니다.
     const { queue, index } = usePlayerStore.getState();
-    if (queue.length) void startQueue(queue, Math.min(index, queue.length - 1), baseFor(queue));
+    if (queue.length) void startQueue(queue, Math.min(index, queue.length - 1), baseFor(queue), usePlayerStore.getState().shuffle);
     return;
   }
   if (playlist.playing) playlist.pause();
@@ -252,7 +263,7 @@ export function skipToIndex(index: number) {
     return;
   }
   const { queue } = usePlayerStore.getState();
-  if (queue[index]) void startQueue(queue, index, baseFor(queue));
+  if (queue[index]) void startQueue(queue, index, baseFor(queue), usePlayerStore.getState().shuffle);
 }
 
 export function cycleRepeat() {
@@ -270,9 +281,11 @@ async function reorderAround(order: Track[], current: Track) {
     updateRestored(order, order.indexOf(current));
     return;
   }
-  const ticket = ++request;
+  // 재생 요청은 취소하지 않습니다. 그사이 큐가 새로 올라갔거나 다른 재배치가 있었으면 옛 순서로 덮지 않습니다.
+  const version = queueVersion;
+  const mine = ++reorderTicket;
   const uris = await Promise.all(order.map(playableUri));
-  if (ticket !== request || !playlist) return;
+  if (version !== queueVersion || mine !== reorderTicket || !playlist) return;
   const list = playlist;
   const { index } = usePlayerStore.getState();
   rebuilding = true;
@@ -286,12 +299,14 @@ async function reorderAround(order: Track[], current: Track) {
   });
   rebuilding = false;
   usePlayerStore.setState({ queue: order, index: at });
+  queueVersion += 1;
 }
 
-export async function toggleShuffle() {
-  const { shuffle, queue, index } = usePlayerStore.getState();
-  const value = !shuffle;
-  usePlayerStore.setState({ shuffle: value });
+/** 셔플 설정에 맞게 지금 큐를 다시 늘어놓습니다. */
+async function applyShuffle(value: boolean) {
+  // 새 큐를 올리는 중이면 옛 큐를 섞지 않고, 올리기가 끝난 뒤에 적용합니다(startQueue).
+  if (playlist && starting) return;
+  const { queue, index } = usePlayerStore.getState();
   const current = queue[index];
   if (!current) return;
   // 원래 순서가 지금 큐와 맞지 않으면(복원한 큐, 실패한 요청) 섞기 전의 순서를 기준으로 삼습니다.
@@ -303,6 +318,12 @@ export async function toggleShuffle() {
     const restored = base.find((t) => t.id === current.id) ? base : queue;
     await reorderAround(restored, restored.find((t) => t.id === current.id) ?? current);
   }
+}
+
+export async function toggleShuffle() {
+  const value = !usePlayerStore.getState().shuffle;
+  usePlayerStore.setState({ shuffle: value });
+  await applyShuffle(value);
 }
 
 /** 큐 끝에 곡을 더합니다. 재생 중인 곡이 없으면 바로 재생합니다. */
@@ -321,9 +342,10 @@ export async function addToQueue(tracks: Track[]) {
   }
   const ticket = request;
   const stopTicket = stops;
+  const version = queueVersion;
   const uris = await Promise.all(fresh.map(playableUri));
-  if (ticket !== request) {
-    // 그사이 재생을 멈췄으면 더하지 않습니다. 큐가 바뀌었으면 바뀐 큐를 기준으로 다시 더합니다.
+  if (ticket !== request || version !== queueVersion) {
+    // 그사이 재생을 멈췄으면 더하지 않습니다. 큐가 바뀌었으면(새 큐, 셔플) 바뀐 큐를 기준으로 다시 더합니다.
     if (stops !== stopTicket) {
       releaseStale();
       return;
@@ -334,6 +356,7 @@ export async function addToQueue(tracks: Track[]) {
   uris.forEach((uri) => playlist?.add({ uri }));
   baseQueue = [...baseQueue, ...fresh];
   usePlayerStore.setState({ queue: [...queue, ...fresh] });
+  queueVersion += 1;
 }
 
 export function removeFromQueue(trackId: string) {
@@ -353,6 +376,7 @@ export function removeFromQueue(trackId: string) {
   rebuilding = true;
   playlist.remove(at);
   rebuilding = false;
+  queueVersion += 1;
   baseQueue = baseQueue.filter((t) => t.id !== trackId);
   const nextQueue = queue.filter((t) => t.id !== trackId);
   const nextIndex = at < index ? index - 1 : Math.min(index, nextQueue.length - 1);
@@ -363,6 +387,7 @@ export function removeFromQueue(trackId: string) {
 function stop() {
   request += 1;
   stops += 1;
+  queueVersion += 1;
   starting = false;
   if (playlist) {
     playlist.pause();
