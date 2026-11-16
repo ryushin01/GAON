@@ -49,7 +49,7 @@ function Playlists() {
 }
 
 function deleteLocal(track: Track) {
-  removeFromQueue(track.id);
+  void removeFromQueue(track.id);
   useLibraryStore.getState().removeLocalTrack(track.id);
   void deleteLocalFile(track.id);
 }

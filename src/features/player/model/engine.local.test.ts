@@ -92,9 +92,10 @@ describe('내 FLAC 재생 요청', () => {
     await playTracks([track('a')]);
     jest.clearAllMocks();
     const picking = playTracks([track('x', 'local'), track('b')]);
-    await toggleShuffle();
+    const shuffling = toggleShuffle();
+    await settle();
     mockPending.get('x')?.resolve('blob:x');
-    await picking;
+    await Promise.all([picking, shuffling]);
     await settle();
     expect(mockList.items).toContain('blob:x');
     expect(mockList.play).toHaveBeenCalled();

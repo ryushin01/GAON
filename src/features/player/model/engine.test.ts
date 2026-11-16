@@ -95,7 +95,7 @@ describe('player engine', () => {
     await playTracks(tracks.slice(0, 3), 'c');
     await addToQueue([tracks[0], tracks[3]]);
     expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd']);
-    removeFromQueue('a');
+    await removeFromQueue('a');
     expect(usePlayerStore.getState().index).toBe(1);
     expect(usePlayerStore.getState().queue[1].id).toBe('c');
   });
@@ -148,7 +148,7 @@ describe('복원한 큐', () => {
 
   it('곡을 더하거나 빼도 큐를 새로 만들지 않습니다', async () => {
     await addToQueue([track('e')]);
-    removeFromQueue('a');
+    await removeFromQueue('a');
     expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['b', 'c', 'd', 'e']);
     expect(usePlayerStore.getState().index).toBe(0);
     expect(mockList.clear).not.toHaveBeenCalled();
@@ -193,13 +193,32 @@ describe('재생 오류와 멈춤', () => {
     expect(usePlayerStore.getState().error).toBeNull();
   });
 
-  it('곡을 더하는 사이에 재생을 멈추면 다시 재생하지 않습니다', async () => {
+  it('곡을 더하는 사이에 재생을 멈추면 더하지도, 다시 재생하지도 않습니다', async () => {
     await playTracks([tracks[0]]);
     jest.clearAllMocks();
     const adding = addToQueue([tracks[1]]);
-    removeFromQueue('a');
+    // 출력 방식을 바꾸면 재생을 바로 멈춥니다.
+    setExclusiveOutput(true);
     await adding;
     expect(usePlayerStore.getState().queue).toEqual([]);
     expect(mockList.play).not.toHaveBeenCalled();
+    setExclusiveOutput(false);
+  });
+
+  it('더하기와 빼기는 누른 순서대로 적용합니다', async () => {
+    await playTracks([tracks[0]]);
+    const adding = addToQueue([tracks[1]]);
+    const removing = removeFromQueue('a');
+    await Promise.all([adding, removing]);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['b']);
+  });
+
+  it('새 큐가 올라오기 전에 옛 큐에서 고른 곡 빼기는 새 큐에 적용하지 않습니다', async () => {
+    await playTracks(tracks.slice(0, 2));
+    const picking = playTracks(tracks, 'c');
+    const removing = removeFromQueue('a');
+    await Promise.all([picking, removing]);
+    // 빼기를 누른 때는 새 큐(a~d)가 아직 올라오기 전이었지만, 빼기는 새 큐가 올라온 뒤 차례가 와서 버립니다.
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd']);
   });
 });
