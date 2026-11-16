@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
-import { next, PlayPauseButton, useCurrentTrack, usePlayerStore } from '@/features/player';
+import { next, PlaybackError, PlayPauseButton, useCurrentTrack, usePlayerStore } from '@/features/player';
 import { AppText, Disc, IconButton, StatusDot, VisuallyHidden } from '@/shared/ui';
 
 function Progress() {
@@ -19,15 +19,13 @@ function Progress() {
 export function NowPlayingBar() {
   const { theme } = useUnistyles();
   const track = useCurrentTrack();
-  const error = usePlayerStore((s) => s.error);
   const index = usePlayerStore((s) => s.index);
   const count = usePlayerStore((s) => s.queue.length);
   const repeat = usePlayerStore((s) => s.repeat);
   const playing = usePlayerStore((s) => s.playing);
 
-  if (!track) {
-    return error ? <AppText tone="danger" role="alert" style={styles.error}>{error}</AppText> : null;
-  }
+  // 곡이 있든 없든 재생 오류를 같은 자리에서 알립니다.
+  if (!track) return <PlaybackError style={styles.error} />;
   const title = displayTitle(track);
   const artists = artistLine(track);
   const { text } = theme.colors.stage;
@@ -35,6 +33,7 @@ export function NowPlayingBar() {
   return (
     <View style={styles.root} role="region" aria-label="지금 재생 중">
       <Progress />
+      <PlaybackError style={styles.error} />
       <View style={styles.row}>
         <Pressable
           role="button"
@@ -65,7 +64,7 @@ export function NowPlayingBar() {
 
 const styles = StyleSheet.create((theme) => ({
   root: { backgroundColor: theme.colors.panel, borderTopWidth: 1, borderTopColor: theme.colors.border },
-  error: { padding: theme.spacing.md },
+  error: { paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.sm },
   progress: { height: 2, backgroundColor: theme.colors.surfaceStrong },
   progressFill: { height: '100%', backgroundColor: theme.colors.stage.accent },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 68, paddingHorizontal: theme.spacing.md },

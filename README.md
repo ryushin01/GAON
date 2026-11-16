@@ -1,7 +1,7 @@
 # GAON - 고해상도 음악 스트리밍
 
 [![CI](https://github.com/ryushin01/GAON/actions/workflows/ci.yml/badge.svg)](https://github.com/ryushin01/GAON/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-0.10.0-0A0A0A)
+![version](https://img.shields.io/badge/version-0.11.0-0A0A0A)
 
 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. iOS, Android, Windows, macOS에 설치해 들을 수 있고, 기기에 있는 FLAC 파일도 가져와 재생합니다.
 
@@ -39,16 +39,16 @@
 |---|---|
 | Hi-Res 스트리밍 | 24bit 88.2kHz, 96kHz, 192kHz FLAC 재생, 곡마다 음질 표시 |
 | TOP 100 | 순위와 변동, 신규 진입 표시, 장르 필터, 전체·선택 재생 |
-| 플레이어 | 셔플, 반복, 재생 위치 이동, 가사 따라가기, 재생 목록 편집, 백그라운드 재생 |
+| 플레이어 | 셔플, 반복, 재생 위치 이동, 가사 따라가기, 재생 목록 편집, 백그라운드 재생, 앱을 다시 켜도 재생 목록 유지 |
 | 내 FLAC | 기기의 FLAC을 변환 없이 앱 안에 저장, 태그와 음질 분석, 인터넷 없이 재생 |
-| 비트 퍼펙트 출력 | PC 앱 독점 출력, 곡마다 장치 샘플레이트 전환 (macOS Core Audio, Windows WASAPI) |
+| 비트 퍼펙트 출력 | PC 앱 독점 출력, 곡마다 장치 샘플레이트 전환 (macOS Core Audio, Windows WASAPI), 미디어 키 |
 | 테마 | 라이트, 다크, 시스템 설정 따르기 |
 | 보관함 | 좋아요, 최근 재생, 플레이리스트 (앱을 다시 켜도 유지) |
 | 계정 | 카카오·Google·GitHub 소셜 로그인 구현 (공개 데모는 데모 로그인), 소유자 계정은 비공개 Gist로 보관함 동기화 |
-| 카탈로그 | 곡·앨범·가수 상세, 피처링과 작사·작곡·편곡 크레딧, 통합 검색 |
-| 접근성 | 키보드 조작, 본문 바로가기, 스크린 리더 이름, 색과 무관한 순위 변동 표시 |
+| 카탈로그 | 곡·앨범·가수 상세, 피처링과 작사·작곡·편곡 크레딧, 통합 검색(띄어쓰기 무시, 초성 검색) |
+| 접근성 | 키보드 조작, 본문 바로가기, 스크린 리더 이름과 알림, 입력 오류 연결, 색과 무관한 순위 변동 표시 |
 
-FLAC은 변환 없이 저장하고 손실 없이 디코딩합니다. PC 앱은 설정에서 비트 퍼펙트 출력을 켜면 운영체제 믹서를 거치지 않고 장치로 보내고, 실제 출력 상태를 플레이어에 표시합니다. 모바일과 웹의 마지막 출력은 운영체제가 처리합니다. 자세한 내용은 [음질](docs/development.md#음질)을 참고하세요.
+FLAC은 변환 없이 저장하고 손실 없이 디코딩합니다. PC 앱은 설정에서 비트 퍼펙트 출력을 켜면 운영체제 믹서를 거치지 않고 장치로 보내고, 실제 출력 상태를 플레이어에 표시합니다. 새 버전이 나오면 설정의 앱 정보에서 알려 줍니다. 모바일과 웹의 마지막 출력은 운영체제가 처리합니다. 자세한 내용은 [음질](docs/development.md#음질)을 참고하세요.
 
 ## 기술 스택
 
@@ -107,7 +107,7 @@ src/
 ├─ _app/         앱 초기화와 루트 레이아웃
 ├─ _pages/       화면
 ├─ widgets/      앱 셸, 곡 목록, 플레이어 패널
-├─ features/     재생, FLAC 가져오기, 좋아요, 보관함 동기화
+├─ features/     재생, FLAC 가져오기, 좋아요, 플레이리스트 만들기, 보관함 동기화
 ├─ entities/     음악 카탈로그, 보관함, 로그인 상태
 └─ shared/       UI, 설정, FLAC 파서
 ```
@@ -128,10 +128,10 @@ src/
 |---|---|---|
 | Lexend | 웹·PC 앱 영문·숫자 (제목·본문) | 100~900 가변 |
 | 함렛 | 웹·PC 앱 한글 (제목·본문) | 300·500·700 |
-| LINE Seed | 모바일 앱 한글·영문 (제목·본문) | Thin·Regular·Bold |
+| LINE Seed | 모바일 앱 한글·영문 (제목·본문, KS X 1001로 줄임) | Thin·Regular·Bold |
 | 나눔고딕코딩(GaonMono) | 라벨·수치 (웹·PC·모바일) | 400 |
 
-저작자·라이선스·원본은 아래 출처 표에 있습니다. 모두 같은 사이트에서 제공합니다. 함렛은 화면에 쓰는 글자만 담은 작은 파일을 먼저 받고 나머지 글자는 글자 묶음별 조각으로 나눠 그 글자를 쓸 때만 받습니다(`pnpm fonts`). 모바일 앱은 글꼴 하나로 한글과 영문을 함께 그려야 해서 영문이 들어 있는 LINE Seed를 굵기마다 앱에 넣었습니다.
+저작자·라이선스·원본은 아래 출처 표에 있습니다. 모두 같은 사이트에서 제공합니다. 함렛은 화면에 쓰는 글자만 담은 작은 파일을 먼저 받고 나머지 글자는 글자 묶음별 조각으로 나눠 그 글자를 쓸 때만 받습니다(`pnpm fonts`). 모바일 앱은 글꼴 하나로 한글과 영문을 함께 그려야 해서 영문이 들어 있는 LINE Seed를 굵기마다 앱에 넣었고, KS X 1001 한글 2,350자만 남겨 굵기마다 3.4MB를 0.56MB로 줄였습니다(`scripts/subset-fonts.py`).
 
 ## 출처
 
@@ -139,10 +139,10 @@ src/
 |---|---|---|---|
 | Diphylleia 글꼴 (CD 라벨) | The Diphylleia Project Authors(JAMO) | SIL OFL 1.1 | [JAMO-TYPEFACE/Diphylleia](https://github.com/JAMO-TYPEFACE/Diphylleia) |
 | Nanum Myeongjo(나눔명조) 글꼴 (CD 라벨) | NHN(네이버), 디자인 FONTRIX | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Myeongjo) |
-| Nanum Gothic Coding(나눔고딕코딩) 글꼴 (라틴 문자만 남겨 GaonMono로 이름을 바꿔 씀) | NHN(네이버), 디자인 산돌커뮤니케이션 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Gothic+Coding) |
+| Nanum Gothic Coding(나눔고딕코딩) 글꼴 (필요한 글자만 남겨 GaonMono로 이름을 바꿔 씀) | NHN(네이버), 디자인 산돌커뮤니케이션 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Gothic+Coding) |
 | Lexend 글꼴 (웹·PC 앱 영문·숫자) | Bonnie Shaver-Troup, Thomas Jockin 외 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Lexend) |
 | 함렛(Hahmlet) 글꼴 (웹·PC 앱 한글, 줄인 파일 이름 GaonSans) | The Hahmlet Project Authors(Hypertype) | SIL OFL 1.1 | [hyper-type/hahmlet](https://github.com/hyper-type/hahmlet) |
-| LINE Seed 글꼴 (모바일 앱) | LINE Corporation | SIL OFL 1.1 | [LINE Seed](https://seed.line.me) |
+| LINE Seed 글꼴 (모바일 앱, 필요한 글자만 남김) | LINE Corporation | SIL OFL 1.1 | [LINE Seed](https://seed.line.me) |
 | Ionicons 아이콘 | Ionic | MIT | [ionic-team/ionicons](https://github.com/ionic-team/ionicons) (쓰는 아이콘만 남겨 GaonIcons로 씀) |
 
 음원과 앨범 아트는 코드로 합성했고, 가수·곡·가사·순위는 가상 데이터입니다.

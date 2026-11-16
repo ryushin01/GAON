@@ -5,9 +5,10 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { deleteLocalFile, useLibraryStore, useLocalTracks } from '@/entities/library';
 import type { Track } from '@/entities/music';
+import { usePlaylistNameField } from '@/features/create-playlist';
 import { ImportFlacButton } from '@/features/import-local';
 import { removeFromQueue } from '@/features/player';
-import { AppButton, AppText, Chip, ConfirmDialog, IconButton, Screen, ScreenHeader, StateView } from '@/shared/ui';
+import { AppButton, AppText, Chip, ConfirmDialog, FieldError, IconButton, Screen, ScreenHeader, StateView } from '@/shared/ui';
 import { TrackList, useTrackLookup } from '@/widgets/track-list';
 
 type Tab = 'liked' | 'recent' | 'playlists' | 'local';
@@ -20,37 +21,18 @@ const TABS: { id: Tab; label: string }[] = [
 
 function Playlists() {
   const playlists = useLibraryStore((s) => s.playlists);
-  const createPlaylist = useLibraryStore((s) => s.createPlaylist);
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
+  const field = usePlaylistNameField();
   const create = () => {
-    if (!name.trim()) {
-      setError('플레이리스트 이름을 입력해 주세요.');
-      return;
-    }
-    createPlaylist(name.trim());
-    setName('');
-    setError('');
+    field.create();
   };
   return (
     <View style={styles.pane}>
       <AppText variant="label" tone="muted" aria-hidden>새 플레이리스트 이름</AppText>
       <View style={styles.form}>
-        <TextInput
-          aria-label="새 플레이리스트 이름"
-          aria-invalid={Boolean(error)}
-          value={name}
-          maxLength={40}
-          onChangeText={(v) => {
-            setName(v);
-            if (error) setError('');
-          }}
-          onSubmitEditing={create}
-          style={styles.input}
-        />
+        <TextInput aria-label="새 플레이리스트 이름" {...field.inputProps} onSubmitEditing={create} style={styles.input} />
         <AppButton label="만들기" onPress={create} />
       </View>
-      {error ? <AppText variant="caption" tone="danger" role="alert">{error}</AppText> : null}
+      <FieldError id={field.errorId} message={field.error} />
       <View role="list">
         {playlists.map((p) => (
           <View role="listitem" key={p.id}>

@@ -72,8 +72,23 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 - 비트 퍼펙트는 앱이 장치로 보내는 데이터까지 보장합니다. 장치의 볼륨, EQ, DSP는 앱 밖에 있습니다. MacBook 내장 스피커처럼 자체 처리를 하는 장치는 소리까지 원본 그대로라고 할 수 없어, 외장 DAC를 권합니다.
 - macOS HAL 입력은 float32입니다. 24비트 이하 값은 손실 없이 들어가고, 장치 실제 비트 수가 곡보다 낮으면 비트 퍼펙트로 표시하지 않습니다. 32비트 FLAC은 macOS에서 지원하지 않습니다.
 - **Windows WASAPI 독점은 실제 장치로 시험하지 못했습니다.** CI는 컴파일, 무손실 변환, 장치가 없을 때 충돌하지 않는지만 검사합니다(`pnpm test:native:smoke <FLAC>`).
-- 곡은 재생 전에 끝까지 내려받아 캐시합니다(최대 2GB). 곡 사이 무간격 재생과 재생 중 출력 장치 변경 대응은 아직 없습니다.
+- 곡은 재생 전에 끝까지 내려받아 캐시합니다(최대 2GB). 받는 대로 파일에 써서 메모리에 곡 전체를 올리지 않고, 캐시가 차면 가장 오래 안 들은 곡부터 지웁니다. 곡 사이 무간격 재생과 재생 중 출력 장치 변경 대응은 아직 없습니다.
+- 재생기는 Media Session으로 곡 정보와 재생 상태를 운영체제에 알려, 키보드 미디어 키와 macOS 제어 센터·Windows 미디어 오버레이로 재생·일시정지·이전·다음·위치 이동을 할 수 있습니다.
 - Android(14 이상, USB DAC)와 iOS는 아직 지원하지 않습니다. iOS에는 독점 API가 없습니다.
+
+## 재생
+
+- 재생 엔진은 `features/player/model/engine.ts`입니다. 곡을 빠르게 연달아 고르면 마지막에 고른 곡만 재생합니다(요청 번호).
+- 큐와 지금 곡은 앱을 다시 켜도 남습니다. 미니 플레이어에 그대로 보이고, 재생을 누르면 그 곡의 처음부터 이어 듣습니다. 재생 위치는 저장하지 않습니다. 저장은 같은 내용이면 다시 쓰지 않습니다(`shared/lib/unchangedWrites.ts`).
+- 재생 오류는 미니 플레이어와 플레이어 화면의 알림 영역(`PlaybackError`)에 나오고, 다시 재생되면 지워집니다.
+- 웹·PC 앱에서 내 FLAC은 IndexedDB의 파일을 blob 주소로 재생합니다. 큐에서 빠진 곡의 주소는 놓아 파일 데이터가 메모리에 남지 않게 합니다.
+
+## PC 앱 보안
+
+- 화면 문서에 콘텐츠 보안 정책(CSP)을 붙입니다(`electron/main.cjs`). 스크립트는 앱에 든 파일과 `index.html`의 테마 스크립트(빌드 결과에서 해시를 계산)만 실행하고, 스타일은 React Native Web·Unistyles가 런타임에 넣어 인라인을 허용합니다. 미디어·이미지·요청은 https와 개발용 미디어 서버(`localhost:8787`), blob만 받습니다.
+- Electron fuses(`electron-builder.json`의 `electronFuses`): `ELECTRON_RUN_AS_NODE`와 `NODE_OPTIONS`를 무시하고, `app.asar`에서만 앱 코드를 읽으며, `file://` 추가 권한을 끕니다. `--inspect` 인자는 Playwright가 설치본을 검사할 때 써서 켜 둡니다. 서명하지 않은 macOS 앱은 fuse를 바꾼 뒤 ad-hoc 서명을 다시 합니다(`resetAdHocDarwinSignature`).
+- `pnpm test:desktop`이 정책 위반이 없는지, 정책 밖의 인라인 스크립트가 막히는지 확인합니다.
+- 설정 화면의 앱 정보에서 GitHub의 최신 Release가 더 새 버전이면 내려받는 링크를 보여 줍니다(PC 앱만, 자동 업데이트는 코드 서명이 필요해 아직 없음).
 
 ## 테마
 
@@ -81,12 +96,14 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 디자인은 데이터 관제 화면 스타일입니다(레퍼런스: The Lobby의 Overwatch). 점 격자 바탕(`DotGrid`), 네 귀퉁이 꺾쇠를 단 가는 테두리 패널(`Panel`), 넓게 띄운 고정폭 라벨(`AppText` `label`), 가늘고 촘촘한 큰 제목과 깜빡이는 커서(`Cursor`), 칸을 나눈 막대 계기(`SegmentMeter`), 상태 표시등(`StatusDot`), `> 라벨` 모양의 명령 버튼(`AppButton` `command`)을 씁니다. 준비됨과 Hi-Res는 신호색(`signal`), 재생 중은 표시등 색(`live`)이며 늘 글자와 함께 보여 줍니다. 커서는 네 번만 깜빡이고 멈추며, 동작 줄이기에서는 깜빡이지 않습니다. 홈의 디스크 배치와 움직임, CD 라벨 그림은 이 스타일과 따로 둡니다.
 
-| 역할 | 글꼴 | 앱(iOS·Android) | 웹·PC 앱 |
-|---|---|---|---|
-| 제목·본문 `SANS_FONT` | 운영체제 산세리프 | 운영체제 기본 글꼴 | system-ui, Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR |
-| 라벨·수치 `MONO_FONT` | Nanum Gothic Coding (SIL OFL) | `NanumGothicCoding-Regular.ttf` | `GaonMono-subset.woff2` (라틴 문자만) |
+| 역할 | 앱(iOS·Android) | 웹·PC 앱 |
+|---|---|---|
+| 제목·본문 `SANS_FONT`, `sansFont()` | LINE Seed Thin·Regular·Bold (`LINESeedKR-*-subset.ttf`) | 영문·숫자 Lexend, 한글 함렛(`public/fonts`, 줄인 이름 GaonSans) |
+| 라벨·수치 `MONO_FONT` | Nanum Gothic Coding을 줄인 `GaonMono-app.ttf` (한글 포함) | `GaonMono-subset.woff2` (라틴 문자만, 한글은 다음 글꼴) |
 
-한글 웹 글꼴을 받지 않아 첫 화면이 빠릅니다. 웹과 PC 앱의 고정폭 글꼴은 라틴 문자만 남긴 WOFF2입니다(`python scripts/subset-fonts.py`). OFL의 예약 이름(Nanum) 때문에 줄인 파일은 이름을 GaonMono로 바꿨습니다. 한글 라벨은 운영체제 글꼴로 나옵니다. `assets/fonts`의 Diphylleia와 Nanum Myeongjo는 CD 라벨을 그릴 때만 씁니다(`scripts/disc_labels.py`).
+- 웹·PC 앱의 함렛은 화면에 쓰는 글자만 담은 파일을 먼저 받고, 나머지 글자는 글자 묶음별 조각으로 나눠 그 글자를 쓸 때만 받습니다(`pnpm fonts`). 화면 글자가 바뀌면 `pnpm fonts`를 다시 돌립니다. 빠진 글자가 있으면 단위 테스트(`pnpm fonts --check`)가 실패합니다.
+- 앱 글꼴은 KS X 1001 한글 2,350자와 라틴·문장 부호만 남긴 TTF입니다(`python scripts/subset-fonts.py`, fontTools 필요). 원본 12.5MB가 약 3MB가 됩니다. 원본 TTF는 다시 만들 때와 검사에 쓰고 앱에는 넣지 않습니다. 원본에 있던 화면 글자(카탈로그 자료 `scripts/generate-media.py` 포함)가 줄인 파일에서 빠지면 `pnpm fonts --check`가 실패합니다. 사용자가 가져온 FLAC 태그의 드문 한글은 운영체제가 시스템 글꼴로 대신 그립니다.
+- OFL의 예약 이름(Nanum) 때문에 줄인 고정폭 글꼴은 이름을 GaonMono로 바꿨습니다. `assets/fonts`의 Diphylleia와 Nanum Myeongjo는 CD 라벨을 그릴 때만 씁니다(`scripts/disc_labels.py`).
 
 ## 아이콘
 
@@ -99,7 +116,8 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 - 카탈로그는 앱 입구(`src/_app/prefetch.ts`)에서 바로 요청하고, Pages 배포는 HTML에 미리 받기 태그를 넣습니다.
 - Supabase SDK는 로그인 키가 있는 빌드에서 처음 필요할 때만 받습니다(`getSupabase`).
 - 홈의 가운데 디스크 이미지를 혼자 먼저 받습니다(`shared/lib/firstImage.ts`). 옆 디스크와 아래 구역의 이미지는 그 이미지가 도착한 뒤에 받고, 오지 않으면 4초 뒤에 받습니다.
-- 제목과 본문은 운영체제 글꼴을 써서 한글 웹 글꼴을 받지 않습니다.
+- 한글 웹 글꼴(함렛)은 화면 글자 파일만 먼저 받고, 나머지 조각 CSS는 페이지를 다 받은 뒤 한가할 때 붙입니다(`src/_app/attachFonts.ts`).
+- 첫 묶음(gzip 약 520KB)의 대부분은 expo-router, React Native Web, Reanimated, react-dom입니다. Supabase(약 900KB 원본)는 따로 늦게 받고, 설정 화면의 `expo-web-browser`도 그 화면 묶음에만 있습니다. Reanimated가 Worklets 버전 확인에 `semver`를 함께 싣지만 라이브러리 안쪽이라 그대로 둡니다.
 - 홈 디스크는 지금 순위에서 두 칸 앞까지만 이미지를 받습니다.
 
 ## 의존성 갱신 (Dependabot)
@@ -118,4 +136,7 @@ Expo SDK가 버전을 정하는 패키지(`expo*`, `jest-expo`, `react`, `react-
 - 대화상자는 `Modal`에 `aria-label`을 넘겨 이름을 답니다. 웹의 `Modal`이 바깥에 `role="dialog"`를 만들므로 안쪽에 역할을 또 달지 않습니다.
 - 되돌릴 수 없는 삭제는 `ConfirmDialog`로 한 번 더 묻습니다. (KWCAG 7.3.1)
 - 앨범 아트 대체 텍스트는 `AlbumArt`의 `label`로 넘깁니다. 옆에 곡 정보가 있는 꾸밈 이미지라면 비워 둡니다.
+- 알림 영역은 `LiveRegion`(`role="status"`·`role="alert"`)으로 처음부터 두고 내용만 바꿉니다. 영역이 내용과 함께 새로 생기면 읽지 않는 화면 낭독기가 있습니다. 비어 있을 때는 흐름 밖에 있어 간격을 바꾸지 않습니다.
+- 입력 오류는 `FieldError`로 보여 주고 입력 칸의 `aria-describedby`·`aria-errormessage`로 연결합니다. 빈 칸은 잘못된 값이 아니라 `aria-invalid`를 붙이지 않습니다. 오류 문구에는 원인과 고치는 방법을 씁니다.
+- 화면을 그리다 오류가 나면 루트의 `ErrorBoundary`(`src/_app/RouteError.tsx`)가 다시 시도와 홈으로 가기를 보여 줍니다.
 - 슬라이스는 공개 API(`index.ts`)로만 가져옵니다.

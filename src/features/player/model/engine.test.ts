@@ -1,7 +1,7 @@
 import type { Track } from '@/entities/music';
 import { useLibraryStore } from '@/entities/library';
 
-import { addToQueue, cycleRepeat, next, playTracks, previous, removeFromQueue, toggleShuffle } from './engine';
+import { addToQueue, cycleRepeat, next, playTracks, previous, removeFromQueue, setExclusiveOutput, skipToIndex, toggleShuffle } from './engine';
 import { usePlayerStore } from './playerStore';
 
 const mockList = {
@@ -98,5 +98,43 @@ describe('player engine', () => {
     removeFromQueue('a');
     expect(usePlayerStore.getState().index).toBe(1);
     expect(usePlayerStore.getState().queue[1].id).toBe('c');
+  });
+});
+
+describe('player engine 경쟁과 복원', () => {
+  it('곡 주소를 구하는 사이에 다른 곡을 고르면 마지막에 고른 곡만 재생합니다', async () => {
+    // 두 요청 모두 오디오 모드와 곡 주소를 기다리는 동안 겹칩니다.
+    await Promise.all([playTracks(tracks, 'a'), playTracks(tracks, 'c')]);
+    expect(usePlayerStore.getState().index).toBe(2);
+    expect(mockList.clear).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('복원한 큐', () => {
+  beforeEach(() => {
+    // 재생기를 버려 앱을 막 켠 상태로 만듭니다.
+    setExclusiveOutput(true);
+    setExclusiveOutput(false);
+    jest.clearAllMocks();
+    usePlayerStore.setState({ queue: tracks, index: 1 });
+  });
+
+  it('재생기 없이 곡을 옮기고, 목록에서 고르면 그 곡부터 재생합니다', async () => {
+    next();
+    expect(usePlayerStore.getState().index).toBe(2);
+    expect(mockList.next).not.toHaveBeenCalled();
+    skipToIndex(3);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mockList.items).toHaveLength(4);
+    expect(mockList.skipTo).toHaveBeenCalledWith(3);
+    expect(mockList.play).toHaveBeenCalled();
+  });
+
+  it('곡을 더하거나 빼도 큐를 새로 만들지 않습니다', async () => {
+    await addToQueue([track('e')]);
+    removeFromQueue('a');
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['b', 'c', 'd', 'e']);
+    expect(usePlayerStore.getState().index).toBe(0);
+    expect(mockList.clear).not.toHaveBeenCalled();
   });
 });

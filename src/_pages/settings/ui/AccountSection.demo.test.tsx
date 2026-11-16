@@ -39,7 +39,8 @@ describe('AccountSection (로그인 서버가 없는 빌드)', () => {
     await fireEvent.press(screen.getByRole('button', { name: '소유자 로그인' }));
     await fireEvent.changeText(screen.getByLabelText('GitHub 토큰'), 'token');
     await fireEvent.press(screen.getByRole('button', { name: '소유자로 로그인' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/소유자 계정이 아닙니다/);
+    // 알림 영역(View role="alert")은 처음부터 있어 글자로 찾습니다.
+    expect(await screen.findByText(/소유자 계정이 아닙니다/)).toBeTruthy();
     expect(useSessionStore.getState().session).toBeNull();
   });
 

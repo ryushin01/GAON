@@ -55,3 +55,6 @@ yarn-error.*
 /public-media/
 /coverage/
 /native/build/
+
+# Python
+__pycache__/

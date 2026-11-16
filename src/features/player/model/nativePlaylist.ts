@@ -59,6 +59,21 @@ export type PlaylistLike = {
   destroy?: () => void;
 };
 
+type LockMetadata = { title?: string; artist?: string; albumTitle?: string; artworkUrl?: string };
+
+const MEDIA_ACTIONS = ['play', 'pause', 'previoustrack', 'nexttrack', 'seekto'] as const;
+
+function mediaSession(): MediaSession | undefined {
+  return typeof navigator === 'undefined' ? undefined : navigator.mediaSession;
+}
+
+function setMediaMetadata(metadata: unknown) {
+  const session = mediaSession();
+  if (!session || typeof MediaMetadata === 'undefined' || !metadata) return;
+  const { title, artist, albumTitle, artworkUrl } = metadata as LockMetadata;
+  session.metadata = new MediaMetadata({ title, artist, album: albumTitle, artwork: artworkUrl ? [{ src: artworkUrl }] : [] });
+}
+
 type Callbacks = { onOutput: (output: OutputInfo | null) => void; onError: (message: string) => void };
 
 /** 재생 목록은 화면에서 관리하고, 재생기는 한 번에 한 곡만 재생합니다. */
@@ -79,6 +94,11 @@ export function createNativePlaylist(bridge: AudioBridge, { onOutput, onError }:
   const publish = () => {
     const status = { playing, isBuffering: loading, currentTime: time, duration } as AudioPlaylistStatus;
     statusListeners.forEach((listener) => listener(status));
+    const session = mediaSession();
+    if (session?.metadata) {
+      session.playbackState = playing ? 'playing' : 'paused';
+      if (duration > 0 && time <= duration) session.setPositionState?.({ duration, position: time, playbackRate: 1 });
+    }
   };
   const announceTrack = () => trackListeners.forEach((listener) => listener({ currentIndex: index }));
 
@@ -161,7 +181,15 @@ export function createNativePlaylist(bridge: AudioBridge, { onOutput, onError }:
     }
   });
 
-  return {
+  const clearMediaSession = () => {
+    const session = mediaSession();
+    if (!session) return;
+    session.metadata = null;
+    session.playbackState = 'none';
+    MEDIA_ACTIONS.forEach((action) => session.setActionHandler(action, null));
+  };
+
+  const playlist: PlaylistLike = {
     get loop() {
       return loop;
     },
@@ -226,15 +254,33 @@ export function createNativePlaylist(bridge: AudioBridge, { onOutput, onError }:
       if (name === 'playlistStatusUpdate') statusListeners.push(listener as Listeners['playlistStatusUpdate']);
       else trackListeners.push(listener as Listeners['trackChanged']);
     },
-    // 재생기에는 잠금 화면이 없습니다.
-    setActiveForLockScreen: () => {},
-    updateLockScreenMetadata: () => {},
-    clearLockScreenControls: () => {},
+    // 재생기는 운영체제 미디어 조작(미디어 키, 제어 센터)을 Media Session으로 받습니다.
+    setActiveForLockScreen: (active, metadata) => {
+      const session = mediaSession();
+      if (!session) return;
+      if (!active) {
+        clearMediaSession();
+        return;
+      }
+      setMediaMetadata(metadata);
+      session.setActionHandler('play', () => playlist.play());
+      session.setActionHandler('pause', () => playlist.pause());
+      session.setActionHandler('previoustrack', () => playlist.previous());
+      session.setActionHandler('nexttrack', () => playlist.next());
+      session.setActionHandler('seekto', (details) => {
+        if (details.seekTime != null) void playlist.seekTo(details.seekTime);
+      });
+      publish();
+    },
+    updateLockScreenMetadata: (metadata) => setMediaMetadata(metadata),
+    clearLockScreenControls: clearMediaSession,
     destroy: () => {
       unsubscribe();
       loadToken += 1;
       bridge.stop();
       onOutput(null);
+      clearMediaSession();
     },
   };
+  return playlist;
 }

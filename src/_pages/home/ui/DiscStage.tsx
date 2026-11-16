@@ -278,7 +278,7 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
 
   const rankNo = track.rank ?? position + 1;
   const info = (
-    <View aria-live="polite" style={wide ? styles.infoWide : styles.info}>
+    <View style={wide ? styles.infoWide : styles.info}>
       <Animated.View key={track.id} entering={enter}>
         <View aria-hidden style={styles.eyebrow}>
           <AppText variant="label" tone="muted">{`TOP ${String(rankNo).padStart(2, '0')} / ${String(tracks.length).padStart(2, '0')}`}</AppText>
@@ -387,6 +387,10 @@ export function DiscStage({ tracks, viewport, active, playingId, onPlay, onOpen,
   return (
     <GestureDetector gesture={pan}>
       <View ref={rootRef} style={[styles.root, stageHeight ? { height: stageHeight } : undefined]}>
+        {/* 넘길 때마다 정보 영역 전체를 읽지 않고 순위와 제목, 가수만 짧게 알립니다. */}
+        <View role="status" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.announce}>
+          <VisuallyHidden>{`${rankNo}위 ${title}, ${track.artists.join(', ')}`}</VisuallyHidden>
+        </View>
         {open && <TrackIndex tracks={tracks} current={position} wide={wide} onSelect={(i) => { moveTo(i); closeIndex(); }} onClose={closeIndex} />}
         {body}
       </View>
@@ -399,6 +403,7 @@ const stageDiscStyle = { position: 'absolute' } as const;
 
 const styles = StyleSheet.create((theme) => ({
   root: { overflow: 'hidden', width: '100%' },
+  announce: { position: 'absolute', width: 1, height: 1, overflow: 'hidden' },
   flex: { flex: 1, minWidth: 0 },
   flexMin: { flex: 1, minHeight: 0 },
   column: { gap: theme.spacing.xs, paddingBottom: theme.spacing.sm },

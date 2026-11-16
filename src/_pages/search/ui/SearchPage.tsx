@@ -4,11 +4,12 @@ import { Pressable, TextInput, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { MONO_FONT } from '@/shared/config';
+import { matchesSearch } from '@/shared/lib';
 
 import { useLocalTracks } from '@/entities/library';
 import { AlbumCard, matchesQuery, TrackRow, useCatalog } from '@/entities/music';
 import { playTracks, useCurrentTrack } from '@/features/player';
-import { AppText, IconButton, Rail, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
+import { AppText, IconButton, LiveRegion, Rail, Screen, ScreenHeader, Section, StateView } from '@/shared/ui';
 import { TrackActions } from '@/widgets/track-list';
 
 const TRACK_LIMIT = 30;
@@ -19,18 +20,18 @@ export function SearchPage() {
   const local = useLocalTracks();
   const current = useCurrentTrack();
   const [query, setQuery] = useState('');
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
 
   const tracks = useMemo(
     () => (q ? [...local, ...(catalog?.tracks ?? [])].filter((t) => matchesQuery(t, q)) : []),
     [q, local, catalog],
   );
   const albums = useMemo(
-    () => (q ? (catalog?.albums ?? []).filter((a) => [a.title, ...a.artists].some((v) => v.toLowerCase().includes(q))) : []),
+    () => (q ? (catalog?.albums ?? []).filter((a) => [a.title, ...a.artists].some((v) => matchesSearch(v, q))) : []),
     [q, catalog],
   );
   const artists = useMemo(
-    () => (q ? (catalog?.artists ?? []).filter((a) => a.name.toLowerCase().includes(q)) : []),
+    () => (q ? (catalog?.artists ?? []).filter((a) => matchesSearch(a.name, q)) : []),
     [q, catalog],
   );
   const nothing = q && !tracks.length && !albums.length && !artists.length;
@@ -54,8 +55,8 @@ export function SearchPage() {
         {query ? <IconButton icon="close-circle" label="검색어 지우기" size={20} color={theme.colors.textMuted} onPress={() => setQuery('')} /> : null}
       </View>
 
-      {isError && <AppText tone="danger" role="alert" style={styles.notice}>카탈로그를 불러오지 못해 내 FLAC에서만 찾습니다.</AppText>}
-      {!q && <StateView title="듣고 싶은 음악을 찾아보세요" description="예: 유신, 빛, 재즈" />}
+      <LiveRegion role="alert" style={styles.notice}>{isError ? <AppText tone="danger">카탈로그를 불러오지 못해 내 FLAC에서만 찾습니다.</AppText> : null}</LiveRegion>
+      {!q && <StateView title="듣고 싶은 음악을 찾아보세요" description="예: 유신, 빛, 재즈. 띄어쓰기 없이, 초성(ㅇㅅ)으로도 찾을 수 있습니다." />}
       {nothing ? <StateView title="검색 결과가 없습니다" description="다른 검색어를 입력해 보세요." /> : null}
 
       {artists.length > 0 && (

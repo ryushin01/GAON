@@ -10,6 +10,8 @@
  *    첫 화면 뒤에 붙고, 1에 없는 글자(사용자가 입력한 글자 등)를 쓸 때 그 글자가 든 조각만 받습니다.
  *
  * 화면 글자가 바뀌면 다시 실행합니다. `--check`는 1에 빠진 글자가 있으면 실패합니다(단위 테스트에서 씀).
+ * `appFonts`가 있으면 `--check`에서 모바일 앱의 줄인 글꼴(`scripts/subset-fonts.py`)도 확인합니다.
+ * 원본 글꼴에 있던 화면 글자(카탈로그 자료 포함)가 줄인 파일에서 빠졌으면 실패합니다.
  * 조각 파일은 글자가 바뀌어도 그대로라 없는 것만 만듭니다. 원본 글꼴을 바꿨으면 `--all`로 모두 다시 만듭니다.
  */
 import { existsSync } from "node:fs";
@@ -264,6 +266,23 @@ for (const font of config.fonts) {
   // OFL 예약 이름이 있는 글꼴은 줄인 파일의 이름표도 바꿈(fontTools 필요: pip install fonttools brotli)
   if (font.rename && written.length)
     execFileSync("python3", [path.join(ROOT, "scripts/fonts/rename-font.py"), family, ...written], { stdio: "inherit" });
+}
+
+// 모바일 앱 글꼴: 원본이 그릴 수 있던 화면 글자는 줄인 파일도 그릴 수 있어야 함
+if (CHECK && config.appFonts) {
+  const appScreen = new Set(screen);
+  for (const file of config.appFonts.scan ?? []) {
+    for (const ch of unescapeAll(await read(file))) {
+      const cp = ch.codePointAt(0);
+      if (cp > 0x7e) appScreen.add(cp);
+    }
+  }
+  for (const [source, subset] of config.appFonts.pairs) {
+    const original = cmapOf(await readFile(path.join(ROOT, source)));
+    const reduced = cmapOf(await readFile(path.join(ROOT, subset)));
+    const lack = [...appScreen].filter((cp) => original.has(cp) && !reduced.has(cp));
+    if (lack.length) missing.push(`${subset}: ${String.fromCodePoint(...lack)} (scripts/subset-fonts.py의 글자 범위에 넣고 다시 만드세요)`);
+  }
 }
 
 if (CHECK) {
