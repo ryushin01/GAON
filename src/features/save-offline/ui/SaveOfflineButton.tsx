@@ -8,6 +8,13 @@ import { AppButton, AppText, LiveRegion } from '@/shared/ui';
 
 import { cancelOffline, saveOffline, useOfflineStatus, type OfflineStatus } from '../model/saveOffline';
 
+/** 받지 못한 까닭과 고치는 방법입니다. */
+function failure({ failed, storageFull }: OfflineStatus): string {
+  return storageFull
+    ? `${failed}곡을 저장하지 못했습니다. 기기의 저장 공간이 모자랍니다. 저장한 곡을 지우거나 공간을 비운 뒤 남은 곡 저장을 다시 눌러 주세요.`
+    : `${failed}곡을 저장하지 못했습니다. 인터넷 연결을 확인하고 남은 곡 저장을 다시 눌러 주세요.`;
+}
+
 function summary({ total, saved, saving, savedBytes, missingBytes }: OfflineStatus): string {
   if (saving > 0) return `오프라인 저장 중 · ${saved}/${total}곡`;
   if (saved === total) return `${total}곡 모두 오프라인 저장됨 · ${formatFileSize(savedBytes)}`;
@@ -55,7 +62,7 @@ export function SaveOfflineButton({ tracks, style }: { tracks: Track[]; style?: 
       <LiveRegion role="alert">
         {status.failed > 0 && !busy ? (
           <AppText variant="caption" tone="danger">
-            {`${status.failed}곡을 저장하지 못했습니다. 인터넷 연결을 확인하고 남은 곡 저장을 다시 눌러 주세요.`}
+            {failure(status)}
           </AppText>
         ) : null}
       </LiveRegion>

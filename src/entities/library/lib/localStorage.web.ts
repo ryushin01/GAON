@@ -25,6 +25,8 @@ async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStor
 }
 
 const urls = new Map<string, string>();
+/** 재생 목록에 있는 곡입니다. 엔진이 큐를 바꿀 때마다 releaseAudioUris로 알려 줍니다. */
+let inUse = new Set<string>();
 
 async function blobUrl(key: string): Promise<string | undefined> {
   const cached = urls.get(key);
@@ -85,8 +87,9 @@ export async function resolveAudioUri(id: string): Promise<string> {
   return url;
 }
 
-/** keep에 없는 곡의 재생 주소를 놓습니다. 붙잡고 있던 파일 데이터를 브라우저가 치울 수 있습니다. */
+/** keep(재생 목록의 곡)에 없는 곡의 재생 주소를 놓습니다. 붙잡고 있던 파일 데이터를 브라우저가 치울 수 있습니다. */
 export function releaseAudioUris(keep: string[]): void {
+  inUse = new Set(keep);
   const kept = new Set(keep.map((id) => `audio:${id}`));
   for (const [key, url] of urls) {
     if (key.startsWith('audio:') && !kept.has(key)) {
@@ -101,16 +104,17 @@ export async function resolveArtUri(id: string): Promise<string | undefined> {
 }
 
 /**
- * 저장한 파일을 지웁니다. release가 false면 지금 재생 중일 수 있는 재생 주소는 놓지 않고 파일만 지웁니다.
- * 그 주소는 곡이 큐에서 빠질 때 releaseAudioUris가 놓습니다.
+ * 저장한 파일을 지우고 true를 돌려줍니다. 앨범 아트 주소는 바로 놓습니다. release가 false면 재생 목록에 있는 곡의
+ * 재생 주소는 놓지 않아 재생이 끊기지 않고(주소가 파일 데이터를 붙잡음), 곡이 큐에서 빠질 때 releaseAudioUris가 놓습니다.
  */
-export async function deleteLocalFile(id: string, { release = true }: { release?: boolean } = {}): Promise<void> {
+export async function deleteLocalFile(id: string, { release = true }: { release?: boolean } = {}): Promise<boolean> {
   for (const key of [`audio:${id}`, `art:${id}`]) {
     const url = urls.get(key);
-    if (url && release) {
+    if (url && (release || key.startsWith('art:') || !inUse.has(id))) {
       URL.revokeObjectURL(url);
       urls.delete(key);
     }
     await withStore('readwrite', (s) => s.delete(key));
   }
+  return true;
 }

@@ -23,7 +23,7 @@ function withState(saved: number, saving = 0, failed = 0): Meta<typeof SaveOffli
         useOfflineSave.setState({
           queue: tracks.slice(saved, saved + saving),
           current: saving ? tracks[saved].id : null,
-          failed: tracks.slice(saved, saved + failed).map((t) => t.id),
+          failed: tracks.slice(saved, saved + failed).map((t) => ({ id: t.id, reason: 'network' as const })),
         });
         return () => {
           useLibraryStore.setState({ offlineTracks: [] });

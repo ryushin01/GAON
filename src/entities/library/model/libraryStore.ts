@@ -38,6 +38,11 @@ type LibraryState = {
   localTracks: Track[];
   /** 인터넷 없이 듣도록 기기에 저장한 스트리밍 곡입니다(오프라인 저장). 곡 정보만 두고, 파일은 내 FLAC과 같은 저장소에 둡니다. */
   offlineTracks: Track[];
+  /**
+   * 파일을 지워야 하는 곡입니다. 재생 중이라 지우기를 미뤘거나 지우다 실패한 파일이 앱을 다시 켜도 남지 않게,
+   * 지울 때까지 기억했다가 앱을 켤 때 다시 지웁니다.
+   */
+  fileTrash: string[];
   /** 기기에 저장한 앨범 아트(내 FLAC, 오프라인 저장)의 주소입니다. 앱을 켤 때마다 새로 만들어 저장하지 않습니다. */
   localArt: Record<string, string>;
   toggleLike: (id: string) => void;
@@ -51,7 +56,10 @@ type LibraryState = {
   removeLocalTrack: (id: string) => void;
   setLocalArt: (art: Record<string, string>) => void;
   addOfflineTrack: (track: Track) => void;
+  /** 곡 정보를 빼고 파일은 지울 목록에 넣습니다. */
   removeOfflineTracks: (ids: string[]) => void;
+  trashFiles: (ids: string[]) => void;
+  clearFileTrash: (ids: string[]) => void;
 };
 
 function newId() {
@@ -69,6 +77,7 @@ export const useLibraryStore = create<LibraryState>()(
       deletedPlaylistAt: {},
       localTracks: [],
       offlineTracks: [],
+      fileTrash: [],
       localArt: {},
       toggleLike: (id) =>
         set((s) => {
@@ -161,13 +170,27 @@ export const useLibraryStore = create<LibraryState>()(
           };
         }),
       setLocalArt: (art) => set((s) => ({ localArt: { ...s.localArt, ...art } })),
+      // 다시 저장한 곡의 새 파일은 지울 목록에서 뺍니다.
       addOfflineTrack: (track) =>
-        set((s) => ({ offlineTracks: [track, ...s.offlineTracks.filter((t) => t.id !== track.id)] })),
+        set((s) => ({
+          offlineTracks: [track, ...s.offlineTracks.filter((t) => t.id !== track.id)],
+          fileTrash: s.fileTrash.filter((id) => id !== track.id),
+        })),
       removeOfflineTracks: (ids) =>
         set((s) => {
           const gone = new Set(ids);
           const localArt = Object.fromEntries(Object.entries(s.localArt).filter(([id]) => !gone.has(id)));
-          return { offlineTracks: s.offlineTracks.filter((t) => !gone.has(t.id)), localArt };
+          return {
+            offlineTracks: s.offlineTracks.filter((t) => !gone.has(t.id)),
+            localArt,
+            fileTrash: [...new Set([...s.fileTrash, ...ids])],
+          };
+        }),
+      trashFiles: (ids) => set((s) => ({ fileTrash: [...new Set([...s.fileTrash, ...ids])] })),
+      clearFileTrash: (ids) =>
+        set((s) => {
+          const done = new Set(ids);
+          return { fileTrash: s.fileTrash.filter((id) => !done.has(id)) };
         }),
     }),
     {
@@ -175,7 +198,7 @@ export const useLibraryStore = create<LibraryState>()(
       // 시각 기록은 없어도 되는 값이라 버전을 올리지 않습니다. 이전 버전에서 저장한 보관함은 기록 없이 불러옵니다.
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ likedIds, likedAt, unlikedAt, recentIds, playlists, deletedPlaylistAt, localTracks, offlineTracks }) => ({
+      partialize: ({ likedIds, likedAt, unlikedAt, recentIds, playlists, deletedPlaylistAt, localTracks, offlineTracks, fileTrash }) => ({
         likedIds,
         likedAt,
         unlikedAt,
@@ -184,6 +207,7 @@ export const useLibraryStore = create<LibraryState>()(
         deletedPlaylistAt,
         localTracks,
         offlineTracks,
+        fileTrash,
       }),
     },
   ),

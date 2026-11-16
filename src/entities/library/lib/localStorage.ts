@@ -12,6 +12,19 @@ function ensureRoot() {
 }
 
 const EXT: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp' };
+const ART_EXTS = ['jpg', 'png', 'webp'];
+
+/** 재생 목록에 있는 곡입니다. 엔진이 큐를 바꿀 때마다 releaseAudioUris로 알려 줍니다. */
+let inUse = new Set<string>();
+/** 재생 목록에 있어 지우기를 미룬 곡 파일입니다. 재생기가 그 경로로 곡을 열어야 합니다. */
+const deferred = new Set<string>();
+
+function removeFiles(id: string, exts: string[]) {
+  for (const ext of exts) {
+    const file = new File(root(), `${id}.${ext}`);
+    if (file.exists) file.delete();
+  }
+}
 
 export async function readHeader(ref: LocalFileRef): Promise<Uint8Array> {
   const file = new File(ref.uri);
@@ -49,6 +62,8 @@ async function download(url: string, target: File): Promise<void> {
  * 앱의 내려받기는 도중에 멈출 수 없어, 취소는 받은 뒤에 부르는 쪽이 지웁니다.
  */
 export async function downloadAudio(id: string, url: string, _signal?: AbortSignal): Promise<void> {
+  // 지우기를 미뤄 둔 같은 곡을 다시 저장하면, 새로 받은 파일을 나중에 지우지 않게 합니다.
+  deferred.delete(id);
   await download(url, new File(ensureRoot(), `${id}.flac`));
 }
 
@@ -66,21 +81,39 @@ export async function resolveAudioUri(id: string): Promise<string> {
   return file.uri;
 }
 
-/** 앱은 파일 경로로 재생해 놓을 것이 없습니다. 웹과 모양을 맞춥니다. */
-export function releaseAudioUris(_keep: string[]): void {}
+/** 앱은 파일 경로로 재생해 놓을 재생 주소는 없고, 큐에서 빠진 곡 중 지우기를 미뤄 둔 파일을 지웁니다. */
+export function releaseAudioUris(keep: string[]): void {
+  inUse = new Set(keep);
+  for (const id of [...deferred]) {
+    if (inUse.has(id)) continue;
+    deferred.delete(id);
+    try {
+      removeFiles(id, ['flac']);
+    } catch {
+      // 지우지 못한 파일은 보관함의 지울 목록(fileTrash)에 남아 앱을 다시 켤 때 지웁니다.
+    }
+  }
+}
 
 export async function resolveArtUri(id: string): Promise<string | undefined> {
-  for (const ext of ['jpg', 'png', 'webp']) {
+  for (const ext of ART_EXTS) {
     const file = new File(root(), `${id}.${ext}`);
     if (file.exists) return file.uri;
   }
   return undefined;
 }
 
-/** 앱은 파일 경로로 재생해, 재생 중인 파일을 지워도 운영체제가 연 파일은 끝까지 읽습니다. */
-export async function deleteLocalFile(id: string, _options?: { release?: boolean }): Promise<void> {
-  for (const ext of ['flac', 'jpg', 'png', 'webp']) {
-    const file = new File(root(), `${id}.${ext}`);
-    if (file.exists) file.delete();
+/**
+ * 저장한 파일을 지우고 true를 돌려줍니다. 앨범 아트는 바로 지웁니다. release가 false면 재생 목록에 있는 곡 파일은
+ * 곡이 큐에서 빠질 때까지 지우기를 미루고 false를 돌려줍니다. 재생기는 곡을 올릴 때 받은 경로로 파일을 엽니다.
+ */
+export async function deleteLocalFile(id: string, { release = true }: { release?: boolean } = {}): Promise<boolean> {
+  removeFiles(id, ART_EXTS);
+  if (!release && inUse.has(id)) {
+    deferred.add(id);
+    return false;
   }
+  deferred.delete(id);
+  removeFiles(id, ['flac']);
+  return true;
 }
