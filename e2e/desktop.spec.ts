@@ -48,10 +48,16 @@ test('PC 앱에서 스트리밍과 로컬 FLAC이 재시작 뒤에도 동작합�
     return (window as { __injected?: boolean }).__injected ?? false;
   });
   expect(injected).toBe(false);
+  // 다크 테마를 고른 채로 다시 켭니다. index.html의 테마 스크립트는 CSP 해시가 맞아야 실행됩니다.
+  await win.getByRole('link', { name: '설정', exact: true }).click();
+  await win.getByRole('button', { name: '다크', exact: true }).click();
   await app.close();
 
   app = await _electron.launch({ executablePath: executablePath!, args });
   win = await app.firstWindow();
+  // 콘솔 감시는 첫 문서를 읽은 뒤에 붙어 위반을 놓칠 수 있어, 테마 스크립트가 실제로 실행됐는지 봅니다.
+  // (Windows는 git이 화면 파일을 CRLF로 받아, 해시를 계산할 때 줄바꿈을 맞추지 않으면 여기서 막힙니다.)
+  await expect.poll(() => win.evaluate(() => document.documentElement.dataset.theme ?? '')).toBe('dark');
   await expect(win.getByRole('heading', { name: '빛 (The Light)', level: 2 })).toBeVisible({ timeout: 30_000 });
   await win.getByRole('link', { name: '보관함', exact: true }).click();
   await win.getByRole('button', { name: '내 FLAC' }).click();
