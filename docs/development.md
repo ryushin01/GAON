@@ -20,12 +20,13 @@ CD 라벨(`disc/*.webp`)은 `scripts/disc_labels.py`가 실제 CD 구조(테두�
 
 ## 네이티브 빌드
 
-`ios/`와 `android/`는 `expo prebuild`로 만드는 폴더이고 저장소에 올리지 않습니다. 네이티브 설정은 `app.json`에서 바꿉니다.
+`ios/`와 `android/`는 `expo prebuild`로 만드는 폴더이고 저장소에 올리지 않습니다. 네이티브 설정(아이콘·스플래시·권한·플러그인)은 `app.json`에서 바꿉니다.
+
+`expo run:ios`·`expo run:android`는 이 폴더가 없을 때만 prebuild를 하고, 이미 있으면 `app.json`이 바뀌어도 다시 반영하지 않습니다. 그래서 0.8.1에서 아이콘·스플래시를 바꾼 뒤에도 로컬 빌드에는 예전 아이콘이 남았습니다. `pnpm ios`·`pnpm android`는 빌드 전에 `expo prebuild`로 폴더를 설정에 맞춥니다(pod install은 `expo run:ios`가 함). `expo run:*`을 직접 쓸 때는 먼저 `pnpm exec expo prebuild`를 실행하고, 설정을 뺀 뒤 예전 파일이 남으면 `--clean`으로 다시 만듭니다.
 
 ```bash
-pnpm exec expo prebuild
-pnpm exec expo run:ios --configuration Release
-pnpm exec expo run:android --variant release   # JDK 21 필요
+pnpm ios --configuration Release
+pnpm android --variant release   # JDK 21 필요
 ```
 
 Android 에뮬레이터에서 로컬 미디어 서버를 쓰려면 `adb reverse tcp:8787 tcp:8787`을 먼저 실행합니다. Android Release 빌드는 평문 HTTP를 막으므로, 로컬 서버로 검사할 때는 Debug 빌드를 쓰거나 `android/app/src/release/AndroidManifest.xml`에 `usesCleartextTraffic`을 임시로 켭니다. 공개 주소는 HTTPS라 이 설정이 필요 없습니다.
