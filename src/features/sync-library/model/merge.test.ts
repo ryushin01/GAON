@@ -76,6 +76,14 @@ describe('mergeLibraries', () => {
     expect(mergeLibraries({ ...empty, playlists: [local] }, { ...empty, playlists: [remote] }).playlists[0].name).toBe('퇴근');
   });
 
+  it('객체의 기본 속성 이름(__proto__, constructor)을 가진 항목도 시각으로 비교합니다', () => {
+    // Gist를 손으로 고치면 어떤 키든 올 수 있습니다. JSON.parse는 __proto__도 자기 속성으로 만듭니다.
+    const remote = parseSnapshot(JSON.parse('{"likedIds":[],"recentIds":[],"playlists":[],"unlikedAt":{"__proto__":' + now + ',"constructor":' + now + '}}'));
+    const merged = mergeLibraries({ ...empty, likedIds: ['__proto__', 'constructor', 'a'] }, remote!);
+    expect(merged.likedIds).toEqual(['a']);
+    expect(Object.keys(merged.unlikedAt).sort()).toEqual(['__proto__', 'constructor']);
+  });
+
   it('오래된 삭제 기록은 지웁니다', () => {
     const merged = mergeLibraries({ ...empty, unlikedAt: { old: now - 200 * DAY, recent: now - DAY } }, empty);
     expect(merged.unlikedAt).toEqual({ recent: now - DAY });

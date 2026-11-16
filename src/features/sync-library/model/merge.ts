@@ -57,14 +57,21 @@ export function parseSnapshot(data: unknown): LibrarySnapshot | null {
   };
 }
 
-/** 두 기록에서 키마다 나중 시각을 고릅니다. */
-function latest(a: Stamps, b: Stamps): Stamps {
-  const merged = { ...a };
+/**
+ * 두 기록에서 키마다 나중 시각을 고릅니다. Gist의 JSON에는 `__proto__`, `constructor` 같은 키도 올 수 있어,
+ * 객체의 기본 속성과 섞이지 않게 Map으로 셉니다.
+ */
+function latest(a: Stamps, b: Stamps): Map<string, number> {
+  const merged = new Map(Object.entries(a));
   for (const [key, at] of Object.entries(b)) {
-    if (!hasStamp(merged, key) || at > merged[key]) merged[key] = at;
+    const seen = merged.get(key);
+    if (seen === undefined || at > seen) merged.set(key, at);
   }
   return merged;
 }
+
+/** 자기 속성에 있는 시각만 읽습니다. */
+const stampOf = (stamps: Stamps, key: string) => (hasStamp(stamps, key) ? stamps[key] : undefined);
 
 type Members = { ids: string[]; addedAt: Stamps; removedAt: Stamps };
 
@@ -77,16 +84,18 @@ function mergeMembers(a: Members, b: Members): Members {
   const removedAt = latest(a.removedAt, b.removedAt);
   const inA = new Set(a.ids);
   const inB = new Set(b.ids);
-  const addedAt: Stamps = {};
+  const addedAt = new Map<string, number>();
   const ids: string[] = [];
   for (const id of new Set([...a.ids, ...b.ids])) {
-    const at = Math.max(inA.has(id) ? (a.addedAt[id] ?? 0) : -1, inB.has(id) ? (b.addedAt[id] ?? 0) : -1);
-    if (hasStamp(removedAt, id) && removedAt[id] >= at) continue;
+    const at = Math.max(inA.has(id) ? (stampOf(a.addedAt, id) ?? 0) : -1, inB.has(id) ? (stampOf(b.addedAt, id) ?? 0) : -1);
+    const removed = removedAt.get(id);
+    if (removed !== undefined && removed >= at) continue;
     ids.push(id);
-    if (at > 0) addedAt[id] = at;
-    delete removedAt[id];
+    if (at > 0) addedAt.set(id, at);
+    removedAt.delete(id);
   }
-  return { ids, addedAt, removedAt: pruneStamps(removedAt) };
+  // Object.fromEntries는 `__proto__` 키도 자기 속성으로 만듭니다.
+  return { ids, addedAt: Object.fromEntries(addedAt), removedAt: pruneStamps(Object.fromEntries(removedAt)) };
 }
 
 /** 플레이리스트를 마지막으로 바꾼 시각입니다. 이전 버전의 플레이리스트는 만든 시각입니다. */
@@ -129,8 +138,9 @@ export function mergeLibraries(local: LibrarySnapshot, remote: LibrarySnapshot):
   }
   // 지운 뒤에 다른 기기에서 고친 플레이리스트는 남깁니다. 나중에 한 일이 이깁니다.
   const playlists = [...byId.values()].filter((p) => {
-    if (hasStamp(deletedPlaylistAt, p.id) && deletedPlaylistAt[p.id] >= touchedAt(p)) return false;
-    delete deletedPlaylistAt[p.id];
+    const deleted = deletedPlaylistAt.get(p.id);
+    if (deleted !== undefined && deleted >= touchedAt(p)) return false;
+    deletedPlaylistAt.delete(p.id);
     return true;
   });
 
@@ -140,7 +150,7 @@ export function mergeLibraries(local: LibrarySnapshot, remote: LibrarySnapshot):
     unlikedAt: likes.removedAt,
     recentIds: [...new Set([...local.recentIds, ...remote.recentIds])].slice(0, RECENT_LIMIT),
     playlists: playlists.sort((a, b) => b.createdAt - a.createdAt),
-    deletedPlaylistAt: pruneStamps(deletedPlaylistAt),
+    deletedPlaylistAt: pruneStamps(Object.fromEntries(deletedPlaylistAt)),
   };
 }
 
