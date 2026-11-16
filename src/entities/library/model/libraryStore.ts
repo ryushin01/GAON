@@ -36,7 +36,9 @@ type LibraryState = {
   deletedPlaylistAt: Stamps;
   /** 메타데이터만 저장합니다. 실제 파일 주소는 재생 직전에 구합니다. */
   localTracks: Track[];
-  /** 저장하지 않는 앨범 아트 주소입니다. */
+  /** 인터넷 없이 듣도록 기기에 저장한 스트리밍 곡입니다(오프라인 저장). 곡 정보만 두고, 파일은 내 FLAC과 같은 저장소에 둡니다. */
+  offlineTracks: Track[];
+  /** 기기에 저장한 앨범 아트(내 FLAC, 오프라인 저장)의 주소입니다. 앱을 켤 때마다 새로 만들어 저장하지 않습니다. */
   localArt: Record<string, string>;
   toggleLike: (id: string) => void;
   addRecent: (id: string) => void;
@@ -48,6 +50,8 @@ type LibraryState = {
   addLocalTracks: (tracks: Track[]) => void;
   removeLocalTrack: (id: string) => void;
   setLocalArt: (art: Record<string, string>) => void;
+  addOfflineTrack: (track: Track) => void;
+  removeOfflineTracks: (ids: string[]) => void;
 };
 
 function newId() {
@@ -64,6 +68,7 @@ export const useLibraryStore = create<LibraryState>()(
       playlists: [],
       deletedPlaylistAt: {},
       localTracks: [],
+      offlineTracks: [],
       localArt: {},
       toggleLike: (id) =>
         set((s) => {
@@ -156,13 +161,21 @@ export const useLibraryStore = create<LibraryState>()(
           };
         }),
       setLocalArt: (art) => set((s) => ({ localArt: { ...s.localArt, ...art } })),
+      addOfflineTrack: (track) =>
+        set((s) => ({ offlineTracks: [track, ...s.offlineTracks.filter((t) => t.id !== track.id)] })),
+      removeOfflineTracks: (ids) =>
+        set((s) => {
+          const gone = new Set(ids);
+          const localArt = Object.fromEntries(Object.entries(s.localArt).filter(([id]) => !gone.has(id)));
+          return { offlineTracks: s.offlineTracks.filter((t) => !gone.has(t.id)), localArt };
+        }),
     }),
     {
       name: 'gaon-library',
       // 시각 기록은 없어도 되는 값이라 버전을 올리지 않습니다. 이전 버전에서 저장한 보관함은 기록 없이 불러옵니다.
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ likedIds, likedAt, unlikedAt, recentIds, playlists, deletedPlaylistAt, localTracks }) => ({
+      partialize: ({ likedIds, likedAt, unlikedAt, recentIds, playlists, deletedPlaylistAt, localTracks, offlineTracks }) => ({
         likedIds,
         likedAt,
         unlikedAt,
@@ -170,6 +183,7 @@ export const useLibraryStore = create<LibraryState>()(
         playlists,
         deletedPlaylistAt,
         localTracks,
+        offlineTracks,
       }),
     },
   ),
@@ -180,4 +194,19 @@ export function useLocalTracks(): Track[] {
   const tracks = useLibraryStore((s) => s.localTracks);
   const art = useLibraryStore((s) => s.localArt);
   return useMemo(() => tracks.map((t) => ({ ...t, artUri: art[t.id] })), [tracks, art]);
+}
+
+/**
+ * 오프라인 저장한 곡입니다. 인터넷 없이도 보이도록 기기에 저장한 앨범 아트를 쓰고, CD 라벨은 받지 않아 커버로 대신합니다.
+ * 카탈로그를 받으면 화면은 카탈로그의 곡 정보를 먼저 씁니다.
+ */
+export function useOfflineTracks(): Track[] {
+  const tracks = useLibraryStore((s) => s.offlineTracks);
+  const art = useLibraryStore((s) => s.localArt);
+  return useMemo(() => tracks.map((t) => ({ ...t, artUri: art[t.id] ?? t.artUri, discUri: undefined })), [tracks, art]);
+}
+
+/** 오프라인 저장한 곡인지 봅니다. 재생할 때 스트리밍 대신 기기의 파일을 씁니다. */
+export function isStoredOffline(id: string): boolean {
+  return useLibraryStore.getState().offlineTracks.some((t) => t.id === id);
 }

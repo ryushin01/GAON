@@ -34,8 +34,36 @@ export async function saveLocalFile(id: string, ref: LocalFileRef, art?: { mime:
   }
 }
 
+/** 받다 실패하면 반쯤 쓴 파일(Android)을 지웁니다. */
+async function download(url: string, target: File): Promise<void> {
+  try {
+    await File.downloadFileAsync(url, target, { idempotent: true });
+  } catch (error) {
+    if (target.exists) target.delete();
+    throw error;
+  }
+}
+
+/**
+ * 스트리밍 곡을 받아 문서 폴더에 넣습니다(오프라인 저장). 내 FLAC과 같은 자리에 두어 같은 방법으로 재생합니다.
+ * 앱의 내려받기는 도중에 멈출 수 없어, 취소는 받은 뒤에 부르는 쪽이 지웁니다.
+ */
+export async function downloadAudio(id: string, url: string, _signal?: AbortSignal): Promise<void> {
+  await download(url, new File(ensureRoot(), `${id}.flac`));
+}
+
+export async function downloadArt(id: string, url: string, _signal?: AbortSignal): Promise<void> {
+  const ext = /\.(png|webp)(?:$|\?)/i.exec(url)?.[1]?.toLowerCase() ?? 'jpg';
+  await download(url, new File(ensureRoot(), `${id}.${ext}`));
+}
+
+/** 앱의 문서 폴더는 운영체제가 지우지 않습니다. 웹과 모양을 맞춥니다. */
+export async function keepStoredFiles(): Promise<void> {}
+
 export async function resolveAudioUri(id: string): Promise<string> {
-  return new File(root(), `${id}.flac`).uri;
+  const file = new File(root(), `${id}.flac`);
+  if (!file.exists) throw new Error('저장된 파일을 찾을 수 없습니다.');
+  return file.uri;
 }
 
 /** 앱은 파일 경로로 재생해 놓을 것이 없습니다. 웹과 모양을 맞춥니다. */
@@ -49,7 +77,8 @@ export async function resolveArtUri(id: string): Promise<string | undefined> {
   return undefined;
 }
 
-export async function deleteLocalFile(id: string): Promise<void> {
+/** 앱은 파일 경로로 재생해, 재생 중인 파일을 지워도 운영체제가 연 파일은 끝까지 읽습니다. */
+export async function deleteLocalFile(id: string, _options?: { release?: boolean }): Promise<void> {
   for (const ext of ['flac', 'jpg', 'png', 'webp']) {
     const file = new File(root(), `${id}.${ext}`);
     if (file.exists) file.delete();

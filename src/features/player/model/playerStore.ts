@@ -47,12 +47,12 @@ export const usePlayerStore = create<PlayerState>()(
       // 재생 위치가 바뀔 때마다 같은 내용을 다시 쓰지 않습니다.
       storage: createJSONStorage(() => skipUnchangedWrites(AsyncStorage)),
       // 앱을 다시 켜도 듣던 큐와 곡이 남습니다. 재생 위치처럼 자주 바뀌는 값은 저장하지 않습니다.
-      // 내 FLAC의 앨범 아트 주소는 앱을 켤 때마다 새로 만들어서 저장하지 않습니다.
+      // 기기에 저장한 앨범 아트(내 FLAC, 오프라인 저장)의 주소는 앱을 켤 때마다 새로 만들어서 저장하지 않습니다.
       partialize: ({ repeat, shuffle, exclusive, queue, index }) => ({
         repeat,
         shuffle,
         exclusive,
-        queue: queue.map((t) => (t.source === 'local' ? { ...t, artUri: undefined } : t)),
+        queue: queue.map((t) => (t.artUri?.startsWith('http') ? t : { ...t, artUri: undefined })),
         index,
       }),
       // 버전 1은 큐 없이 설정만 저장했습니다.

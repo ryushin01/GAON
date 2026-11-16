@@ -1,3 +1,4 @@
+import { useLibraryStore } from '@/entities/library';
 import type { Track } from '@/entities/music';
 
 import { addToQueue, forgetTrack, playTracks, removeFromQueue, setExclusiveOutput, togglePlay, toggleShuffle } from './engine';
@@ -55,6 +56,29 @@ beforeEach(() => {
   usePlayerStore.setState({ queue: [], index: 0, shuffle: false, error: null });
 });
 
+describe('오프라인 저장한 곡', () => {
+  afterEach(() => useLibraryStore.setState({ offlineTracks: [] }));
+
+  it('스트리밍 대신 기기에 저장한 파일로 재생합니다', async () => {
+    useLibraryStore.setState({ offlineTracks: [track('s')] });
+    const playing = playTracks([track('s'), track('t')]);
+    await settle();
+    mockPending.get('s')?.resolve('blob:s');
+    await playing;
+    expect(mockList.items).toEqual(['blob:s', 'https://m/t.flac']);
+  });
+
+  it('저장한 파일을 찾지 못하면 스트리밍합니다', async () => {
+    useLibraryStore.setState({ offlineTracks: [track('s')] });
+    const playing = playTracks([track('s')]);
+    await settle();
+    mockPending.get('s')?.reject(new Error('저장된 파일을 찾을 수 없습니다.'));
+    await playing;
+    expect(mockList.items).toEqual(['https://m/s.flac']);
+    expect(usePlayerStore.getState().error).toBeNull();
+  });
+});
+
 describe('내 FLAC 재생 요청', () => {
   it('낡은 요청이 끝나도 아직 주소를 구하는 새 요청의 주소는 놓지 않습니다', async () => {
     const first = playTracks([track('x', 'local')]);
@@ -99,8 +123,8 @@ describe('내 FLAC 재생 요청', () => {
     await settle();
     expect(mockList.items).toContain('blob:x');
     expect(mockList.play).toHaveBeenCalled();
-    // 새 큐가 올라간 뒤 지금 큐에 있는 내 FLAC(x)만 남기고 정리합니다.
-    expect(mockRelease).toHaveBeenCalledWith(['x']);
+    // 새 큐가 올라간 뒤 지금 큐에 있는 곡(x, b)의 주소만 남기고 정리합니다.
+    expect(mockRelease.mock.calls.at(-1)?.[0]).toEqual(expect.arrayContaining(['x', 'b']));
     expect(usePlayerStore.getState().shuffle).toBe(true);
   });
 

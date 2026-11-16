@@ -6,6 +6,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { displayTitle, type Track } from '@/entities/music';
 import { AddToPlaylistDialog } from './AddToPlaylistDialog';
 import { addToQueue } from '@/features/player';
+import { offlineMenuItem } from '@/features/save-offline';
 import { LikeButton } from '@/features/toggle-like';
 import { AppText, IconButton } from '@/shared/ui';
 
@@ -15,11 +16,18 @@ export function TrackActions({ track, extra = [] }: Props) {
   const { theme } = useUnistyles();
   const [menu, setMenu] = useState(false);
   const [dialog, setDialog] = useState(false);
+  // 저장 상태는 메뉴를 열 때 구합니다. 항목을 고르면 메뉴가 닫혀 그 사이 바뀌어도 다시 구할 필요가 없습니다.
+  const [offline, setOffline] = useState<ReturnType<typeof offlineMenuItem>>(null);
   const title = displayTitle(track);
+  const openMenu = () => {
+    setOffline(offlineMenuItem(track));
+    setMenu(true);
+  };
 
   const items: { label: string; onPress: () => void }[] = [
     { label: '다음에 듣기 목록에 추가', onPress: () => void addToQueue([track]) },
     { label: '플레이리스트에 담기', onPress: () => setDialog(true) },
+    ...(offline ? [offline] : []),
     { label: '곡 정보', onPress: () => router.push(`/track/${track.id}`) },
     ...(track.albumId ? [{ label: '앨범으로 이동', onPress: () => router.push(`/album/${track.albumId}`) }] : []),
     ...(track.source === 'stream' ? [{ label: '가수 정보', onPress: () => router.push(`/artist/${encodeURIComponent(track.artists[0])}`) }] : []),
@@ -29,7 +37,7 @@ export function TrackActions({ track, extra = [] }: Props) {
   return (
     <View style={styles.row}>
       <LikeButton trackId={track.id} title={title} />
-      <IconButton icon="ellipsis-vertical" label={`${title} 더보기`} size={20} color={theme.colors.textMuted} onPress={() => setMenu(true)} />
+      <IconButton icon="ellipsis-vertical" label={`${title} 더보기`} size={20} color={theme.colors.textMuted} onPress={openMenu} />
       <Modal aria-label={`${title} 메뉴`} visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
         <View style={styles.backdrop}>
           <View style={styles.menu}>

@@ -52,6 +52,33 @@ export async function saveLocalFile(id: string, ref: LocalFileRef, art?: { mime:
   }
 }
 
+async function fetchBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error(`파일을 받지 못했습니다. (${response.status})`);
+  return response.blob();
+}
+
+/** 스트리밍 곡을 받아 IndexedDB에 넣습니다(오프라인 저장). 내 FLAC과 같은 자리에 두어 같은 방법으로 재생합니다. */
+export async function downloadAudio(id: string, url: string, signal?: AbortSignal): Promise<void> {
+  const blob = await fetchBlob(url, signal);
+  const audio = blob.type === 'audio/flac' ? blob : blob.slice(0, blob.size, 'audio/flac');
+  await withStore('readwrite', (s) => s.put(audio, `audio:${id}`));
+}
+
+export async function downloadArt(id: string, url: string, signal?: AbortSignal): Promise<void> {
+  const blob = await fetchBlob(url, signal);
+  await withStore('readwrite', (s) => s.put(blob, `art:${id}`));
+}
+
+/** 저장 공간이 부족할 때 브라우저가 저장한 곡을 지우지 않도록 요청합니다. 허락하지 않아도 저장은 됩니다. */
+export async function keepStoredFiles(): Promise<void> {
+  try {
+    await navigator.storage?.persist?.();
+  } catch {
+    // 허락하지 않아도 저장은 됩니다.
+  }
+}
+
 export async function resolveAudioUri(id: string): Promise<string> {
   const url = await blobUrl(`audio:${id}`);
   if (!url) throw new Error('저장된 파일을 찾을 수 없습니다.');
@@ -73,11 +100,17 @@ export async function resolveArtUri(id: string): Promise<string | undefined> {
   return blobUrl(`art:${id}`);
 }
 
-export async function deleteLocalFile(id: string): Promise<void> {
+/**
+ * 저장한 파일을 지웁니다. release가 false면 지금 재생 중일 수 있는 재생 주소는 놓지 않고 파일만 지웁니다.
+ * 그 주소는 곡이 큐에서 빠질 때 releaseAudioUris가 놓습니다.
+ */
+export async function deleteLocalFile(id: string, { release = true }: { release?: boolean } = {}): Promise<void> {
   for (const key of [`audio:${id}`, `art:${id}`]) {
     const url = urls.get(key);
-    if (url) URL.revokeObjectURL(url);
-    urls.delete(key);
+    if (url && release) {
+      URL.revokeObjectURL(url);
+      urls.delete(key);
+    }
     await withStore('readwrite', (s) => s.delete(key));
   }
 }
