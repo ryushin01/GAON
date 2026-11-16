@@ -7,8 +7,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "ios": "expo run:ios",
-    "android": "expo run:android",
+    "ios": "expo prebuild --platform ios --no-install --no-clean && expo run:ios",
+    "android": "expo prebuild --platform android --no-install --no-clean && expo run:android",
     "web": "expo start --web",
     "media:generate": "python3 scripts/generate-media.py public-media",
     "media:serve": "node scripts/serve-media.mjs public-media 8787",
