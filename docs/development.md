@@ -22,7 +22,9 @@ CD 라벨(`disc/*.webp`)은 `scripts/disc_labels.py`가 실제 CD 구조(테두�
 
 `ios/`와 `android/`는 `expo prebuild`로 만드는 폴더이고 저장소에 올리지 않습니다. 네이티브 설정(아이콘·스플래시·권한·플러그인)은 `app.json`에서 바꿉니다.
 
-`expo run:ios`·`expo run:android`는 이 폴더가 없을 때만 prebuild를 하고, 이미 있으면 `app.json`이 바뀌어도 다시 반영하지 않습니다. 그래서 0.8.1에서 아이콘·스플래시를 바꾼 뒤에도 로컬 빌드에는 예전 아이콘이 남았습니다. `pnpm ios`·`pnpm android`는 빌드 전에 `expo prebuild --no-clean`으로 지금 폴더에 설정을 다시 적용합니다(Pods·빌드 캐시와 손으로 바꾼 파일은 그대로, pod install은 `expo run:ios`가 함). `expo run:*`을 직접 쓸 때도 먼저 `pnpm exec expo prebuild --no-clean`을 실행합니다. `--no-clean` 없이 실행하면 Expo CLI 58의 기본대로 폴더를 지우고 새로 만드므로, 설정을 뺀 뒤 예전 파일이 남았을 때만 그렇게 합니다.
+`expo run:ios`·`expo run:android`는 이 폴더가 없을 때만 prebuild를 하고, 이미 있으면 `app.json`이 바뀌어도 다시 반영하지 않습니다. 그래서 0.8.1에서 아이콘·스플래시를 바꾼 뒤에도 로컬 빌드에는 예전 아이콘이 남았습니다. `pnpm ios`·`pnpm android`는 빌드 전에 `expo prebuild --no-clean`으로 지금 폴더에 설정을 다시 적용합니다(pod install은 `expo run:ios`가 함). Pods·빌드 캐시는 남지만, 아이콘·스플래시·권한·Info.plist처럼 설정에서 만드는 부분은 `app.json` 기준으로 다시 쓰므로 그 부분을 손으로 고친 내용은 덮어씁니다. `expo run:*`을 직접 쓸 때도 먼저 `pnpm exec expo prebuild --no-clean`을 실행합니다.
+
+`--no-clean`은 뺀 설정을 되돌리지 않습니다. 예를 들어 끈 권한이 매니페스트에 남을 수 있습니다. 설정을 빼거나 끈 뒤에는 `--no-clean` 없이 `pnpm exec expo prebuild`를 실행해 폴더를 새로 만듭니다(Expo CLI 58의 기본은 폴더를 지우고 새로 만드는 clean 모드).
 
 ```bash
 pnpm ios --configuration Release
