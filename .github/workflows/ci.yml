@@ -27,7 +27,12 @@ jobs:
       - run: pip install numpy soundfile pillow
       - run: python scripts/generate-media.py public-media
       - run: pnpm build:native
-      - run: pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/album-28-1.flac
+      # 같은 앨범(같은 형식)의 두 곡은 이어 붙이기(갭리스)를, 형식이 다른 곡은 이어 붙이지 않는지를 함께 봅니다.
+      - run: pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/glass-city-2.flac public-media/audio/album-28-1.flac
+      - name: 비트 퍼펙트 재생기 갭리스 (시험 출력)
+        run: pnpm test:native:smoke public-media/audio/glass-city-1.flac public-media/audio/glass-city-2.flac
+        env:
+          SMOKE_SKIP_REAL: '1'
       # 실행기의 apt 저장소가 잠시 안 될 때가 있어 몇 번 다시 시도하고, 끝내 안 되면 실행기에 이미 있는 라이브러리를 믿고 브라우저만 받습니다.
       - name: Playwright 브라우저 설치
         run: |
@@ -59,8 +64,9 @@ jobs:
         run: |
           import numpy as np, soundfile as sf
           t = np.arange(96000) / 96000
-          tone = 0.25 * np.sin(2 * np.pi * 440 * t)
-          sf.write('fixture.flac', np.stack([tone, tone], axis=1), 96000, subtype='PCM_24', format='FLAC')
+          for name, freq in (('fixture.flac', 440), ('fixture-next.flac', 660)):
+              tone = 0.25 * np.sin(2 * np.pi * freq * t)
+              sf.write(name, np.stack([tone, tone], axis=1), 96000, subtype='PCM_24', format='FLAC')
       - run: node scripts/build-native.mjs
-      - run: node scripts/verify-native-audio.mjs fixture.flac
-      - run: node scripts/smoke-native-audio.mjs fixture.flac
+      - run: node scripts/verify-native-audio.mjs fixture.flac fixture-next.flac
+      - run: node scripts/smoke-native-audio.mjs fixture.flac fixture-next.flac

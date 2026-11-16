@@ -8,9 +8,11 @@ function setup(loop: 'none' | 'single' | 'all' = 'none') {
     prepareUrl: jest.fn(async (url: string) => `${url}.name`),
     prepareBytes: jest.fn(async () => 'bytes.name'),
     load: jest.fn(),
+    next: jest.fn(),
     play: jest.fn(),
     pause: jest.fn(),
-    stop: jest.fn(),
+    // 재생기는 멈춤을 처리하면 stopped를 알립니다.
+    stop: jest.fn(() => queueMicrotask(() => emit({ event: 'stopped' }))),
     seek: jest.fn(),
     onEvent: jest.fn((listener: Listener) => {
       emit = listener;
@@ -105,6 +107,89 @@ describe('비트 퍼펙트 재생 목록', () => {
     list.play();
     await settle();
     expect(bridge.load).toHaveBeenCalledWith('a.name');
+  });
+
+  it('지금 곡을 불러오면 다음 곡을 미리 받아 재생기에 알립니다', async () => {
+    const { bridge, list } = setup();
+    list.play();
+    await settle();
+    expect(bridge.prepareUrl).toHaveBeenCalledWith('b');
+    expect(bridge.next).toHaveBeenLastCalledWith('b.name');
+    expect(bridge.load).toHaveBeenCalledTimes(1);
+  });
+
+  it('재생기가 다음 곡을 이어 붙이면 다시 불러오지 않고 곡만 넘기며, 그다음 곡을 알립니다', async () => {
+    const { bridge, list, tracks, emit } = setup();
+    list.play();
+    await settle();
+    emit({ event: 'advanced', file: 'b.name', duration: 24 });
+    await settle();
+    expect(tracks).toHaveBeenLastCalledWith({ currentIndex: 1 });
+    expect(bridge.load).toHaveBeenCalledTimes(1);
+    expect(bridge.next).toHaveBeenLastCalledWith('c.name');
+    // 마지막 곡에서는 알릴 다음 곡이 없습니다(반복 꺼짐).
+    emit({ event: 'advanced', file: 'c.name', duration: 24 });
+    await settle();
+    expect(tracks).toHaveBeenLastCalledWith({ currentIndex: 2 });
+    expect(bridge.next).toHaveBeenLastCalledWith('c.name');
+  });
+
+  it('다음 곡이 바뀌면 알린 곡을 지우고 새 다음 곡을 알립니다', async () => {
+    const { bridge, list } = setup();
+    list.play();
+    await settle();
+    list.remove(1);
+    await settle();
+    expect(bridge.next.mock.calls.slice(-2)).toEqual([[null], ['c.name']]);
+  });
+
+  it('곡을 여러 번 옮기는 작업은 끝난 뒤의 다음 곡만 받습니다', async () => {
+    const { bridge, list } = setup();
+    list.play();
+    await settle();
+    bridge.prepareUrl.mockClear();
+    // 셔플 재배치처럼 지금 곡만 남기고 빼고 다시 넣습니다.
+    list.remove(2);
+    list.remove(1);
+    list.add({ uri: 'c' });
+    list.add({ uri: 'b' });
+    await settle();
+    expect(bridge.prepareUrl.mock.calls).toEqual([['c']]);
+    expect(bridge.next).toHaveBeenLastCalledWith('c.name');
+  });
+
+  it('재생기가 큐에 없는 곡으로 넘어갔으면 다음 곡을 새로 불러옵니다', async () => {
+    const { bridge, list, tracks, emit } = setup();
+    list.play();
+    await settle();
+    emit({ event: 'advanced', file: 'old.name', duration: 24 });
+    await settle();
+    expect(tracks).toHaveBeenLastCalledWith({ currentIndex: 1 });
+    expect(bridge.load).toHaveBeenLastCalledWith('b.name');
+  });
+
+  it('한 곡 반복은 같은 곡을 다음 곡으로 알리고, 넘어가도 곡을 바꾸지 않습니다', async () => {
+    const { bridge, list, tracks, emit } = setup('single');
+    list.play();
+    await settle();
+    expect(bridge.next).toHaveBeenLastCalledWith('a.name');
+    tracks.mockClear();
+    emit({ event: 'advanced', file: 'a.name', duration: 24 });
+    await settle();
+    expect(tracks).not.toHaveBeenCalled();
+    expect(bridge.load).toHaveBeenCalledTimes(1);
+  });
+
+  it('멈춤을 처리했다는 알림 전에 온 이벤트는 멈추기 전 곡의 것이라 버립니다', async () => {
+    const { bridge, list, tracks, emit } = setup();
+    list.play();
+    await settle();
+    list.skipTo(1);
+    // 재생기가 멈춤을 처리하기 전에 앞 곡이 끝났다는 알림이 왔습니다.
+    emit({ event: 'ended' });
+    await settle();
+    expect(tracks).toHaveBeenLastCalledWith({ currentIndex: 1 });
+    expect(bridge.load).toHaveBeenLastCalledWith('b.name');
   });
 
   it('준비에 실패하면 알립니다', async () => {

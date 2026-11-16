@@ -6,6 +6,7 @@ if (ipcRenderer.sendSync('audio:available')) {
     prepareUrl: (url) => ipcRenderer.invoke('audio:prepareUrl', url),
     prepareBytes: (bytes) => ipcRenderer.invoke('audio:prepareBytes', bytes),
     load: (name) => ipcRenderer.send('audio:load', name),
+    next: (name) => ipcRenderer.send('audio:next', name ?? null),
     play: () => ipcRenderer.send('audio:command', 'play'),
     pause: () => ipcRenderer.send('audio:command', 'pause'),
     stop: () => ipcRenderer.send('audio:command', 'stop'),

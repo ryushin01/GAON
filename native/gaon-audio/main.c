@@ -2,13 +2,18 @@
  * GAON 비트 퍼펙트 재생기입니다. Electron 메인 프로세스가 실행하며, 표준 입력으로 명령을 받고
  * 표준 출력으로 JSON 이벤트를 한 줄씩 보냅니다.
  *
- *   load <경로> | play | pause | seek <초> | stop | quit
+ *   load <경로> | next [경로] | play | pause | seek <초> | stop | quit
  *
  * 운영체제 믹서를 거치지 않도록 macOS는 hog 모드와 장치 샘플레이트 변경 후 HAL에 직접 쓰고, Windows는
  * 곡의 형식으로 WASAPI 독점 모드를 엽니다. 조건이 맞지 않으면 재생은 하되 bitPerfect=false와 이유를 알립니다.
  *
- *   --verify <파일> <출력> <형식>  실제 콜백으로 장치에 쓸 버퍼를 만들어 PCM으로 되돌려 저장합니다.
- *   --backend null                 소리 장치가 없는 환경에서 시험합니다.
+ * next로 다음 곡을 미리 알려 두면, 형식(샘플레이트, 채널, 비트 수)이 같을 때 지금 곡의 끝에 바로 이어 붙여
+ * 장치를 다시 열지 않고 끊김 없이 재생합니다(갭리스). 다음 곡이 들리기 시작하면 advanced를 알립니다.
+ * 형식이 다르면 지금처럼 ended를 알리고, 화면이 다음 곡을 불러옵니다.
+ *
+ *   --verify <파일> <출력> <형식> [다음 파일]  실제 콜백으로 장치에 쓸 버퍼를 만들어 PCM으로 되돌려 저장합니다.
+ *                                              다음 파일을 주면 재생과 같은 길로 이어 붙입니다.
+ *   --backend null                            소리 장치가 없는 환경에서 시험합니다.
  */
 #ifdef _WIN32
 #define COBJMACROS
@@ -60,6 +65,10 @@ static void sleep_ms(unsigned ms) { usleep(ms * 1000); }
 
 #define RING_SECONDS 2
 #define CHUNK_FRAMES 4096
+/* 상태 스레드가 곡의 끝과 다음 곡으로 넘어간 것을 확인하는 간격과, 재생 위치를 알리는 간격입니다. */
+#define TICK_MS 20
+#define STATUS_TICKS 12
+#define NO_CUT ((ma_uint64)-1)
 
 static ma_context g_context;
 static ma_bool32 g_nullBackend = MA_FALSE;
@@ -68,17 +77,33 @@ static ma_mutex g_stateLock;  /* 디코더와 장치 상태 */
 
 static ma_device g_device;
 static ma_bool32 g_deviceOpen = MA_FALSE;
-static ma_dr_flac *g_flac = NULL;
 static ma_pcm_rb g_ring;
 static ma_bool32 g_ringReady = MA_FALSE;
+
+/* 지금 들리는 곡입니다. 재생 위치와 형식은 이 곡 기준입니다. */
+static ma_dr_flac *g_flac = NULL;
+/* 지금 곡 다음에 이어 재생할 곡입니다(next 명령). */
+static ma_dr_flac *g_next = NULL;
+/* 다음 곡의 파일 이름입니다. advanced 이벤트로 알려, 화면이 어느 곡으로 넘어갔는지 확인합니다. */
+static char g_nextName[256] = "";
+/* 디코더 스레드가 링에 쓰는 곡입니다. 지금 곡이거나, 이어 붙인 다음 곡이거나, 버린 뒤에는 NULL입니다. */
+static ma_dr_flac *g_reading = NULL;
+/* 디코더가 다음 곡을 지금 곡 뒤에 이어 붙였습니다. 아직 들리기 전일 수 있습니다. */
+static ma_bool32 g_joined = MA_FALSE;
+/* 위치는 모두 링을 비운 뒤(불러오기, 위치 이동) 센 프레임 수입니다. */
+static ma_uint64 g_framesWritten = 0; /* 디코더가 링에 쓴 프레임 */
+static ma_uint64 g_joinAt = 0;        /* 다음 곡을 이어 붙인 곳 */
+static ma_uint64 g_trackStart = 0;    /* 지금 곡이 들리기 시작한 곳 */
+/* 장치 콜백은 여기까지만 읽습니다. 이어 붙인 곡을 버릴 때 그 앞에서 끊습니다. */
+static volatile ma_uint64 g_cutAt = NO_CUT;
 
 static volatile ma_bool32 g_playing = MA_FALSE;
 static volatile ma_bool32 g_decodedAll = MA_FALSE;
 static volatile ma_bool32 g_endedPending = MA_FALSE;
 static volatile ma_bool32 g_quit = MA_FALSE;
-static volatile ma_uint64 g_framesPlayed = 0;
+static volatile ma_uint64 g_framesPlayed = 0; /* 장치 콜백이 링에서 읽은 프레임 */
 static volatile ma_uint64 g_underruns = 0;
-static ma_uint64 g_baseFrame = 0;
+static ma_uint64 g_baseFrame = 0; /* 지금 곡에서 링을 비운 위치(위치 이동한 곳) */
 
 /* ---------- 출력 ---------- */
 
@@ -161,6 +186,12 @@ static void fill_output(void *output, ma_uint32 frameCount, ma_uint32 channels, 
     while (remaining > 0 && g_ringReady) {
         ma_uint32 available = remaining;
         void *read = NULL;
+        ma_uint64 cut = g_cutAt;
+        if (cut != NO_CUT) {
+            /* 이어 붙였다가 버린 곡은 읽지 않습니다. 끊은 뒤에는 링을 건드리지 않아, 상태 스레드가 링을 비울 수 있습니다. */
+            if (g_framesPlayed >= cut) break;
+            if ((ma_uint64)available > cut - g_framesPlayed) available = (ma_uint32)(cut - g_framesPlayed);
+        }
         if (ma_pcm_rb_acquire_read(&g_ring, &available, &read) != MA_SUCCESS || available == 0) break;
         write_samples((const ma_int32 *)read, cursor, (ma_uint64)available * channels, format);
         ma_pcm_rb_commit_read(&g_ring, available);
@@ -455,36 +486,112 @@ static ma_bool32 open_device(void) {
     return MA_TRUE;
 }
 
+/* ---------- 곡 이어 붙이기 ---------- */
+
+static ma_bool32 same_format(const ma_dr_flac *a, const ma_dr_flac *b) {
+    return a && b && a->sampleRate == b->sampleRate && a->channels == b->channels && a->bitsPerSample == b->bitsPerSample;
+}
+
+/* 다음 곡의 파일 이름을 JSON에 그대로 쓸 수 있는 글자로만 남깁니다. 앱은 해시 이름(0-9a-f.flac)만 넘깁니다. */
+static void remember_next_name(const char *path) {
+    const char *base = path;
+    const char *p;
+    size_t n = 0;
+    for (p = path; *p; p += 1) {
+        if (*p == '/' || *p == '\\') base = p + 1;
+    }
+    for (p = base; *p && n + 1 < sizeof(g_nextName); p += 1) {
+        unsigned char c = (unsigned char)*p;
+        if (c >= 0x20 && c != '"' && c != '\\') g_nextName[n++] = (char)c;
+    }
+    g_nextName[n] = '\0';
+}
+
+/*
+ * 지금 곡을 끝까지 읽었으면, 형식이 같은 다음 곡을 링에서 바로 이어 읽게 합니다. 장치는 그대로라 곡 사이가 끊기지 않습니다.
+ * 형식이 다르면 장치를 다시 열어야 하므로 이어 붙이지 않습니다. g_stateLock을 잡고 부릅니다.
+ */
+static ma_bool32 join_next(void) {
+    if (g_joined || g_cutAt != NO_CUT || !same_format(g_flac, g_next)) return MA_FALSE;
+    g_reading = g_next;
+    g_joined = MA_TRUE;
+    g_joinAt = g_framesWritten;
+    g_decodedAll = MA_FALSE;
+    g_endedPending = MA_FALSE;
+    return MA_TRUE;
+}
+
+/* 이어 붙인 곡이 들리기 시작했으면 그 곡을 지금 곡으로 삼고 알립니다. g_stateLock을 잡고 부릅니다. */
+static void check_advance(void) {
+    if (!g_joined || g_framesPlayed < g_joinAt) return;
+    ma_dr_flac_close(g_flac);
+    g_flac = g_next;
+    g_next = NULL;
+    g_joined = MA_FALSE;
+    g_trackStart = g_joinAt;
+    g_baseFrame = 0;
+    emit("{\"event\":\"advanced\",\"file\":\"%s\",\"duration\":%.3f,\"rate\":%u,\"bits\":%u,\"channels\":%u}", g_nextName,
+         (double)g_flac->totalPCMFrameCount / (double)g_flac->sampleRate, g_flac->sampleRate, g_flac->bitsPerSample, g_flac->channels);
+    g_nextName[0] = '\0';
+}
+
 /* ---------- 디코더 스레드 ---------- */
+
+/* 링에 빈자리가 있으면 읽는 곡을 풀어 씁니다. 곡 끝이면 다음 곡을 이어 붙입니다. 할 일이 더 있으면 참입니다. */
+static ma_bool32 decode_step(void) {
+    ma_uint32 want;
+    void *write = NULL;
+    ma_uint64 got;
+    if (!g_reading || !g_ringReady || g_decodedAll) return MA_FALSE;
+    want = ma_pcm_rb_available_write(&g_ring);
+    if (want > CHUNK_FRAMES) want = CHUNK_FRAMES;
+    if (want == 0 || ma_pcm_rb_acquire_write(&g_ring, &want, &write) != MA_SUCCESS || want == 0) return MA_FALSE;
+    got = ma_dr_flac_read_pcm_frames_s32(g_reading, want, (ma_int32 *)write);
+    ma_pcm_rb_commit_write(&g_ring, (ma_uint32)got);
+    g_framesWritten += got;
+    if (got > 0) return MA_TRUE;
+    if (join_next()) return MA_TRUE;
+    g_decodedAll = MA_TRUE;
+    return MA_FALSE;
+}
 
 THREAD_FN(decoder_thread) {
     (void)unused;
     while (!g_quit) {
-        ma_bool32 wrote = MA_FALSE;
+        ma_bool32 more;
         ma_mutex_lock(&g_stateLock);
-        if (g_flac && g_ringReady && !g_decodedAll) {
-            ma_uint32 want = ma_pcm_rb_available_write(&g_ring);
-            if (want > CHUNK_FRAMES) want = CHUNK_FRAMES;
-            if (want > 0) {
-                void *write = NULL;
-                if (ma_pcm_rb_acquire_write(&g_ring, &want, &write) == MA_SUCCESS && want > 0) {
-                    ma_uint64 got = ma_dr_flac_read_pcm_frames_s32(g_flac, want, (ma_int32 *)write);
-                    ma_pcm_rb_commit_write(&g_ring, (ma_uint32)got);
-                    if (got == 0) g_decodedAll = MA_TRUE;
-                    wrote = got > 0;
-                }
-            }
-        }
+        more = decode_step();
         ma_mutex_unlock(&g_stateLock);
-        if (!wrote) sleep_ms(5);
+        if (!more) sleep_ms(5);
     }
     THREAD_RET;
 }
 
+/*
+ * 장치 콜백이 링을 다 읽었습니다. 끊었던 곡이 있으면 링을 비우고, 다음 곡을 이어 붙일 수 있으면 장치를 그대로 두고 이어 갑니다.
+ * 아니면 장치를 놓고 끝났다고 알립니다. g_stateLock을 잡고 부릅니다.
+ */
+static void finish_track(void) {
+    g_endedPending = MA_FALSE;
+    /* 그사이 다음 곡을 이어 붙였으면 끝난 것이 아닙니다. */
+    if (!g_decodedAll) return;
+    if (g_cutAt != NO_CUT) {
+        /* 콜백은 끊은 곳에서 링을 읽지 않으므로 지금 비워도 됩니다. */
+        ma_pcm_rb_reset(&g_ring);
+        g_framesWritten = g_framesPlayed;
+        g_cutAt = NO_CUT;
+    }
+    if (join_next()) return;
+    g_playing = MA_FALSE;
+    close_device();
+    emit("{\"event\":\"ended\"}");
+}
+
 THREAD_FN(status_thread) {
+    int ticks = 0;
     (void)unused;
     while (!g_quit) {
-        sleep_ms(250);
+        sleep_ms(TICK_MS);
         ma_mutex_lock(&g_stateLock);
 #ifdef _WIN32
         if (g_wasLost) {
@@ -493,19 +600,17 @@ THREAD_FN(status_thread) {
             close_device();
         }
 #endif
-        if (g_flac) {
+        check_advance();
+        ticks += 1;
+        if (g_flac && ticks >= STATUS_TICKS) {
             double rate = (double)g_flac->sampleRate;
-            ma_uint64 frame = g_baseFrame + g_framesPlayed;
+            ma_uint64 frame = g_baseFrame + (g_framesPlayed - g_trackStart);
+            ticks = 0;
             emit("{\"event\":\"status\",\"playing\":%s,\"time\":%.3f,\"duration\":%.3f,\"underruns\":%llu}",
                  g_playing ? "true" : "false", (double)frame / rate, (double)g_flac->totalPCMFrameCount / rate,
                  (unsigned long long)g_underruns);
-            if (g_endedPending && g_playing) {
-                g_endedPending = MA_FALSE;
-                g_playing = MA_FALSE;
-                close_device();
-                emit("{\"event\":\"ended\"}");
-            }
         }
+        if (g_flac && g_endedPending && g_playing) finish_track();
         ma_mutex_unlock(&g_stateLock);
     }
     THREAD_RET;
@@ -517,6 +622,9 @@ static void reset_position(ma_uint64 frame) {
     ma_pcm_rb_reset(&g_ring);
     g_baseFrame = frame;
     g_framesPlayed = 0;
+    g_framesWritten = 0;
+    g_trackStart = 0;
+    g_cutAt = NO_CUT;
     g_decodedAll = MA_FALSE;
     g_endedPending = MA_FALSE;
 }
@@ -528,10 +636,18 @@ static void cmd_stop(void) {
         ma_pcm_rb_uninit(&g_ring);
         g_ringReady = MA_FALSE;
     }
+    if (g_next) {
+        ma_dr_flac_close(g_next);
+        g_next = NULL;
+    }
     if (g_flac) {
         ma_dr_flac_close(g_flac);
         g_flac = NULL;
     }
+    g_reading = NULL;
+    g_joined = MA_FALSE;
+    g_cutAt = NO_CUT;
+    g_nextName[0] = '\0';
 }
 
 static ma_dr_flac *open_flac(const char *path) {
@@ -561,10 +677,36 @@ static void cmd_load(const char *path) {
         return;
     }
     g_ringReady = MA_TRUE;
+    g_reading = flac;
     reset_position(0);
     g_underruns = 0;
     emit("{\"event\":\"loaded\",\"duration\":%.3f,\"rate\":%u,\"bits\":%u,\"channels\":%u}",
          (double)flac->totalPCMFrameCount / (double)flac->sampleRate, flac->sampleRate, flac->bitsPerSample, flac->channels);
+    ma_mutex_unlock(&g_stateLock);
+}
+
+/*
+ * 지금 곡 다음에 재생할 곡을 정합니다. 경로가 없으면 지웁니다. 열지 못한 곡은 없는 것으로 두어,
+ * 지금 곡이 끝나면 ended를 알리고 화면이 다음 곡을 직접 불러오게 합니다.
+ */
+static void cmd_next(const char *path) {
+    ma_dr_flac *flac = *path ? open_flac(path) : NULL;
+    ma_mutex_lock(&g_stateLock);
+    /* 이미 다음 곡이 들리기 시작했으면 먼저 알려, 이 명령이 그 곡 뒤의 곡을 정하게 합니다. */
+    check_advance();
+    if (g_joined) {
+        /* 이어 붙인 곡이 바뀌었습니다. 이어 붙인 곳에서 끊고 그 뒤에 쓴 곡은 버립니다. */
+        g_cutAt = g_joinAt;
+        g_joined = MA_FALSE;
+        g_reading = NULL;
+        g_decodedAll = MA_TRUE;
+    }
+    if (g_next) ma_dr_flac_close(g_next);
+    g_next = flac;
+    if (flac) remember_next_name(path);
+    else g_nextName[0] = '\0';
+    /* 지금 곡을 이미 다 읽었으면 바로 이어 붙입니다. 링이 아직 비지 않았으면 끊김 없이 이어집니다. */
+    if (g_flac && g_decodedAll) join_next();
     ma_mutex_unlock(&g_stateLock);
 }
 
@@ -593,11 +735,19 @@ static void cmd_seek(double seconds) {
         ma_mutex_unlock(&g_stateLock);
         return;
     }
+    /* 이미 다음 곡이 들리기 시작했으면 그 곡에서 옮깁니다. */
+    check_advance();
     if (seconds < 0) seconds = 0;
     frame = (ma_uint64)(seconds * (double)g_flac->sampleRate);
     if (frame > g_flac->totalPCMFrameCount) frame = g_flac->totalPCMFrameCount;
     wasPlaying = g_playing;
     if (g_deviceOpen) output_stop();
+    if (g_joined) {
+        /* 이어 붙였던 다음 곡은 처음으로 되돌려, 지금 곡을 다 읽은 뒤에 다시 이어 붙입니다. */
+        ma_dr_flac_seek_to_pcm_frame(g_next, 0);
+        g_joined = MA_FALSE;
+    }
+    g_reading = g_flac;
     ma_dr_flac_seek_to_pcm_frame(g_flac, frame);
     reset_position(frame);
     if (wasPlaying && g_deviceOpen && !output_start()) {
@@ -642,52 +792,74 @@ static void read_back(const void *buffer, ma_uint64 samples, ma_format format, m
     }
 }
 
-/* 재생과 같은 링 버퍼와 data_callback을 거쳐, 장치 없이 파일 끝까지 돌립니다. */
-static int run_verify(const char *path, const char *outPath, const char *formatName) {
+/*
+ * 재생과 같은 링 버퍼, 디코더(decode_step), data_callback을 거쳐 장치 없이 파일 끝까지 돌립니다.
+ * 다음 파일을 주면 재생할 때처럼 이어 붙이고, 넘어간 곳(advancedAt, 첫 파일 기준 프레임)을 알립니다.
+ */
+static int run_verify(const char *path, const char *outPath, const char *formatName, const char *nextPath) {
     ma_format format = parse_format(formatName);
     FILE *out;
     ma_device fake;
     void *buffer;
-    ma_uint32 bytesPerFrame;
-    ma_uint64 total = 0;
+    ma_uint32 bytesPerFrame, channels, bits, rate;
+    ma_uint64 total = 0, first;
+    long long advancedAt = -1;
 
     g_flac = open_flac(path);
     if (!g_flac || format == ma_format_unknown) {
         fprintf(stderr, "cannot open\n");
         return 2;
     }
+    if (nextPath) {
+        g_next = open_flac(nextPath);
+        if (!g_next) {
+            fprintf(stderr, "cannot open next\n");
+            return 2;
+        }
+        remember_next_name(nextPath);
+    }
     out = fopen(outPath, "wb");
     if (!out) return 2;
-    ma_pcm_rb_init(ma_format_s32, g_flac->channels, g_flac->sampleRate * RING_SECONDS, NULL, NULL, &g_ring);
+    channels = g_flac->channels;
+    bits = g_flac->bitsPerSample;
+    rate = g_flac->sampleRate;
+    first = g_flac->totalPCMFrameCount;
+    ma_pcm_rb_init(ma_format_s32, channels, rate * RING_SECONDS, NULL, NULL, &g_ring);
     g_ringReady = MA_TRUE;
+    g_reading = g_flac;
     MA_ZERO_OBJECT(&fake);
-    fake.playback.channels = g_flac->channels;
+    fake.playback.channels = channels;
     fake.playback.format = format;
-    bytesPerFrame = ma_get_bytes_per_frame(format, g_flac->channels);
+    bytesPerFrame = ma_get_bytes_per_frame(format, channels);
     buffer = malloc(CHUNK_FRAMES * bytesPerFrame);
 
     for (;;) {
         ma_uint64 before;
-        ma_uint32 want = CHUNK_FRAMES;
-        void *write = NULL;
-        ma_uint64 got = 0;
-        if (ma_pcm_rb_acquire_write(&g_ring, &want, &write) == MA_SUCCESS && want > 0) {
-            got = ma_dr_flac_read_pcm_frames_s32(g_flac, want, (ma_int32 *)write);
-            ma_pcm_rb_commit_write(&g_ring, (ma_uint32)got);
+        ma_uint32 ready;
+        decode_step();
+        ready = ma_pcm_rb_available_read(&g_ring);
+        if (ready == 0) {
+            if (g_decodedAll) break;
+            continue;
         }
-        if (got == 0) break;
+        if (ready > CHUNK_FRAMES) ready = CHUNK_FRAMES;
         before = g_framesPlayed;
-        data_callback(&fake, buffer, NULL, (ma_uint32)got);
-        if (g_framesPlayed - before != got) {
+        data_callback(&fake, buffer, NULL, ready);
+        if (g_framesPlayed - before != ready) {
             fprintf(stderr, "frame count mismatch\n");
             return 3;
         }
-        read_back(buffer, got * g_flac->channels, format, g_flac->bitsPerSample, out);
-        total += got;
+        read_back(buffer, (ma_uint64)ready * channels, format, bits, out);
+        total += ready;
+        if (g_joined && g_framesPlayed >= g_joinAt) {
+            advancedAt = (long long)g_joinAt;
+            check_advance();
+        }
     }
     fclose(out);
-    printf("{\"frames\":%llu,\"rate\":%u,\"bits\":%u,\"channels\":%u,\"format\":\"%s\",\"holds\":%s}\n", (unsigned long long)total,
-           g_flac->sampleRate, g_flac->bitsPerSample, g_flac->channels, formatName, format_holds(format, g_flac->bitsPerSample) ? "true" : "false");
+    printf("{\"frames\":%llu,\"first\":%llu,\"advancedAt\":%lld,\"rate\":%u,\"bits\":%u,\"channels\":%u,\"format\":\"%s\",\"holds\":%s}\n",
+           (unsigned long long)total, (unsigned long long)first, advancedAt, rate, bits, channels, formatName,
+           format_holds(format, bits) ? "true" : "false");
     return 0;
 }
 
@@ -709,7 +881,9 @@ int main(int argc, char **argv) {
     ma_uint32 backendCount = 0;
     int i;
 
-    if (argc >= 5 && strcmp(argv[1], "--verify") == 0) return run_verify(argv[2], argv[3], argv[4]);
+    ma_mutex_init(&g_outputLock);
+    ma_mutex_init(&g_stateLock);
+    if (argc >= 5 && strcmp(argv[1], "--verify") == 0) return run_verify(argv[2], argv[3], argv[4], argc >= 6 ? argv[5] : NULL);
     for (i = 1; i + 1 < argc; i += 1) {
         if (strcmp(argv[i], "--backend") == 0 && strcmp(argv[i + 1], "null") == 0) {
             g_nullBackend = MA_TRUE;
@@ -717,8 +891,6 @@ int main(int argc, char **argv) {
             backendCount = 1;
         }
     }
-    ma_mutex_init(&g_outputLock);
-    ma_mutex_init(&g_stateLock);
     if (ma_context_init(backendCount ? backends : NULL, backendCount, NULL, &g_context) != MA_SUCCESS) {
         emit_error("no_audio_backend");
         return 1;
@@ -734,6 +906,8 @@ int main(int argc, char **argv) {
         size_t n = strlen(line);
         while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == '\r')) line[--n] = '\0';
         if (strncmp(line, "load ", 5) == 0) cmd_load(line + 5);
+        else if (strcmp(line, "next") == 0) cmd_next("");
+        else if (strncmp(line, "next ", 5) == 0) cmd_next(line + 5);
         else if (strcmp(line, "play") == 0) cmd_play();
         else if (strcmp(line, "pause") == 0) cmd_pause();
         else if (strncmp(line, "seek ", 5) == 0) cmd_seek(atof(line + 5));
@@ -741,6 +915,8 @@ int main(int argc, char **argv) {
             ma_mutex_lock(&g_stateLock);
             cmd_stop();
             ma_mutex_unlock(&g_stateLock);
+            /* 화면은 이 알림보다 먼저 온 이벤트를 멈추기 전 곡의 것으로 보고 버립니다. */
+            emit("{\"event\":\"stopped\"}");
         } else if (strcmp(line, "quit") == 0) break;
     }
     /* 부모가 죽어 입력이 닫혀도 여기로 와서 장치를 놓습니다. */

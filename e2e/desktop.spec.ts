@@ -139,3 +139,50 @@ test('독점 출력을 켜면 재생기로 스트리밍과 로컬 FLAC을 재생
   await expect(win.getByRole('button', { name: '비트 퍼펙트 (독점)' })).toHaveAttribute('aria-pressed', 'true');
   await app.close();
 });
+
+test('비트 퍼펙트 재생기는 같은 형식의 다음 곡을 끊김 없이 이어 재생합니다', async () => {
+  test.setTimeout(180_000);
+  const dir = mkdtempSync(join(tmpdir(), 'gaon-'));
+  const args = [`--user-data-dir=${join(dir, 'data')}`];
+  const env = { ...process.env, GAON_AUDIO_BACKEND: process.env.GAON_AUDIO_BACKEND ?? 'null' };
+
+  const app = await _electron.launch({ executablePath: executablePath!, args, env });
+  const win = await app.firstWindow();
+  await expect(win.getByRole('heading', { name: '빛 (The Light)', level: 2 })).toBeVisible({ timeout: 30_000 });
+  await win.getByRole('link', { name: '설정', exact: true }).click();
+  await win.getByRole('button', { name: '비트 퍼펙트 (독점)' }).click();
+  // 재생기가 보내는 이벤트를 모읍니다. 이어 붙이면 ended 없이 advanced가 옵니다.
+  await win.evaluate(() => {
+    const w = window as unknown as { gaonAudio: { onEvent: (listener: (event: { event: string }) => void) => void }; gaonEvents: string[] };
+    w.gaonEvents = [];
+    w.gaonAudio.onEvent((event) => w.gaonEvents.push(event.event));
+  });
+
+  // 앨범 「빛 (The Light)」의 곡은 모두 96kHz/24bit라 장치를 다시 열지 않고 이어 붙일 수 있습니다.
+  await win.getByRole('link', { name: '검색', exact: true }).click();
+  await win.getByRole('searchbox').fill('빛');
+  await win.getByRole('link', { name: /^빛 \(The Light\) 유신/ }).first().click();
+  await win.getByRole('button', { name: '전체 재생' }).click();
+  await win.getByRole('button', { name: /플레이어 열기/ }).click();
+  const title = win.getByRole('heading', { level: 1 });
+  await expect(title).toHaveText('빛 (The Light)');
+  const slider = win.getByRole('slider', { name: '재생 위치' });
+  const position = async () => Number(await slider.getAttribute('aria-valuenow'));
+  await expect.poll(position, { timeout: 30_000 }).toBeGreaterThan(0);
+
+  // 30초 곡의 끝 무렵으로 옮겨, 끝까지 들으면 다음 곡으로 넘어가게 합니다.
+  await slider.focus();
+  for (let i = 0; i < 5; i += 1) {
+    const before = await position();
+    await win.keyboard.press('ArrowRight');
+    await expect.poll(position).toBeGreaterThanOrEqual(before + 4);
+  }
+  await expect(title).toHaveText('그림자가 머문 자리', { timeout: 20_000 });
+  const events = await win.evaluate(() => (window as unknown as { gaonEvents: string[] }).gaonEvents);
+  expect(events).toContain('advanced');
+  expect(events).not.toContain('ended');
+  // 넘어간 곡의 재생 위치는 그 곡의 처음부터 셉니다.
+  await expect.poll(position).toBeLessThan(10);
+  await expect.poll(position).toBeGreaterThan(0);
+  await app.close();
+});

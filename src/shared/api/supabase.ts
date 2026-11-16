@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 import { SUPABASE_ENABLED, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config';
+import { onceAsync } from '../lib/onceAsync';
 
 import { authStorage } from './authStorage';
 import './urlPolyfill';
@@ -12,20 +13,6 @@ export const AUTH_CALLBACK_URL = 'gaon://auth-callback';
 /** PC 앱은 웹 화면을 쓰지만, 로그인은 시스템 브라우저에서 하고 앱 주소로 돌아옵니다. */
 export function isDesktopApp() {
   return Platform.OS === 'web' && typeof window !== 'undefined' && 'gaonAuth' in window;
-}
-
-/**
- * 한 번만 만드는 비동기 값을 돌려줍니다. 만들다 실패하면 기억하지 않아 다음 요청에서 다시 만듭니다.
- */
-export function onceAsync<T>(create: () => Promise<T>): () => Promise<T> {
-  let pending: Promise<T> | null = null;
-  return () => {
-    pending ??= create().catch((error: unknown) => {
-      pending = null;
-      throw error;
-    });
-    return pending;
-  };
 }
 
 const loadClient = onceAsync(() =>
