@@ -406,13 +406,13 @@ export function forgetTrack(trackId: string): Promise<void> {
   return serial(() => removeNow(trackId));
 }
 
-/** 마지막 곡을 빼면 재생을 멈춥니다. */
+/** 마지막 곡을 빼면 큐를 비웁니다. */
 function removeNow(trackId: string) {
   const { queue, index } = usePlayerStore.getState();
   const at = queue.findIndex((t) => t.id === trackId);
   if (at < 0) return;
   if (queue.length === 1) {
-    stop();
+    clearQueue();
     return;
   }
   if (playlist) {
@@ -427,9 +427,15 @@ function removeNow(trackId: string) {
   if (at === index) syncLockScreen(nextQueue[nextIndex]);
 }
 
+/** 재생을 멈추고 줄을 선 새 큐 요청과 곡 더하기도 그만두게 합니다(출력 방식을 바꿀 때). */
 function stop() {
   request += 1;
   stops += 1;
+  clearQueue();
+}
+
+/** 큐를 비우고 재생을 멈춥니다. 줄을 선 요청은 그대로 두어, 마지막 곡을 뺀 뒤에 고른 곡은 재생됩니다. */
+function clearQueue() {
   loads += 1;
   if (playlist) {
     playlist.pause();

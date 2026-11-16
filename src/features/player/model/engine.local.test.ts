@@ -127,4 +127,16 @@ describe('내 FLAC 재생 요청', () => {
     expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['x']);
     expect(mockList.remove).toHaveBeenCalledWith(0);
   });
+
+  it('마지막 곡을 빼 큐가 비어도 그 뒤에 고른 곡은 재생합니다', async () => {
+    await playTracks([track('a')]);
+    const loading = playTracks([track('x', 'local')]);
+    await settle();
+    const forgetting = forgetTrack('a');
+    const picking = playTracks([track('b')]);
+    mockPending.get('x')?.resolve('blob:x');
+    await Promise.all([loading, forgetting, picking]);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['b']);
+    expect(mockList.items).toEqual(['https://m/b.flac']);
+  });
 });
