@@ -168,6 +168,21 @@ describe('비트 퍼펙트 재생 목록', () => {
     expect(bridge.load).toHaveBeenLastCalledWith('b.name');
   });
 
+  it('마지막 곡에서 큐에 없는 곡으로 넘어갔으면 멈추고, 다시 재생하면 지금 곡을 새로 불러옵니다', async () => {
+    const { bridge, list, emit } = setup();
+    list.skipTo(2);
+    list.play();
+    await settle();
+    emit({ event: 'advanced', file: 'old.name', duration: 24 });
+    await settle();
+    expect(list.playing).toBe(false);
+    expect(bridge.stop).toHaveBeenCalledTimes(2);
+    bridge.load.mockClear();
+    list.play();
+    await settle();
+    expect(bridge.load).toHaveBeenCalledWith('c.name');
+  });
+
   it('한 곡 반복은 같은 곡을 다음 곡으로 알리고, 넘어가도 곡을 바꾸지 않습니다', async () => {
     const { bridge, list, tracks, emit } = setup('single');
     list.play();

@@ -170,9 +170,10 @@ test('비트 퍼펙트 재생기는 같은 형식의 다음 곡을 끊김 없이
   const position = async () => Number(await slider.getAttribute('aria-valuenow'));
   await expect.poll(position, { timeout: 30_000 }).toBeGreaterThan(0);
 
-  // 30초 곡의 끝 무렵으로 옮겨, 끝까지 들으면 다음 곡으로 넘어가게 합니다.
+  // 30초 곡의 끝 무렵으로 옮겨, 끝까지 들으면 다음 곡으로 넘어가게 합니다. 한 번에 5초씩 옮기므로 22초를 넘으면 멈춰,
+  // 옮긴 위치를 확인하는 동안 곡이 끝나 버리지 않게 합니다(넘어가면 위치가 다음 곡 기준으로 돌아감).
   await slider.focus();
-  for (let i = 0; i < 5; i += 1) {
+  while ((await position()) < 22) {
     const before = await position();
     await win.keyboard.press('ArrowRight');
     await expect.poll(position).toBeGreaterThanOrEqual(before + 4);

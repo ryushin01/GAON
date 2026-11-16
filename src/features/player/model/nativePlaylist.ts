@@ -258,8 +258,10 @@ export function createNativePlaylist(
     queued = null;
     if (!expected || expected.name !== file || target == null || uris[target] !== expected.uri) {
       if (target == null) {
+        // 큐의 끝입니다. 재생기를 멈췄으니 다시 재생하면 지금 곡을 새로 불러옵니다.
         wantPlay = false;
         playing = false;
+        loadedUri = null;
         stopHelper();
         publish();
       } else {
