@@ -31,8 +31,8 @@ let applying = false;
 let localVersion = 0;
 
 function snapshot(): LibrarySnapshot {
-  const { likedIds, recentIds, playlists } = useLibraryStore.getState();
-  return { likedIds, recentIds, playlists };
+  const { likedIds, likedAt, unlikedAt, recentIds, playlists, deletedPlaylistAt } = useLibraryStore.getState();
+  return { likedIds, likedAt, unlikedAt, recentIds, playlists, deletedPlaylistAt };
 }
 
 function apply(next: LibrarySnapshot) {

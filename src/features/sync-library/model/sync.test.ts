@@ -56,4 +56,21 @@ describe('보관함 동기화 (소유자 Gist)', () => {
     expect(lastData.likedIds).toContain('during-sync');
     await setOwnerSession(null);
   });
+
+  it('양쪽이 모두 바뀌어 합칠 때 이 기기에서 취소한 좋아요를 되살리지 않습니다', async () => {
+    mockRead.mockResolvedValue(null);
+    mockWrite.mockResolvedValue('2026-11-10T03:00:00Z');
+    await setOwnerSession({ login: 'ryushin01', token: 't' });
+    await syncNow();
+    // 이 기기에서 좋아요를 취소하는 사이에, 다른 기기는 예전 좋아요가 남은 채로 새 곡에 좋아요를 눌러 올렸습니다.
+    useLibraryStore.setState({ likedIds: ['kept'], likedAt: {}, unlikedAt: { gone: Date.now() } });
+    mockRead.mockResolvedValue({ data: { likedIds: ['other', 'gone'], likedAt: { other: Date.now() - 1000 }, recentIds: [], playlists: [] }, updatedAt: '2026-11-10T04:00:00Z' });
+    mockWrite.mockClear();
+    await syncNow();
+    const pushed = mockWrite.mock.calls.at(-1)?.[1] as { likedIds: string[]; unlikedAt: Record<string, number> };
+    expect(pushed.likedIds).toEqual(['kept', 'other']);
+    expect(Object.keys(pushed.unlikedAt)).toEqual(['gone']);
+    expect(useLibraryStore.getState().likedIds).toEqual(['kept', 'other']);
+    await setOwnerSession(null);
+  });
 });
