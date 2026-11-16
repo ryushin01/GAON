@@ -70,6 +70,7 @@ sequenceDiagram
     alt 서버에 없음
         동기화->>서버: push
     else 다른 계정이었거나 양쪽 모두 바뀜
+        동기화->>동기화: mergeLibraries (항목마다 더한 시각과 삭제 기록 비교)
         동기화->>서버: 합친 보관함 저장 (merge)
     else 서버만 바뀜
         서버-->>동기화: pull
