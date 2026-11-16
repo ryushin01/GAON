@@ -75,6 +75,7 @@ function createPlaylist(): PlaylistLike {
         onOutput: (output) => usePlayerStore.setState({ output }),
         onError: (error) => usePlayerStore.setState({ error }),
         // 미디어 키도 화면의 버튼과 같은 규칙(3초 뒤 이전은 처음으로, 반복 재생의 처음으로 돌아가기)을 따릅니다.
+        onMediaPlay: () => resume(),
         onMediaNext: () => next(),
         onMediaPrevious: () => previous(),
       },
@@ -112,8 +113,27 @@ function releaseUnused(queue: Track[]) {
   releaseAudioUris(queue.filter((t) => t.source === 'local').map((t) => t.id));
 }
 
-/** 만들어 둔 큐를 재생기에 올리고 index의 곡부터 재생합니다. */
-async function startQueue(queue: Track[], index: number): Promise<void> {
+/**
+ * 낡은 요청이 만든 주소를 놓습니다. 더 새 요청이 아직 주소를 구하는 중이면 그 요청이 쓸 주소까지 놓을 수 있어,
+ * 그때는 놓지 않고 새 요청이 끝날 때 정리하게 둡니다.
+ */
+function releaseStale() {
+  if (!starting) releaseUnused(usePlayerStore.getState().queue);
+}
+
+/** base가 queue의 원래 순서인지(같은 곡들인지) 봅니다. */
+function describes(base: Track[], queue: Track[]) {
+  return base.length === queue.length && queue.every((t) => base.some((b) => b.id === t.id));
+}
+
+/** 복원한 큐의 원래 순서입니다. 앞서 실패한 요청의 순서가 남아 있으면 쓰지 않습니다. */
+const baseFor = (queue: Track[]) => (describes(baseQueue, queue) ? baseQueue : queue);
+
+/**
+ * 만들어 둔 큐를 재생기에 올리고 index의 곡부터 재생합니다.
+ * base는 셔플 전의 원래 순서이고, 올리기에 성공했을 때만 기억합니다.
+ */
+async function startQueue(queue: Track[], index: number, base: Track[] = queue): Promise<void> {
   const ticket = ++request;
   const start = queue[index];
   starting = true;
@@ -121,11 +141,12 @@ async function startQueue(queue: Track[], index: number): Promise<void> {
     await ensureAudioMode();
     const uris = await Promise.all(queue.map(playableUri));
     if (ticket !== request) {
-      // 그사이 새 요청이나 멈춤이 있었으면, 이번에 만든 내 FLAC 주소 중 지금 큐에 없는 것을 놓습니다.
-      releaseUnused(usePlayerStore.getState().queue);
+      // 그사이 새 요청이나 멈춤이 있었으면, 이번에 만든 내 FLAC 주소 중 쓰지 않는 것을 놓습니다.
+      releaseStale();
       return;
     }
     starting = false;
+    baseQueue = base;
     const list = ensurePlaylist();
     rebuilding = true;
     list.clear();
@@ -139,9 +160,12 @@ async function startQueue(queue: Track[], index: number): Promise<void> {
     list.play();
   } catch (error) {
     rebuilding = false;
-    releaseUnused(usePlayerStore.getState().queue);
-    if (ticket !== request) return;
+    if (ticket !== request) {
+      releaseStale();
+      return;
+    }
     starting = false;
+    releaseUnused(usePlayerStore.getState().queue);
     usePlayerStore.setState({ error: error instanceof Error ? error.message : '곡을 재생하지 못했습니다.' });
   }
 }
@@ -153,7 +177,7 @@ async function startQueue(queue: Track[], index: number): Promise<void> {
 function updateRestored(queue: Track[], index: number) {
   const track = queue[index];
   usePlayerStore.setState({ queue, index, ...(track ? { currentTime: 0, duration: track.durationSec } : null) });
-  if (starting && track) void startQueue(queue, index);
+  if (starting && track) void startQueue(queue, index, baseFor(queue));
 }
 
 /** 곡 목록을 큐로 만들고 지정한 곡부터 재생합니다. */
@@ -161,28 +185,25 @@ export async function playTracks(tracks: Track[], startId?: string): Promise<voi
   if (!tracks.length) return;
   const { shuffle } = usePlayerStore.getState();
   const start = tracks.find((t) => t.id === startId) ?? (shuffle ? shuffled(tracks)[0] : tracks[0]);
-  baseQueue = tracks;
   const queue = shuffle ? [start, ...shuffled(tracks.filter((t) => t.id !== start.id))] : tracks;
-  await startQueue(queue, queue.indexOf(start));
+  await startQueue(queue, queue.indexOf(start), tracks);
 }
 
 export function togglePlay() {
   if (!playlist) {
     // 앱을 다시 켜 복원한 큐는 재생기가 없으니, 누르면 그 곡부터 이어 듣습니다.
     const { queue, index } = usePlayerStore.getState();
-    if (queue.length) {
-      if (!baseQueue.length) baseQueue = queue;
-      void startQueue(queue, Math.min(index, queue.length - 1));
-    }
+    if (queue.length) void startQueue(queue, Math.min(index, queue.length - 1), baseFor(queue));
     return;
   }
-  if (playlist.playing) {
-    playlist.pause();
-  } else {
-    // 다시 재생을 누르면 앞서 난 오류는 지웁니다. 또 실패하면 재생기가 다시 알립니다.
-    usePlayerStore.setState({ error: null });
-    playlist.play();
-  }
+  if (playlist.playing) playlist.pause();
+  else resume();
+}
+
+/** 다시 재생합니다. 앞서 난 오류는 지우고, 또 실패하면 재생기가 다시 알립니다. */
+function resume() {
+  usePlayerStore.setState({ error: null });
+  playlist?.play();
 }
 
 /** 복원한 큐에서 재생기 없이 곡만 옮깁니다. */
@@ -231,10 +252,7 @@ export function skipToIndex(index: number) {
     return;
   }
   const { queue } = usePlayerStore.getState();
-  if (queue[index]) {
-    if (!baseQueue.length) baseQueue = queue;
-    void startQueue(queue, index);
-  }
+  if (queue[index]) void startQueue(queue, index, baseFor(queue));
 }
 
 export function cycleRepeat() {
@@ -276,8 +294,8 @@ export async function toggleShuffle() {
   usePlayerStore.setState({ shuffle: value });
   const current = queue[index];
   if (!current) return;
-  // 복원한 큐는 원래 순서를 따로 갖고 있지 않아, 처음 섞기 전의 순서를 기준으로 삼습니다.
-  if (!baseQueue.length) baseQueue = queue;
+  // 원래 순서가 지금 큐와 맞지 않으면(복원한 큐, 실패한 요청) 섞기 전의 순서를 기준으로 삼습니다.
+  baseQueue = baseFor(queue);
   if (value) {
     await reorderAround([current, ...shuffled(queue.filter((t) => t.id !== current.id))], current);
   } else {
@@ -307,7 +325,7 @@ export async function addToQueue(tracks: Track[]) {
   if (ticket !== request) {
     // 그사이 재생을 멈췄으면 더하지 않습니다. 큐가 바뀌었으면 바뀐 큐를 기준으로 다시 더합니다.
     if (stops !== stopTicket) {
-      releaseUnused(usePlayerStore.getState().queue);
+      releaseStale();
       return;
     }
     await addToQueue(tracks);

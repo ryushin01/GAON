@@ -77,6 +77,8 @@ function setMediaMetadata(metadata: unknown) {
 type Callbacks = {
   onOutput: (output: OutputInfo | null) => void;
   onError: (message: string) => void;
+  /** 미디어 키의 재생입니다. 없으면 바로 재생합니다. 엔진은 앞서 난 오류를 지운 뒤 재생합니다. */
+  onMediaPlay?: () => void;
   /** 미디어 키의 다음·이전입니다. 없으면 재생 목록에서 한 칸 옮깁니다. */
   onMediaNext?: () => void;
   onMediaPrevious?: () => void;
@@ -85,7 +87,7 @@ type Callbacks = {
 /** 재생 목록은 화면에서 관리하고, 재생기는 한 번에 한 곡만 재생합니다. */
 export function createNativePlaylist(
   bridge: AudioBridge,
-  { onOutput, onError, onMediaNext, onMediaPrevious }: Callbacks,
+  { onOutput, onError, onMediaPlay, onMediaNext, onMediaPrevious }: Callbacks,
   initialLoop: AudioPlaylistLoopMode,
 ): PlaylistLike {
   let uris: string[] = [];
@@ -273,7 +275,7 @@ export function createNativePlaylist(
         return;
       }
       setMediaMetadata(metadata);
-      session.setActionHandler('play', () => playlist.play());
+      session.setActionHandler('play', () => (onMediaPlay ? onMediaPlay() : playlist.play()));
       session.setActionHandler('pause', () => playlist.pause());
       session.setActionHandler('previoustrack', () => (onMediaPrevious ? onMediaPrevious() : playlist.previous()));
       session.setActionHandler('nexttrack', () => (onMediaNext ? onMediaNext() : playlist.next()));
