@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 type Props = {
@@ -17,8 +17,11 @@ type Props = {
  */
 export function LiveRegion({ role, children, style }: Props) {
   const empty = children == null || children === false || children === '';
+  // Android의 TalkBack은 role만으로는 바뀐 내용을 읽지 않아 live region을 따로 답니다.
+  // 웹은 role에 aria-live가 들어 있어 다시 달지 않습니다.
+  const liveRegion = Platform.OS === 'android' ? (role === 'alert' ? 'assertive' : 'polite') : undefined;
   return (
-    <View role={role} style={empty ? styles.empty : style}>
+    <View role={role} accessibilityLiveRegion={liveRegion} style={empty ? styles.empty : style}>
       {empty ? null : children}
     </View>
   );

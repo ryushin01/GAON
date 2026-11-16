@@ -23,6 +23,10 @@ let rebuilding = false;
  * 빠르게 연달아 고를 때 마지막에 고른 곡이 재생되게 합니다.
  */
 let request = 0;
+/** 재생을 멈출 때마다 늘어납니다. 멈춘 뒤에 끝난 큐 추가가 재생을 다시 시작하지 않게 합니다. */
+let stops = 0;
+/** 복원한 큐를 재생기에 올리는 중인지입니다. 그동안 큐를 바꾸면 바뀐 큐로 다시 올립니다. */
+let starting = false;
 
 const lockMetadata = (track: Track) => ({
   title: displayTitle(track),
@@ -47,8 +51,6 @@ function handleStatus(status: AudioPlaylistStatus) {
     buffering: status.isBuffering,
     currentTime: status.currentTime,
     duration: status.duration,
-    // 다시 재생되면 앞서 난 오류는 지웁니다.
-    ...(status.playing ? { error: null } : null),
   });
 }
 
@@ -72,6 +74,9 @@ function createPlaylist(): PlaylistLike {
       {
         onOutput: (output) => usePlayerStore.setState({ output }),
         onError: (error) => usePlayerStore.setState({ error }),
+        // 미디어 키도 화면의 버튼과 같은 규칙(3초 뒤 이전은 처음으로, 반복 재생의 처음으로 돌아가기)을 따릅니다.
+        onMediaNext: () => next(),
+        onMediaPrevious: () => previous(),
       },
       LOOP[repeat],
     );
@@ -111,10 +116,16 @@ function releaseUnused(queue: Track[]) {
 async function startQueue(queue: Track[], index: number): Promise<void> {
   const ticket = ++request;
   const start = queue[index];
+  starting = true;
   try {
     await ensureAudioMode();
     const uris = await Promise.all(queue.map(playableUri));
-    if (ticket !== request) return;
+    if (ticket !== request) {
+      // 그사이 새 요청이나 멈춤이 있었으면, 이번에 만든 내 FLAC 주소 중 지금 큐에 없는 것을 놓습니다.
+      releaseUnused(usePlayerStore.getState().queue);
+      return;
+    }
+    starting = false;
     const list = ensurePlaylist();
     rebuilding = true;
     list.clear();
@@ -128,9 +139,21 @@ async function startQueue(queue: Track[], index: number): Promise<void> {
     list.play();
   } catch (error) {
     rebuilding = false;
+    releaseUnused(usePlayerStore.getState().queue);
     if (ticket !== request) return;
+    starting = false;
     usePlayerStore.setState({ error: error instanceof Error ? error.message : '곡을 재생하지 못했습니다.' });
   }
+}
+
+/**
+ * 재생기가 아직 없는 복원한 큐를 바꿉니다. 재생기에 올리는 중이었으면 바뀐 큐로 다시 올려,
+ * 늦게 끝난 앞 요청이 바뀐 큐를 덮지 않게 합니다.
+ */
+function updateRestored(queue: Track[], index: number) {
+  const track = queue[index];
+  usePlayerStore.setState({ queue, index, ...(track ? { currentTime: 0, duration: track.durationSec } : null) });
+  if (starting && track) void startQueue(queue, index);
 }
 
 /** 곡 목록을 큐로 만들고 지정한 곡부터 재생합니다. */
@@ -148,7 +171,7 @@ export function togglePlay() {
     // 앱을 다시 켜 복원한 큐는 재생기가 없으니, 누르면 그 곡부터 이어 듣습니다.
     const { queue, index } = usePlayerStore.getState();
     if (queue.length) {
-      baseQueue = queue;
+      if (!baseQueue.length) baseQueue = queue;
       void startQueue(queue, Math.min(index, queue.length - 1));
     }
     return;
@@ -156,6 +179,8 @@ export function togglePlay() {
   if (playlist.playing) {
     playlist.pause();
   } else {
+    // 다시 재생을 누르면 앞서 난 오류는 지웁니다. 또 실패하면 재생기가 다시 알립니다.
+    usePlayerStore.setState({ error: null });
     playlist.play();
   }
 }
@@ -163,8 +188,7 @@ export function togglePlay() {
 /** 복원한 큐에서 재생기 없이 곡만 옮깁니다. */
 function moveRestored(index: number) {
   const { queue } = usePlayerStore.getState();
-  const track = queue[index];
-  if (track) usePlayerStore.setState({ index, currentTime: 0, duration: track.durationSec });
+  if (queue[index]) updateRestored(queue, index);
 }
 
 export function next() {
@@ -208,7 +232,7 @@ export function skipToIndex(index: number) {
   }
   const { queue } = usePlayerStore.getState();
   if (queue[index]) {
-    baseQueue = queue;
+    if (!baseQueue.length) baseQueue = queue;
     void startQueue(queue, index);
   }
 }
@@ -225,7 +249,7 @@ export function cycleRepeat() {
 async function reorderAround(order: Track[], current: Track) {
   if (!playlist) {
     // 재생기가 아직 없으면(복원한 큐) 순서만 바꿉니다.
-    usePlayerStore.setState({ queue: order, index: order.indexOf(current) });
+    updateRestored(order, order.indexOf(current));
     return;
   }
   const ticket = ++request;
@@ -252,6 +276,8 @@ export async function toggleShuffle() {
   usePlayerStore.setState({ shuffle: value });
   const current = queue[index];
   if (!current) return;
+  // 복원한 큐는 원래 순서를 따로 갖고 있지 않아, 처음 섞기 전의 순서를 기준으로 삼습니다.
+  if (!baseQueue.length) baseQueue = queue;
   if (value) {
     await reorderAround([current, ...shuffled(queue.filter((t) => t.id !== current.id))], current);
   } else {
@@ -271,13 +297,19 @@ export async function addToQueue(tracks: Track[]) {
   }
   if (!playlist) {
     // 복원한 큐에는 곡만 더하고, 재생을 누를 때 재생기에 올립니다.
-    usePlayerStore.setState({ queue: [...queue, ...fresh] });
+    if (baseQueue.length) baseQueue = [...baseQueue, ...fresh];
+    updateRestored([...queue, ...fresh], usePlayerStore.getState().index);
     return;
   }
   const ticket = request;
+  const stopTicket = stops;
   const uris = await Promise.all(fresh.map(playableUri));
-  // 주소를 구하는 사이에 큐가 바뀌었으면 바뀐 큐를 기준으로 다시 더합니다.
   if (ticket !== request) {
+    // 그사이 재생을 멈췄으면 더하지 않습니다. 큐가 바뀌었으면 바뀐 큐를 기준으로 다시 더합니다.
+    if (stops !== stopTicket) {
+      releaseUnused(usePlayerStore.getState().queue);
+      return;
+    }
     await addToQueue(tracks);
     return;
   }
@@ -296,7 +328,8 @@ export function removeFromQueue(trackId: string) {
   }
   if (!playlist) {
     const rest = queue.filter((t) => t.id !== trackId);
-    usePlayerStore.setState({ queue: rest, index: at < index ? index - 1 : Math.min(index, rest.length - 1) });
+    baseQueue = baseQueue.filter((t) => t.id !== trackId);
+    updateRestored(rest, at < index ? index - 1 : Math.min(index, rest.length - 1));
     return;
   }
   rebuilding = true;
@@ -311,6 +344,8 @@ export function removeFromQueue(trackId: string) {
 
 function stop() {
   request += 1;
+  stops += 1;
+  starting = false;
   if (playlist) {
     playlist.pause();
     playlist.clear();

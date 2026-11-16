@@ -187,8 +187,9 @@ export function startLibrarySync() {
       useSyncMeta.setState({ dirty: true });
       if (!canSync()) return;
       const delay = recentOnly ? RECENT_PUSH_DELAY_MS : PUSH_DELAY_MS;
-      // 이미 더 일찍 올리기로 했으면 늦추지 않습니다.
-      if (timer && delay > pushDelay) return;
+      // 이미 더 일찍 올리기로 했으면 늦추지 않습니다. 최근 재생을 모으는 중이면 처음 정한 30초를 그대로 둬,
+      // 곡을 계속 넘겨도 올리기가 끝없이 밀리지 않게 합니다.
+      if (timer && (delay > pushDelay || (recentOnly && pushDelay === RECENT_PUSH_DELAY_MS))) return;
       clearTimeout(timer);
       pushDelay = delay;
       timer = setTimeout(() => {

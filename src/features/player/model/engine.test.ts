@@ -1,7 +1,7 @@
 import type { Track } from '@/entities/music';
 import { useLibraryStore } from '@/entities/library';
 
-import { addToQueue, cycleRepeat, next, playTracks, previous, removeFromQueue, setExclusiveOutput, skipToIndex, toggleShuffle } from './engine';
+import { addToQueue, cycleRepeat, next, playTracks, previous, removeFromQueue, setExclusiveOutput, skipToIndex, togglePlay, toggleShuffle } from './engine';
 import { usePlayerStore } from './playerStore';
 
 const mockList = {
@@ -116,7 +116,7 @@ describe('복원한 큐', () => {
     setExclusiveOutput(true);
     setExclusiveOutput(false);
     jest.clearAllMocks();
-    usePlayerStore.setState({ queue: tracks, index: 1 });
+    usePlayerStore.setState({ queue: tracks, index: 1, shuffle: false });
   });
 
   it('재생기 없이 곡을 옮기고, 목록에서 고르면 그 곡부터 재생합니다', async () => {
@@ -136,5 +136,54 @@ describe('복원한 큐', () => {
     expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['b', 'c', 'd', 'e']);
     expect(usePlayerStore.getState().index).toBe(0);
     expect(mockList.clear).not.toHaveBeenCalled();
+  });
+
+  it('셔플을 켰다 끄면 복원한 큐의 원래 순서로 돌아옵니다', async () => {
+    await toggleShuffle();
+    expect(usePlayerStore.getState().queue[0].id).toBe('b');
+    await toggleShuffle();
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd']);
+    expect(usePlayerStore.getState().index).toBe(1);
+  });
+
+  it('재생기에 올리는 사이에 더한 곡도 재생 목록에 들어갑니다', async () => {
+    togglePlay();
+    await addToQueue([track('e')]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(mockList.items).toHaveLength(5);
+    expect(mockList.play).toHaveBeenCalled();
+  });
+});
+
+describe('재생 오류와 멈춤', () => {
+  const statusListener = () =>
+    mockList.addListener.mock.calls.find(([name]) => name === 'playlistStatusUpdate')?.[1] as (status: object) => void;
+
+  beforeEach(() => {
+    setExclusiveOutput(true);
+    setExclusiveOutput(false);
+    jest.clearAllMocks();
+    usePlayerStore.setState({ error: null, shuffle: false });
+  });
+
+  it('앞 곡이 계속 재생돼도 새로 고른 곡의 오류는 남고, 다시 재생을 누르면 지웁니다', async () => {
+    await playTracks(tracks, 'a');
+    usePlayerStore.setState({ error: '저장된 파일을 찾을 수 없습니다.' });
+    statusListener()({ playing: true, isBuffering: false, currentTime: 3, duration: 30 });
+    expect(usePlayerStore.getState().error).toBe('저장된 파일을 찾을 수 없습니다.');
+    mockList.playing = false;
+    togglePlay();
+    expect(usePlayerStore.getState().error).toBeNull();
+  });
+
+  it('곡을 더하는 사이에 재생을 멈추면 다시 재생하지 않습니다', async () => {
+    await playTracks([tracks[0]]);
+    jest.clearAllMocks();
+    const adding = addToQueue([tracks[1]]);
+    removeFromQueue('a');
+    await adding;
+    expect(usePlayerStore.getState().queue).toEqual([]);
+    expect(mockList.play).not.toHaveBeenCalled();
   });
 });
