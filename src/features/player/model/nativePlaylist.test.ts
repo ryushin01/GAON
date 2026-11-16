@@ -162,4 +162,30 @@ describe('비트 퍼펙트 재생기의 Media Session', () => {
     expect(session.metadata).toBeNull();
     expect(handlers.play).toBeNull();
   });
+
+  it('미디어 키의 재생·다음·이전은 화면 버튼과 같은 규칙을 쓰도록 엔진에 맡깁니다', () => {
+    const onMediaNext = jest.fn();
+    const onMediaPrevious = jest.fn();
+    const bridge = {
+      prepareUrl: jest.fn(async (url: string) => url),
+      prepareBytes: jest.fn(async () => 'bytes'),
+      load: jest.fn(),
+      play: jest.fn(),
+      pause: jest.fn(),
+      stop: jest.fn(),
+      seek: jest.fn(),
+      onEvent: jest.fn(() => () => {}),
+    } satisfies AudioBridge;
+    const onMediaPlay = jest.fn();
+    const list = createNativePlaylist(bridge, { onOutput: jest.fn(), onError: jest.fn(), onMediaPlay, onMediaNext, onMediaPrevious }, 'all');
+    list.setActiveForLockScreen(true, { title: '빛' });
+    handlers.nexttrack?.({});
+    handlers.previoustrack?.({});
+    // 운영체제의 재생 버튼도 화면의 재생 버튼처럼 앞서 난 오류를 지우고 재생하도록 엔진에 맡깁니다.
+    handlers.play?.({});
+    expect(onMediaNext).toHaveBeenCalledTimes(1);
+    expect(onMediaPrevious).toHaveBeenCalledTimes(1);
+    expect(onMediaPlay).toHaveBeenCalledTimes(1);
+    expect(bridge.play).not.toHaveBeenCalled();
+  });
 });

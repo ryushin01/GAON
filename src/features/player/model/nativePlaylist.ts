@@ -74,10 +74,22 @@ function setMediaMetadata(metadata: unknown) {
   session.metadata = new MediaMetadata({ title, artist, album: albumTitle, artwork: artworkUrl ? [{ src: artworkUrl }] : [] });
 }
 
-type Callbacks = { onOutput: (output: OutputInfo | null) => void; onError: (message: string) => void };
+type Callbacks = {
+  onOutput: (output: OutputInfo | null) => void;
+  onError: (message: string) => void;
+  /** 미디어 키의 재생입니다. 없으면 바로 재생합니다. 엔진은 앞서 난 오류를 지운 뒤 재생합니다. */
+  onMediaPlay?: () => void;
+  /** 미디어 키의 다음·이전입니다. 없으면 재생 목록에서 한 칸 옮깁니다. */
+  onMediaNext?: () => void;
+  onMediaPrevious?: () => void;
+};
 
 /** 재생 목록은 화면에서 관리하고, 재생기는 한 번에 한 곡만 재생합니다. */
-export function createNativePlaylist(bridge: AudioBridge, { onOutput, onError }: Callbacks, initialLoop: AudioPlaylistLoopMode): PlaylistLike {
+export function createNativePlaylist(
+  bridge: AudioBridge,
+  { onOutput, onError, onMediaPlay, onMediaNext, onMediaPrevious }: Callbacks,
+  initialLoop: AudioPlaylistLoopMode,
+): PlaylistLike {
   let uris: string[] = [];
   let index = 0;
   let loop = initialLoop;
@@ -263,10 +275,10 @@ export function createNativePlaylist(bridge: AudioBridge, { onOutput, onError }:
         return;
       }
       setMediaMetadata(metadata);
-      session.setActionHandler('play', () => playlist.play());
+      session.setActionHandler('play', () => (onMediaPlay ? onMediaPlay() : playlist.play()));
       session.setActionHandler('pause', () => playlist.pause());
-      session.setActionHandler('previoustrack', () => playlist.previous());
-      session.setActionHandler('nexttrack', () => playlist.next());
+      session.setActionHandler('previoustrack', () => (onMediaPrevious ? onMediaPrevious() : playlist.previous()));
+      session.setActionHandler('nexttrack', () => (onMediaNext ? onMediaNext() : playlist.next()));
       session.setActionHandler('seekto', (details) => {
         if (details.seekTime != null) void playlist.seekTo(details.seekTime);
       });

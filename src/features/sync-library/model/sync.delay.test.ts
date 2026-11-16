@@ -52,4 +52,13 @@ describe('보관함 동기화 지연', () => {
     await settle();
     expect(mockWrite).toHaveBeenCalledTimes(1);
   });
+
+  it('최근 재생을 모으는 중에 또 바뀌어도 처음 정한 30초에 올립니다', async () => {
+    useLibraryStore.getState().addRecent('d');
+    await jest.advanceTimersByTimeAsync(20_000);
+    useLibraryStore.getState().addRecent('e');
+    await jest.advanceTimersByTimeAsync(10_000);
+    await settle();
+    expect(mockWrite).toHaveBeenCalledTimes(1);
+  });
 });

@@ -7,6 +7,14 @@ import { AppButton, StateView } from '@/shared/ui';
 /** 화면을 그리다 오류가 나면 빈 화면 대신 다시 시도하거나 홈으로 갈 수 있게 합니다. */
 export function RouteError({ error, retry }: ErrorBoundaryProps) {
   if (__DEV__) console.error(error);
+  // 경계는 retry로만 오류 상태를 지웁니다. 주소만 바꾸면 이 화면이 그대로 남아, 홈으로 옮긴 뒤 다시 그립니다.
+  const goHome = () => {
+    try {
+      router.replace('/');
+    } finally {
+      void retry();
+    }
+  };
   return (
     <View role="alert" style={styles.root}>
       <StateView
@@ -15,7 +23,7 @@ export function RouteError({ error, retry }: ErrorBoundaryProps) {
         actionLabel="다시 시도"
         onAction={() => void retry()}
       />
-      <AppButton variant="secondary" label="홈으로" onPress={() => router.replace('/')} />
+      <AppButton variant="secondary" label="홈으로" onPress={goHome} />
     </View>
   );
 }

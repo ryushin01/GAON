@@ -37,7 +37,7 @@ export function QueuePanel() {
                 <VisuallyHidden>재생</VisuallyHidden>
               </View>
             </Pressable>
-            <IconButton icon="close" label={`${title} 목록에서 빼기`} size={20} color={theme.colors.stage.textMuted} onPress={() => removeFromQueue(item.id)} />
+            <IconButton icon="close" label={`${title} 목록에서 빼기`} size={20} color={theme.colors.stage.textMuted} onPress={() => void removeFromQueue(item.id)} />
           </View>
         );
       }}

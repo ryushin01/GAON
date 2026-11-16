@@ -7,7 +7,7 @@ import { deleteLocalFile, useLibraryStore, useLocalTracks } from '@/entities/lib
 import type { Track } from '@/entities/music';
 import { usePlaylistNameField } from '@/features/create-playlist';
 import { ImportFlacButton } from '@/features/import-local';
-import { removeFromQueue } from '@/features/player';
+import { forgetTrack } from '@/features/player';
 import { AppButton, AppText, Chip, ConfirmDialog, FieldError, IconButton, Screen, ScreenHeader, StateView } from '@/shared/ui';
 import { TrackList, useTrackLookup } from '@/widgets/track-list';
 
@@ -49,9 +49,9 @@ function Playlists() {
 }
 
 function deleteLocal(track: Track) {
-  removeFromQueue(track.id);
   useLibraryStore.getState().removeLocalTrack(track.id);
-  void deleteLocalFile(track.id);
+  // 재생 목록에서 먼저 빼고(올리던 큐가 있으면 그 뒤에), 빠진 뒤에 파일을 지웁니다.
+  void forgetTrack(track.id).then(() => deleteLocalFile(track.id));
 }
 
 export function LibraryPage() {
