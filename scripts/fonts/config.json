@@ -13,5 +13,14 @@
         "700": "scripts/fonts/hahmlet/Hahmlet-700.woff2"
       }
     }
-  ]
+  ],
+  "appFonts": {
+    "scan": ["scripts/generate-media.py"],
+    "pairs": [
+      ["assets/fonts/NanumGothicCoding-Regular.ttf", "assets/fonts/GaonMono-app.ttf"],
+      ["assets/fonts/LINESeedKR-Thin.ttf", "assets/fonts/LINESeedKR-Thin-subset.ttf"],
+      ["assets/fonts/LINESeedKR-Regular.ttf", "assets/fonts/LINESeedKR-Regular-subset.ttf"],
+      ["assets/fonts/LINESeedKR-Bold.ttf", "assets/fonts/LINESeedKR-Bold-subset.ttf"]
+    ]
+  }
 }

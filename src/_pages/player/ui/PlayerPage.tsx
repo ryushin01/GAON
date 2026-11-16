@@ -4,7 +4,7 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { artistLine, displayTitle, QualityBadge } from '@/entities/music';
-import { OutputBadge, SeekBar, TransportControls, useCurrentTrack, usePlayerStore } from '@/features/player';
+import { OutputBadge, PlaybackError, SeekBar, TransportControls, useCurrentTrack, usePlayerStore } from '@/features/player';
 import { LikeButton } from '@/features/toggle-like';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 import { AppText, Disc, DotGrid, IconButton, PageFade, StatusDot, useMainRegion } from '@/shared/ui';
@@ -63,6 +63,7 @@ export function PlayerPage() {
         </View>
         <LikeButton trackId={track.id} title={title} color={text} size={26} />
       </View>
+      <PlaybackError />
       <SeekBar />
       <TransportControls />
       {!wide && (

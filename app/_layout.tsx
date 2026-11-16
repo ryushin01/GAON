@@ -1,1 +1,1 @@
-export { RootLayout as default } from '@/_app';
+export { RootLayout as default, RouteError as ErrorBoundary } from '@/_app';

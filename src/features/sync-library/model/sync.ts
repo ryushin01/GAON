@@ -11,6 +11,8 @@ import { decideSync, mergeLibraries, parseSnapshot, type LibrarySnapshot, type S
 
 /** 마지막 변경 뒤 이만큼 기다렸다가 한 번에 올립니다. */
 const PUSH_DELAY_MS = 1500;
+/** 최근 재생만 바뀌었으면 곡이 넘어갈 때마다 올리지 않고 더 오래 모읍니다. */
+const RECENT_PUSH_DELAY_MS = 30_000;
 
 /** 이 기기가 어느 계정과 언제 맞췄는지 기억합니다. */
 const useSyncMeta = create<SyncMeta>()(
@@ -145,7 +147,15 @@ let stop: (() => void) | null = null;
 export function startLibrarySync() {
   if (stop) return;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let pushDelay = 0;
   let stopped = false;
+  /** 기다리던 업로드를 바로 올립니다. 앱을 떠날 때 모아 둔 최근 재생을 잃지 않게 합니다. */
+  const flush = () => {
+    if (!timer) return;
+    clearTimeout(timer);
+    timer = undefined;
+    if (canSync()) void syncNow();
+  };
   let unsubscribeLibrary: (() => void) | undefined;
   const ready = Promise.all([whenHydrated(useLibraryStore), whenHydrated(useSyncMeta)]);
 
@@ -171,12 +181,20 @@ export function startLibrarySync() {
     if (stopped) return;
     unsubscribeLibrary = useLibraryStore.subscribe((state, previous) => {
       if (applying) return;
-      if (state.likedIds === previous.likedIds && state.recentIds === previous.recentIds && state.playlists === previous.playlists) return;
+      const recentOnly = state.likedIds === previous.likedIds && state.playlists === previous.playlists;
+      if (recentOnly && state.recentIds === previous.recentIds) return;
       localVersion += 1;
       useSyncMeta.setState({ dirty: true });
       if (!canSync()) return;
+      const delay = recentOnly ? RECENT_PUSH_DELAY_MS : PUSH_DELAY_MS;
+      // 이미 더 일찍 올리기로 했으면 늦추지 않습니다.
+      if (timer && delay > pushDelay) return;
       clearTimeout(timer);
-      timer = setTimeout(() => void syncNow(), PUSH_DELAY_MS);
+      pushDelay = delay;
+      timer = setTimeout(() => {
+        timer = undefined;
+        void syncNow();
+      }, delay);
     });
   });
 
@@ -184,13 +202,15 @@ export function startLibrarySync() {
   let removeFocus: () => void;
   if (Platform.OS === 'web') {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && canSync()) void syncNow();
+      if (document.visibilityState === 'hidden') flush();
+      else if (canSync()) void syncNow();
     };
     document.addEventListener('visibilitychange', onVisible);
     removeFocus = () => document.removeEventListener('visibilitychange', onVisible);
   } else {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active' && canSync()) void syncNow();
+      if (state === 'background') flush();
+      else if (state === 'active' && canSync()) void syncNow();
     });
     removeFocus = () => subscription.remove();
   }

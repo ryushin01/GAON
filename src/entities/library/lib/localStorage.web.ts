@@ -58,6 +58,17 @@ export async function resolveAudioUri(id: string): Promise<string> {
   return url;
 }
 
+/** keep에 없는 곡의 재생 주소를 놓습니다. 붙잡고 있던 파일 데이터를 브라우저가 치울 수 있습니다. */
+export function releaseAudioUris(keep: string[]): void {
+  const kept = new Set(keep.map((id) => `audio:${id}`));
+  for (const [key, url] of urls) {
+    if (key.startsWith('audio:') && !kept.has(key)) {
+      URL.revokeObjectURL(url);
+      urls.delete(key);
+    }
+  }
+}
+
 export async function resolveArtUri(id: string): Promise<string | undefined> {
   return blobUrl(`art:${id}`);
 }

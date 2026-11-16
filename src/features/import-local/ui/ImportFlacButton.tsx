@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { AppButton, AppText } from '@/shared/ui';
+import { AppButton, AppText, LiveRegion } from '@/shared/ui';
 
 import { pickAndImportFlac } from '../model/importFlac';
 
@@ -35,11 +35,9 @@ export function ImportFlacButton() {
         disabled={busy}
         onPress={() => void run()}
       />
-      {message && (
-        <AppText variant="caption" tone={message.isError ? 'danger' : 'muted'} role={message.isError ? 'alert' : 'status'}>
-          {message.text}
-        </AppText>
-      )}
+      {/* 결과는 status, 가져오지 못한 파일이 있으면 alert로 알립니다. 두 영역 모두 처음부터 둡니다. */}
+      <LiveRegion role="status">{message && !message.isError ? <AppText variant="caption" tone="muted">{message.text}</AppText> : null}</LiveRegion>
+      <LiveRegion role="alert">{message?.isError ? <AppText variant="caption" tone="danger">{message.text}</AppText> : null}</LiveRegion>
     </View>
   );
 }

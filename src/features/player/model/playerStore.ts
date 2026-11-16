@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { Track } from '@/entities/music';
+import { skipUnchangedWrites } from '@/shared/lib';
 
 import type { OutputInfo } from './nativePlaylist';
 
@@ -42,9 +43,26 @@ export const usePlayerStore = create<PlayerState>()(
     }),
     {
       name: 'gaon-player',
-      version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ repeat, shuffle, exclusive }) => ({ repeat, shuffle, exclusive }),
+      version: 2,
+      // 재생 위치가 바뀔 때마다 같은 내용을 다시 쓰지 않습니다.
+      storage: createJSONStorage(() => skipUnchangedWrites(AsyncStorage)),
+      // 앱을 다시 켜도 듣던 큐와 곡이 남습니다. 재생 위치처럼 자주 바뀌는 값은 저장하지 않습니다.
+      // 내 FLAC의 앨범 아트 주소는 앱을 켤 때마다 새로 만들어서 저장하지 않습니다.
+      partialize: ({ repeat, shuffle, exclusive, queue, index }) => ({
+        repeat,
+        shuffle,
+        exclusive,
+        queue: queue.map((t) => (t.source === 'local' ? { ...t, artUri: undefined } : t)),
+        index,
+      }),
+      // 버전 1은 큐 없이 설정만 저장했습니다.
+      migrate: (persisted) => persisted as PlayerState,
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<PlayerState>;
+        const queue = Array.isArray(saved.queue) ? saved.queue : [];
+        const index = Math.min(Math.max(0, saved.index ?? 0), Math.max(0, queue.length - 1));
+        return { ...current, ...saved, queue, index, duration: queue[index]?.durationSec ?? 0 };
+      },
     },
   ),
 );

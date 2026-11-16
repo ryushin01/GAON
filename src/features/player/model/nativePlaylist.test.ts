@@ -116,3 +116,50 @@ describe('비트 퍼펙트 재생 목록', () => {
     expect(bridge.load).not.toHaveBeenCalled();
   });
 });
+
+describe('비트 퍼펙트 재생기의 Media Session', () => {
+  const handlers: Record<string, ((details: { seekTime?: number }) => void) | null> = {};
+  const session = {
+    metadata: null as unknown,
+    playbackState: 'none',
+    setActionHandler: jest.fn((action: string, handler: ((details: { seekTime?: number }) => void) | null) => {
+      handlers[action] = handler;
+    }),
+    setPositionState: jest.fn(),
+  };
+
+  beforeAll(() => {
+    Object.defineProperty(globalThis.navigator, 'mediaSession', { value: session, configurable: true });
+    (globalThis as { MediaMetadata?: unknown }).MediaMetadata = class {
+      constructor(readonly init: object) {
+        Object.assign(this, init);
+      }
+    };
+  });
+  afterAll(() => {
+    Object.defineProperty(globalThis.navigator, 'mediaSession', { value: undefined, configurable: true });
+    delete (globalThis as { MediaMetadata?: unknown }).MediaMetadata;
+  });
+
+  it('곡 정보를 알리고 미디어 키로 재생·다음 곡·위치 이동을 합니다', async () => {
+    const { bridge, list, tracks, emit } = setup();
+    list.setActiveForLockScreen(true, { title: '빛', artist: '유신', albumTitle: '앨범' });
+    expect(session.metadata).toMatchObject({ title: '빛', artist: '유신', album: '앨범' });
+
+    handlers.play?.({});
+    await settle();
+    expect(bridge.play).toHaveBeenCalled();
+    emit({ event: 'status', playing: true, time: 3, duration: 30 });
+    expect(session.playbackState).toBe('playing');
+    expect(session.setPositionState).toHaveBeenCalledWith({ duration: 30, position: 3, playbackRate: 1 });
+
+    handlers.seekto?.({ seekTime: 10 });
+    expect(bridge.seek).toHaveBeenCalledWith(10);
+    handlers.nexttrack?.({});
+    expect(tracks).toHaveBeenLastCalledWith({ currentIndex: 1 });
+
+    list.clearLockScreenControls();
+    expect(session.metadata).toBeNull();
+    expect(handlers.play).toBeNull();
+  });
+});

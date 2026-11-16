@@ -38,6 +38,9 @@ export async function resolveAudioUri(id: string): Promise<string> {
   return new File(root(), `${id}.flac`).uri;
 }
 
+/** 앱은 파일 경로로 재생해 놓을 것이 없습니다. 웹과 모양을 맞춥니다. */
+export function releaseAudioUris(_keep: string[]): void {}
+
 export async function resolveArtUri(id: string): Promise<string | undefined> {
   for (const ext of ['jpg', 'png', 'webp']) {
     const file = new File(root(), `${id}.${ext}`);

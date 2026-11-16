@@ -1,8 +1,9 @@
 // 비트 퍼펙트 재생기(native/gaon-audio)를 실행하고 화면과 잇습니다.
 const { spawn } = require('node:child_process');
 const { createHash } = require('node:crypto');
-const { closeSync, existsSync, mkdirSync, openSync, readdirSync, readSync, renameSync, rmSync, statSync, writeFileSync } = require('node:fs');
-const { writeFile } = require('node:fs/promises');
+const { closeSync, createWriteStream, existsSync, mkdirSync, openSync, readdirSync, readSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } = require('node:fs');
+const { Readable } = require('node:stream');
+const { pipeline } = require('node:stream/promises');
 const path = require('node:path');
 
 const { app, ipcMain } = require('electron');
@@ -94,7 +95,16 @@ function setupNativeAudio(getWindow) {
     const dir = cacheDir();
     const name = `${createHash('sha256').update(key).digest('hex')}.flac`;
     const file = path.join(dir, name);
-    if (existsSync(file)) return Promise.resolve(name);
+    if (existsSync(file)) {
+      // 꺼내 쓴 시각을 남겨 캐시 정리가 오래 안 쓴 곡부터 지우게 합니다.
+      const now = new Date();
+      try {
+        utimesSync(file, now, now);
+      } catch {
+        // 시각을 못 바꿔도 재생에는 지장이 없습니다.
+      }
+      return Promise.resolve(name);
+    }
     if (!inflight.has(name)) {
       const job = (async () => {
         const part = `${file}.${process.pid}.${Date.now()}.part`;
@@ -122,8 +132,9 @@ function setupNativeAudio(getWindow) {
     if (typeof url !== 'string' || !ALLOWED_MEDIA.some((base) => url.startsWith(base))) throw new Error('blocked_url');
     return cached(url, async (part) => {
       const response = await fetch(url);
-      if (!response.ok) throw new Error('download_failed');
-      await writeFile(part, Buffer.from(await response.arrayBuffer()));
+      if (!response.ok || !response.body) throw new Error('download_failed');
+      // Hi-Res 곡은 수백 MB라 메모리에 다 올리지 않고 받는 대로 파일에 씁니다.
+      await pipeline(Readable.fromWeb(response.body), createWriteStream(part));
     });
   });
   ipcMain.handle('audio:prepareBytes', (_event, bytes) => {

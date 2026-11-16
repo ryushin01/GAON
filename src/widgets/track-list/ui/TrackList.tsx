@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 import { TrackRow, type Track } from '@/entities/music';
 import { AddToPlaylistDialog } from './AddToPlaylistDialog';
 import { addToQueue, playTracks, useCurrentTrack } from '@/features/player';
-import { AppButton, AppText, Checkbox } from '@/shared/ui';
+import { AppButton, AppText, Checkbox, VisuallyHidden } from '@/shared/ui';
 
 import { TrackActions } from './TrackActions';
 
@@ -77,9 +77,13 @@ export function TrackList({ tracks, showRank = false, header, empty, extraAction
           />
         )}
       />
+      {/* 선택한 곡 수는 처음부터 있는 상태 영역에서 알려야 화면 낭독기가 읽습니다. */}
+      <View role="status" style={styles.announce}>
+        <VisuallyHidden>{picked.length > 0 ? `${picked.length}곡 선택` : ''}</VisuallyHidden>
+      </View>
       {picked.length > 0 && (
         <View style={styles.selection} role="toolbar" aria-label={`${picked.length}곡 선택됨`}>
-          <AppText variant="subheading" style={styles.selectionCount} role="status">{picked.length}곡 선택</AppText>
+          <AppText aria-hidden variant="subheading" style={styles.selectionCount}>{picked.length}곡 선택</AppText>
           <AppButton label="듣기" icon="play" onPress={() => { void playTracks(picked); setSelected(new Set()); }} />
           <AppButton label="추가" variant="secondary" onPress={() => { void addToQueue(picked); setSelected(new Set()); }} />
           <AppButton label="담기" variant="secondary" onPress={() => setDialog(true)} />
@@ -99,6 +103,7 @@ export function TrackList({ tracks, showRank = false, header, empty, extraAction
 
 const styles = StyleSheet.create((theme) => ({
   root: { flex: 1 },
+  announce: { position: 'absolute', width: 1, height: 1, overflow: 'hidden' },
   bar: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.sm },
   count: { marginLeft: 'auto', paddingRight: theme.spacing.md },
   selection: {

@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { useSessionStore } from '@/entities/session';
-import { AppButton, AppText } from '@/shared/ui';
+import { AppButton, AppText, LiveRegion } from '@/shared/ui';
 
 import { syncNow, useSyncStatus } from '../model/sync';
 
@@ -14,16 +14,13 @@ export function SyncStatus() {
   const kind = useSessionStore((s) => s.session?.kind);
   if (kind === 'demo') return <AppText variant="caption" tone="muted">데모 로그인은 동기화하지 않고, 보관함은 이 기기에만 저장됩니다.</AppText>;
   return (
-    <View style={styles.root} aria-live="polite">
-      {state === 'error' ? (
-        <>
-          <AppText tone="danger" role="alert">보관함을 동기화하지 못했습니다. {error}</AppText>
-          <View style={styles.action}>
-            <AppButton variant="secondary" label="다시 동기화" onPress={() => void syncNow()} />
-          </View>
-        </>
-      ) : (
-        <AppText variant="caption" tone="muted">{LABEL[state]}</AppText>
+    <View style={styles.root}>
+      <LiveRegion role="status">{state !== 'error' ? <AppText variant="caption" tone="muted">{LABEL[state]}</AppText> : null}</LiveRegion>
+      <LiveRegion role="alert">{state === 'error' ? <AppText tone="danger">보관함을 동기화하지 못했습니다. {error}</AppText> : null}</LiveRegion>
+      {state === 'error' && (
+        <View style={styles.action}>
+          <AppButton variant="secondary" label="다시 동기화" onPress={() => void syncNow()} />
+        </View>
       )}
     </View>
   );

@@ -242,7 +242,8 @@ test('소유자 토큰으로 로그인하면 보관함을 비공개 Gist에 저�
   const token = page.getByLabel('GitHub 토큰');
   await token.fill('other-token');
   await page.getByRole('button', { name: '소유자로 로그인' }).click();
-  await expect(page.getByRole('alert')).toContainText('소유자 계정이 아닙니다');
+  // 재생 오류 등 알림 영역이 처음부터 여럿 있어 글자로 고릅니다.
+  await expect(page.getByRole('alert').filter({ hasText: '소유자 계정이 아닙니다' })).toBeVisible();
   await token.fill('owner-token');
   await page.getByRole('button', { name: '소유자로 로그인' }).click();
   await expect(page.getByText('ryushin01 · GitHub 소유자 계정으로 로그인했습니다.')).toBeVisible();
@@ -322,7 +323,9 @@ test('좋아요와 플레이리스트가 새로 고침 뒤에도 남습니다', 
   await page.getByRole('button', { name: '빛 (The Light) 더보기' }).click();
   await page.getByRole('button', { name: '플레이리스트에 담기' }).click();
   await page.getByRole('button', { name: '새로 만들어 담기' }).click();
-  await expect(page.getByRole('alert')).toHaveText('플레이리스트 이름을 입력해 주세요.');
+  await expect(page.getByRole('alert').filter({ hasText: '플레이리스트 이름을 입력해 주세요.' })).toBeVisible();
+  // 오류 문구가 입력 칸의 설명으로 연결됩니다.
+  await expect(page.getByRole('textbox', { name: '새 플레이리스트 이름' })).toHaveAccessibleDescription(/플레이리스트 이름을 입력해 주세요/);
   await page.getByRole('textbox', { name: '새 플레이리스트 이름' }).fill('출근길');
   await page.getByRole('button', { name: '새로 만들어 담기' }).click();
 
@@ -424,7 +427,7 @@ test('열린 대화상자에도 axe 위반이 없습니다', async ({ page }) =>
 
   await page.getByRole('button', { name: '플레이리스트에 담기' }).click();
   await page.getByRole('button', { name: '새로 만들어 담기' }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: '플레이리스트 이름을 입력해 주세요.' })).toBeVisible();
   await expect(page.locator('[aria-modal]')).toHaveCount(1);
   result = await new AxeBuilder({ page }).analyze();
   expect(result.violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);

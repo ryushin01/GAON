@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { MEDIA_BASE_URL } from '@/shared/config';
+import { matchesSearch } from '@/shared/lib';
 
 import type { Album, Artist, Catalog, LyricLine, Track } from '../model/types';
 
@@ -82,10 +83,9 @@ export function genresOf(tracks: Track[]): string[] {
   return [...new Set(tracks.map((t) => t.genre).filter((g): g is string => Boolean(g)))];
 }
 
-/** 제목, 가수, 피처링, 앨범, 장르, 크레딧에서 찾습니다. */
+/** 제목, 가수, 피처링, 앨범, 장르, 크레딧에서 찾습니다. 띄어쓰기를 무시하고 한글은 초성으로도 찾습니다. */
 export function matchesQuery(track: Track, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return false;
+  if (!query.trim()) return false;
   return [track.title, track.albumTitle, track.genre ?? '', ...track.artists, ...track.featuring, ...track.lyricists, ...track.composers]
-    .some((v) => v.toLowerCase().includes(q));
+    .some((v) => matchesSearch(v, query));
 }

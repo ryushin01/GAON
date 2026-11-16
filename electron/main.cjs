@@ -1,6 +1,7 @@
 // GAON PC 앱입니다. Expo 웹 빌드를 설치본 안에 넣어 실행합니다.
 const { app, BrowserWindow, ipcMain, Menu, nativeTheme, net, protocol, shell } = require('electron');
-const { existsSync, statSync } = require('node:fs');
+const { createHash } = require('node:crypto');
+const { existsSync, readFileSync, statSync } = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
@@ -49,6 +50,37 @@ app.on('open-url', (event, url) => {
 protocol.registerSchemesAsPrivileged([
   { scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, codeCache: true } },
 ]);
+
+/**
+ * 앱 화면의 콘텐츠 보안 정책입니다. 스크립트는 앱에 든 파일과 index.html의 테마 스크립트(해시)만 실행합니다.
+ * 스타일은 React Native Web과 Unistyles가 런타임에 넣어 인라인을 허용합니다.
+ * 앨범 아트·음원·카탈로그는 공개 미디어(https)와 개발용 미디어 서버에서, 내 FLAC은 blob 주소로 받습니다.
+ */
+function contentSecurityPolicy() {
+  let html = '';
+  try {
+    html = readFileSync(path.join(WEB_ROOT, 'index.html'), 'utf8');
+  } catch {
+    // 화면 파일이 없으면 인라인 스크립트도 없습니다.
+  }
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(
+    ([, code]) => `'sha256-${createHash('sha256').update(code).digest('base64')}'`,
+  );
+  const local = 'http://localhost:8787';
+  return [
+    "default-src 'self'",
+    `script-src 'self' ${inline.join(' ')}`.trim(),
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' blob: data: https: ${local}`,
+    `media-src 'self' blob: https: ${local}`,
+    "font-src 'self' data:",
+    `connect-src 'self' blob: https: ${local}`,
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+}
 
 function resolveFile(requestUrl) {
   const pathname = decodeURIComponent(new URL(requestUrl).pathname);
@@ -117,7 +149,16 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(() => {
-    protocol.handle(SCHEME, (request) => net.fetch(pathToFileURL(resolveFile(request.url)).toString()));
+    const csp = contentSecurityPolicy();
+    protocol.handle(SCHEME, async (request) => {
+      const file = resolveFile(request.url);
+      const response = await net.fetch(pathToFileURL(file).toString());
+      if (!file.endsWith('.html')) return response;
+      // 화면 문서에만 정책을 붙입니다.
+      const headers = new Headers(response.headers);
+      headers.set('Content-Security-Policy', csp);
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    });
     if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
     setupNativeAudio(() => BrowserWindow.getAllWindows()[0]);
     createWindow();

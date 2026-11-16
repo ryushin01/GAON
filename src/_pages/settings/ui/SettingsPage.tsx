@@ -7,11 +7,14 @@ import { OutputModeSelector } from '@/features/player';
 import { forgetSync, SyncStatus } from '@/features/sync-library';
 import { AppText, Screen, ScreenHeader, Section } from '@/shared/ui';
 
+import { useUpdateNotice } from '../model/updateNotice';
 import { AccountSection } from './AccountSection';
 
 const HELP_URL = 'https://github.com/ryushin01/GAON/issues';
 
 export function SettingsPage() {
+  const version = Constants.expoConfig?.version;
+  const update = useUpdateNotice(version);
   return (
     <Screen>
       <ScreenHeader eyebrow="GAON / SYSTEM" title="설정" back />
@@ -45,7 +48,15 @@ export function SettingsPage() {
       </Section>
       <Section eyebrow="05 / BUILD" title="앱 정보">
         <View style={styles.body}>
-          <AppText variant="mono" tone="muted">버전 {Constants.expoConfig?.version}</AppText>
+          <AppText variant="mono" tone="muted">버전 {version}</AppText>
+          {update && (
+            <Pressable role="link" style={styles.link} onPress={() => void Linking.openURL(update.url)}>
+              <View style={styles.linkRow}>
+                <AppText aria-hidden variant="mono">{'>'}</AppText>
+                <AppText variant="mono" style={styles.linkText}>{`새 버전 ${update.version} 내려받기`}</AppText>
+              </View>
+            </Pressable>
+          )}
           <AppText variant="caption" tone="muted">가수, 앨범, 가사, 순위는 모두 가상 데이터이고, 음원과 앨범 아트는 코드로 합성했습니다.</AppText>
         </View>
       </Section>

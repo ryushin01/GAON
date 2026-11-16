@@ -2,6 +2,7 @@ export { addToQueue, next, playTracks, removeFromQueue, skipToIndex } from './mo
 export { useCurrentTrack, usePlayerStore } from './model/playerStore';
 export { OutputBadge } from './ui/OutputBadge';
 export { OutputModeSelector } from './ui/OutputModeSelector';
+export { PlaybackError } from './ui/PlaybackError';
 export { PlayPauseButton } from './ui/PlayPauseButton';
 export { SeekBar } from './ui/SeekBar';
 export { TransportControls } from './ui/TransportControls';

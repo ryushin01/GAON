@@ -5,7 +5,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { useSessionStore } from '@/entities/session';
 import { OWNER_GITHUB_LOGIN, PRIVACY_POLICY_URL, SUPABASE_ENABLED } from '@/shared/config';
-import { AppButton, AppText, ConfirmDialog, Icon, type IconName } from '@/shared/ui';
+import { AppButton, AppText, ConfirmDialog, Icon, LiveRegion, type IconName } from '@/shared/ui';
 
 import { deleteAccount, signIn, signInOwner, signOut, type SocialProvider } from '../model/signIn';
 
@@ -132,7 +132,7 @@ export function AccountSection({ onSignedOut, children }: Props) {
             )}
           </>
         )}
-        {error ? <AppText tone="danger" role="alert">로그인하지 못했습니다. {error}</AppText> : null}
+        <LiveRegion role="alert">{error ? <AppText tone="danger">로그인하지 못했습니다. {error}</AppText> : null}</LiveRegion>
         {privacy}
       </View>
     );
@@ -149,7 +149,7 @@ export function AccountSection({ onSignedOut, children }: Props) {
         <AppButton variant="secondary" label={busy === 'out' ? '로그아웃 중…' : '로그아웃'} disabled={busy !== null} onPress={() => void run('out', async () => { await signOut(session.kind); onSignedOut?.(); })} />
         {session.kind === 'supabase' && <AppButton variant="secondary" label="계정 삭제" disabled={busy !== null} onPress={() => setConfirming(true)} />}
       </View>
-      {error ? <AppText tone="danger" role="alert">{error}</AppText> : null}
+      <LiveRegion role="alert">{error ? <AppText tone="danger">{error}</AppText> : null}</LiveRegion>
       {privacy}
       <ConfirmDialog
         visible={confirming}

@@ -45,4 +45,9 @@ describe('DiscStage', () => {
     await fireEvent.press(screen.getByRole('button', { name: /목록/ }));
     expect(screen.getByRole('button', { name: /여름/ })).toBeTruthy();
   });
+
+  it('보이는 곡을 순위와 제목, 가수로 짧게 알립니다', async () => {
+    await render(<DiscStage {...props} onPlay={jest.fn()} />);
+    expect(screen.getByText('1위 빛, 유신')).toBeTruthy();
+  });
 });
