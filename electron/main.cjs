@@ -63,8 +63,10 @@ function contentSecurityPolicy() {
   } catch {
     // 화면 파일이 없으면 인라인 스크립트도 없습니다.
   }
+  // 브라우저는 HTML을 읽을 때 줄바꿈(CRLF, CR)을 LF로 바꾼 뒤 해시를 비교합니다.
+  // Windows에서는 git이 화면 파일을 CRLF로 받으므로 같은 규칙으로 바꿔서 계산합니다.
   const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(
-    ([, code]) => `'sha256-${createHash('sha256').update(code).digest('base64')}'`,
+    ([, code]) => `'sha256-${createHash('sha256').update(code.replace(/\r\n?/g, '\n')).digest('base64')}'`,
   );
   const local = 'http://localhost:8787';
   return [

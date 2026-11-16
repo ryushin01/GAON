@@ -85,9 +85,9 @@ iOS(AVPlayer)와 Android(ExoPlayer)도 일반 재생 경로라 운영체제의 �
 
 ## PC 앱 보안
 
-- 화면 문서에 콘텐츠 보안 정책(CSP)을 붙입니다(`electron/main.cjs`). 스크립트는 앱에 든 파일과 `index.html`의 테마 스크립트(빌드 결과에서 해시를 계산)만 실행하고, 스타일은 React Native Web·Unistyles가 런타임에 넣어 인라인을 허용합니다. 미디어·이미지·요청은 https와 개발용 미디어 서버(`localhost:8787`), blob만 받습니다.
+- 화면 문서에 콘텐츠 보안 정책(CSP)을 붙입니다(`electron/main.cjs`). 스크립트는 앱에 든 파일과 `index.html`의 테마 스크립트(빌드 결과에서 해시를 계산, 브라우저처럼 줄바꿈을 LF로 맞춘 뒤 계산해 Windows의 CRLF 체크아웃에서도 맞음)만 실행하고, 스타일은 React Native Web·Unistyles가 런타임에 넣어 인라인을 허용합니다. 미디어·이미지·요청은 https와 개발용 미디어 서버(`localhost:8787`), blob만 받습니다.
 - Electron fuses(`electron-builder.json`의 `electronFuses`): `ELECTRON_RUN_AS_NODE`와 `NODE_OPTIONS`를 무시하고, `app.asar`에서만 앱 코드를 읽으며, `file://` 추가 권한을 끕니다. `--inspect` 인자는 Playwright가 설치본을 검사할 때 써서 켜 둡니다. 서명하지 않은 macOS 앱은 fuse를 바꾼 뒤 ad-hoc 서명을 다시 합니다(`resetAdHocDarwinSignature`).
-- `pnpm test:desktop`이 정책 위반이 없는지, 정책 밖의 인라인 스크립트가 막히는지 확인합니다.
+- `pnpm test:desktop`이 정책 위반이 없는지, 정책 밖의 인라인 스크립트가 막히는지, 테마 스크립트가 실제로 실행됐는지(`data-theme`) 확인합니다. 첫 문서에서 난 위반은 콘솔 감시가 놓칠 수 있어 마지막 확인이 필요합니다.
 - 설정 화면의 앱 정보에서 GitHub의 최신 Release가 더 새 버전이면 내려받는 링크를 보여 줍니다(PC 앱만, 자동 업데이트는 코드 서명이 필요해 아직 없음).
 
 ## 테마
