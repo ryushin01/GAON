@@ -1,7 +1,7 @@
 # GAON - 고해상도 음악 스트리밍
 
 [![CI](https://github.com/ryushin01/GAON/actions/workflows/ci.yml/badge.svg)](https://github.com/ryushin01/GAON/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-0.12.0-0A0A0A)
+![version](https://img.shields.io/badge/version-0.13.0-0A0A0A)
 
 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. iOS, Android, Windows, macOS에 설치해 들을 수 있고, 기기에 있는 FLAC 파일도 가져와 재생합니다.
 
@@ -41,7 +41,7 @@
 | TOP 100 | 순위와 변동, 신규 진입 표시, 장르 필터, 전체·선택 재생 |
 | 플레이어 | 셔플, 반복, 재생 위치 이동, 가사 따라가기, 재생 목록 편집, 백그라운드 재생, 앱을 다시 켜도 재생 목록 유지 |
 | 내 FLAC | 기기의 FLAC을 변환 없이 앱 안에 저장, 태그와 음질 분석, 인터넷 없이 재생 |
-| 비트 퍼펙트 출력 | PC 앱 독점 출력, 곡마다 장치 샘플레이트 전환 (macOS Core Audio, Windows WASAPI), 미디어 키 |
+| 비트 퍼펙트 출력 | PC 앱 독점 출력, 곡마다 장치 샘플레이트 전환 (macOS Core Audio, Windows WASAPI), 같은 형식의 곡은 끊김 없이 이어 재생(갭리스), 미디어 키 |
 | 테마 | 라이트, 다크, 시스템 설정 따르기 |
 | 보관함 | 좋아요, 최근 재생, 플레이리스트 (앱을 다시 켜도 유지) |
 | 계정 | 카카오·Google·GitHub 소셜 로그인 구현 (공개 데모는 데모 로그인), 소유자 계정은 비공개 Gist로 보관함 동기화 |
@@ -85,7 +85,7 @@ pnpm web                                          # 또는 pnpm ios, pnpm androi
 |---|---|
 | `pnpm build:web` / `pnpm desktop` | 웹 빌드 / 그 빌드를 PC 앱으로 실행 |
 | `pnpm build:desktop` | PC 설치본 빌드 |
-| `pnpm build:native` / `test:native <FLAC>` | 비트 퍼펙트 재생기 빌드 / 무손실 검사 (clang 필요) |
+| `pnpm build:native` / `test:native <FLAC>...` | 비트 퍼펙트 재생기 빌드 / 무손실·곡 이어 붙이기(갭리스) 검사 (clang 필요) |
 | `pnpm lint` / `typecheck` / `test` | ESLint / 타입 검사 / 단위 테스트 |
 | `pnpm lint:fsd` | Feature-Sliced Design 구조 검사 (Steiger) |
 | `pnpm test:e2e` | 프로덕션 웹 빌드의 화면·접근성 검사 (먼저 `build:web` 필요) |

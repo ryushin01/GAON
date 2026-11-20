@@ -12,7 +12,9 @@ export type OutputInfo = {
 type HelperEvent =
   | ({ event: 'output' } & OutputInfo)
   | { event: 'status'; playing: boolean; time: number; duration: number }
-  | { event: 'ended' | 'ready' | 'loaded' }
+  | { event: 'ended' | 'ready' | 'loaded' | 'stopped' }
+  /** 미리 알려 둔 다음 곡(file)을 지금 곡 뒤에 이어 붙여 재생하기 시작했습니다. */
+  | { event: 'advanced'; file: string; duration: number }
   | { event: 'error'; message: string };
 
 /** PC 앱의 preload가 window.gaonAudio로 내보내는 기능입니다. */
@@ -20,6 +22,8 @@ export type AudioBridge = {
   prepareUrl: (url: string) => Promise<string>;
   prepareBytes: (bytes: ArrayBuffer) => Promise<string>;
   load: (name: string) => void;
+  /** 지금 곡 다음에 이어 재생할 파일을 알립니다. null이면 지웁니다. 형식이 같으면 재생기가 끊김 없이 이어 붙입니다. */
+  next?: (name: string | null) => void;
   play: () => void;
   pause: () => void;
   stop: () => void;
@@ -84,7 +88,10 @@ type Callbacks = {
   onMediaPrevious?: () => void;
 };
 
-/** 재생 목록은 화면에서 관리하고, 재생기는 한 번에 한 곡만 재생합니다. */
+/**
+ * 재생 목록은 화면에서 관리하고, 재생기는 지금 곡과 미리 알려 둔 다음 곡만 압니다.
+ * 다음 곡은 지금 곡을 불러온 뒤 미리 받아 두고 재생기에 알려, 형식이 같으면 곡 사이 끊김 없이 이어집니다(갭리스).
+ */
 export function createNativePlaylist(
   bridge: AudioBridge,
   { onOutput, onError, onMediaPlay, onMediaNext, onMediaPrevious }: Callbacks,
@@ -100,6 +107,13 @@ export function createNativePlaylist(
   let loadToken = 0;
   let time = 0;
   let duration = 0;
+  /** 재생기에 알린 다음 곡입니다. */
+  let queued: { uri: string; name: string } | null = null;
+  /** 다음 곡으로 받는 중인 주소입니다. */
+  let preparing: string | null = null;
+  /** 보낸 멈춤 중 재생기가 아직 처리하지 않은 수입니다. 그 전에 온 이벤트는 멈추기 전 곡의 것이라 버립니다. */
+  let stopsPending = 0;
+  let syncScheduled = false;
   const statusListeners: Listeners['playlistStatusUpdate'][] = [];
   const trackListeners: Listeners['trackChanged'][] = [];
 
@@ -122,6 +136,66 @@ export function createNativePlaylist(
     return bridge.prepareUrl(uri);
   };
 
+  /** 재생기를 멈추고 다음 곡도 잊게 합니다. 멈춤을 처리했다는 알림(stopped)이 오기 전의 이벤트는 버립니다. */
+  const stopHelper = () => {
+    stopsPending += 1;
+    queued = null;
+    preparing = null;
+    bridge.stop();
+  };
+
+  /** 지금 곡 다음에 재생할 곡의 위치입니다. 없으면 null입니다. */
+  const followingIndex = (): number | null => {
+    if (!uris.length) return null;
+    if (loop === 'single') return index;
+    if (index < uris.length - 1) return index + 1;
+    return loop === 'all' ? 0 : null;
+  };
+
+  /** 지금 곡이 재생기에 올라가 있을 때만 다음 곡을 미리 알립니다. */
+  const wantedNext = (): string | null => {
+    if (loading || !loadedUri || loadedUri !== uris[index]) return null;
+    const target = followingIndex();
+    return target == null ? null : uris[target];
+  };
+
+  /** 재생기에 알린 다음 곡을 지금 큐에 맞춥니다. 바뀌었으면 옛 곡을 지우고 새 곡을 받아 알립니다. */
+  const syncNext = () => {
+    const tell = bridge.next;
+    if (!tell) return;
+    const uri = wantedNext();
+    if (uri === (queued?.uri ?? null) || (uri !== null && uri === preparing)) return;
+    if (queued) {
+      tell(null);
+      queued = null;
+    }
+    preparing = uri;
+    if (uri === null) return;
+    prepare(uri)
+      .then((name) => {
+        // 받는 사이에 큐나 지금 곡이 바뀌었으면 알리지 않습니다.
+        if (preparing !== uri) return;
+        preparing = null;
+        if (wantedNext() !== uri) return;
+        queued = { uri, name };
+        tell(name);
+      })
+      .catch(() => {
+        // 미리 받지 못해도 지금 곡이 끝나면 그때 다시 불러옵니다.
+        if (preparing === uri) preparing = null;
+      });
+  };
+
+  /** 큐를 여러 번 바꾸는 작업(셔플 재배치 등)이 끝난 뒤 한 번만 맞춥니다. 중간 상태의 곡을 받지 않습니다. */
+  const scheduleSync = () => {
+    if (syncScheduled) return;
+    syncScheduled = true;
+    queueMicrotask(() => {
+      syncScheduled = false;
+      syncNext();
+    });
+  };
+
   const loadCurrent = async () => {
     const uri = uris[index];
     if (!uri) return;
@@ -131,7 +205,7 @@ export function createNativePlaylist(
     loading = true;
     time = 0;
     onOutput(null);
-    bridge.stop();
+    stopHelper();
     publish();
     try {
       const name = await prepare(uri);
@@ -146,6 +220,7 @@ export function createNativePlaylist(
       if (token === loadToken) {
         loading = false;
         publish();
+        syncNext();
       }
     }
   };
@@ -153,8 +228,12 @@ export function createNativePlaylist(
   const goTo = (target: number) => {
     index = target;
     announceTrack();
-    if (wantPlay) void loadCurrent();
-    else loadedUri = null;
+    if (wantPlay) {
+      void loadCurrent();
+    } else {
+      loadedUri = null;
+      scheduleSync();
+    }
   };
 
   const advance = () => {
@@ -172,7 +251,43 @@ export function createNativePlaylist(
     }
   };
 
+  /** 재생기가 미리 알려 둔 다음 곡으로 넘어갔습니다. 그사이 큐가 바뀌어 그 곡이 다음 곡이 아니면 다음 곡을 새로 불러옵니다. */
+  const advanced = (file: string, nextDuration: number) => {
+    const target = followingIndex();
+    const expected = queued;
+    queued = null;
+    if (!expected || expected.name !== file || target == null || uris[target] !== expected.uri) {
+      if (target == null) {
+        // 큐의 끝입니다. 재생기를 멈췄으니 다시 재생하면 지금 곡을 새로 불러옵니다.
+        wantPlay = false;
+        playing = false;
+        loadedUri = null;
+        stopHelper();
+        publish();
+      } else {
+        goTo(target);
+      }
+      return;
+    }
+    // 한 곡 반복은 같은 곡을 이어 붙여 위치만 처음으로 돌아갑니다.
+    const changed = target !== index;
+    index = target;
+    loadedUri = expected.uri;
+    time = 0;
+    duration = nextDuration;
+    if (changed) announceTrack();
+    publish();
+    syncNext();
+  };
+
   const unsubscribe = bridge.onEvent((event) => {
+    if (event.event === 'stopped') {
+      stopsPending = Math.max(0, stopsPending - 1);
+      return;
+    }
+    // 재생기가 꺼졌으면 보낸 멈춤은 처리되지 않습니다. 다음 명령에 새로 켜집니다.
+    if (event.event === 'error' && event.message === 'helper_stopped') stopsPending = 0;
+    else if (stopsPending > 0) return;
     if (event.event === 'status') {
       if (loading) return;
       playing = event.playing;
@@ -183,11 +298,15 @@ export function createNativePlaylist(
       onOutput(event);
     } else if (event.event === 'ended') {
       advance();
+    } else if (event.event === 'advanced') {
+      advanced(event.file, event.duration);
     } else if (event.event === 'error') {
       wantPlay = false;
       playing = false;
       // 재생기가 다시 시작되면 불러온 곡이 없으니 다음 재생 때 다시 불러옵니다.
       loadedUri = null;
+      queued = null;
+      preparing = null;
       onError('재생기를 시작하지 못했습니다. 설정에서 기본 출력으로 바꿔 보세요.');
       publish();
     }
@@ -207,6 +326,7 @@ export function createNativePlaylist(
     },
     set loop(value) {
       loop = value;
+      scheduleSync();
     },
     get playing() {
       return playing;
@@ -216,10 +336,12 @@ export function createNativePlaylist(
     },
     add: ({ uri }) => {
       uris.push(uri);
+      scheduleSync();
     },
     insert: ({ uri }, at) => {
       uris.splice(at, 0, uri);
       if (at <= index && uris.length > 1) index += 1;
+      scheduleSync();
     },
     remove: (at) => {
       uris.splice(at, 1);
@@ -227,9 +349,13 @@ export function createNativePlaylist(
         index -= 1;
       } else if (at === index) {
         index = Math.min(index, Math.max(uris.length - 1, 0));
-        if (wantPlay) void loadCurrent();
-        else loadedUri = null;
+        if (wantPlay) {
+          void loadCurrent();
+          return;
+        }
+        loadedUri = null;
       }
+      scheduleSync();
     },
     clear: () => {
       uris = [];
@@ -237,7 +363,7 @@ export function createNativePlaylist(
       loadedUri = null;
       loadToken += 1;
       loading = false;
-      bridge.stop();
+      stopHelper();
       onOutput(null);
     },
     skipTo: (target) => {
@@ -289,7 +415,7 @@ export function createNativePlaylist(
     destroy: () => {
       unsubscribe();
       loadToken += 1;
-      bridge.stop();
+      stopHelper();
       onOutput(null);
       clearMediaSession();
     },

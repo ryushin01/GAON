@@ -1,4 +1,4 @@
-import { onceAsync } from './supabase';
+import { onceAsync } from './onceAsync';
 
 describe('onceAsync', () => {
   it('한 번 만든 값은 다시 만들지 않습니다', async () => {

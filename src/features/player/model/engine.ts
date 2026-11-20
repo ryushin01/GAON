@@ -2,7 +2,7 @@ import { createAudioPlaylist, setAudioModeAsync, type AudioPlaylistStatus } from
 
 import { releaseAudioUris, resolveAudioUri, useLibraryStore } from '@/entities/library';
 import { artistLine, displayTitle, type Track } from '@/entities/music';
-import { shuffled } from '@/shared/lib';
+import { onceAsync, shuffled } from '@/shared/lib';
 
 import { createNativePlaylist, getAudioBridge, type PlaylistLike } from './nativePlaylist';
 import { usePlayerStore, type RepeatMode } from './playerStore';
@@ -17,7 +17,6 @@ let baseQueue: Track[] = [];
 /** 지금 큐의 순서가 어느 셔플 설정으로 만들어졌는지입니다. null이면 저장된 설정을 따릅니다(복원한 큐). */
 let orderShuffled: boolean | null = null;
 let lockScreenActive = false;
-let audioModeReady: Promise<void> | null = null;
 /** 큐를 바꾸는 동안 나오는 곡 변경 이벤트는 무시합니다. */
 let rebuilding = false;
 
@@ -110,15 +109,17 @@ function ensurePlaylist(): PlaylistLike {
   return playlist;
 }
 
-function ensureAudioMode() {
-  // 잠금 화면 조작을 쓰려면 다른 앱 소리와 섞이지 않는 모드여야 합니다.
-  audioModeReady ??= setAudioModeAsync({
+/**
+ * 잠금 화면 조작을 쓰려면 다른 앱 소리와 섞이지 않는 모드여야 합니다. 한 번만 설정하고,
+ * 실패하면 기억하지 않아 다음 재생에서 다시 시도합니다(전에는 앱을 다시 켤 때까지 재생이 안 됐습니다).
+ */
+const ensureAudioMode = onceAsync(() =>
+  setAudioModeAsync({
     playsInSilentMode: true,
     shouldPlayInBackground: true,
     interruptionMode: 'doNotMix',
-  });
-  return audioModeReady;
-}
+  }),
+);
 
 async function playableUri(track: Track): Promise<string> {
   return track.source === 'local' ? resolveAudioUri(track.id) : track.uri;
