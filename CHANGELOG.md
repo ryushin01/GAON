@@ -1,5 +1,11 @@
 # 버전 기록
 
+## 1.0.2 - 2026-11-20
+
+- Expo SDK 58 안의 패키지 16개를 SDK 권장 버전으로 올림(expo 58.0.26, expo-audio 58.0.12, expo-router 58.0.32, expo-file-system 58.0.14, expo-document-picker 58.0.5 등). 앱 기능은 같음
+- `app.json` 플러그인 목록에 `expo-status-bar`를 더함(`expo install`이 넣음, 옵션이 없어 네이티브 설정은 그대로)
+- 코드 스캔(CodeQL)과 Dependabot 보안 알림을 켬. 지적 반영: PC 앱 비트 퍼펙트 재생기가 장치 버퍼의 바이트 수를 넓은 정수로 계산(실제 값은 작아 동작은 같음), CI 워크플로 토큰을 읽기 권한으로 제한
+
 ## 1.0.1 - 2026-11-20
 
 - PC 앱: Electron 45.2.3 → 45.3.3. Chromium 156.0.8078.100, Node.js 24.22.3과 Chromium·V8 등에서 가져온 수정이 들어 있음

@@ -2,7 +2,7 @@
   "expo": {
     "name": "GAON",
     "slug": "gaon",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "scheme": "gaon",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -50,7 +50,8 @@
           "enableBackgroundPlayback": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": false
