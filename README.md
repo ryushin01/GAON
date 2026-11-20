@@ -87,6 +87,7 @@ pnpm web                                          # 또는 pnpm ios, pnpm androi
 | `pnpm build:web` / `pnpm desktop` | 웹 빌드 / 그 빌드를 PC 앱으로 실행 |
 | `pnpm build:desktop` | PC 설치본 빌드 |
 | `pnpm build:native` / `test:native <FLAC>...` | 비트 퍼펙트 재생기 빌드 / 무손실·곡 이어 붙이기(갭리스) 검사 (clang 필요) |
+| `pnpm test:native:device <FLAC> <다음 FLAC> [다른 형식 FLAC]` | 실제 출력 장치에서 독점·갭리스·형식 바꾸기 검사 (소리가 남, 먼저 `build:native`) |
 | `pnpm lint` / `typecheck` / `test` | ESLint / 타입 검사 / 단위 테스트 |
 | `pnpm lint:fsd` | Feature-Sliced Design 구조 검사 (Steiger) |
 | `pnpm test:e2e` | 프로덕션 웹 빌드의 화면·접근성 검사 (먼저 `build:web` 필요) |
