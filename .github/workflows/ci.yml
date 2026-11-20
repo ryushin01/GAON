@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# 두 작업 모두 코드를 받아 검사만 하므로 읽기 권한만 줍니다(코드 스캔 지적).
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest

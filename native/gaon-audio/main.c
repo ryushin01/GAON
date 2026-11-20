@@ -195,12 +195,12 @@ static void fill_output(void *output, ma_uint32 frameCount, ma_uint32 channels, 
         if (ma_pcm_rb_acquire_read(&g_ring, &available, &read) != MA_SUCCESS || available == 0) break;
         write_samples((const ma_int32 *)read, cursor, (ma_uint64)available * channels, format);
         ma_pcm_rb_commit_read(&g_ring, available);
-        cursor += available * bytesPerFrame;
+        cursor += (size_t)available * bytesPerFrame;
         remaining -= available;
         g_framesPlayed += available;
     }
     if (remaining > 0) {
-        memset(cursor, 0, remaining * bytesPerFrame);
+        memset(cursor, 0, (size_t)remaining * bytesPerFrame);
         if (g_decodedAll) g_endedPending = MA_TRUE;
         else if (g_playing) g_underruns += 1;
     }
