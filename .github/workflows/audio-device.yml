@@ -1,7 +1,7 @@
 name: 오디오 장치 검사
 
 # Windows 러너에 가상 오디오 장치(VB-CABLE)를 설치하고, 비트 퍼펙트 재생기를 실제 Windows 오디오 스택에서 돌립니다.
-# WASAPI 독점 출력, 곡 형식에 맞춘 장치 열기, 같은 형식 곡의 갭리스 이어 넘어가기를 봅니다.
+# WASAPI 독점 출력, 같은 형식 곡의 갭리스 이어 넘어가기, 다른 형식 곡에서 장치를 그 형식으로 다시 열기를 봅니다.
 # 하드웨어 DAC에서 듣는 확인을 대신하지는 않습니다. 재생기 코드가 바뀐 PR에서 돌고, 손으로도 돌릴 수 있습니다.
 on:
   workflow_dispatch:
@@ -47,7 +47,8 @@ jobs:
       - run: node scripts/build-native.mjs
       - name: 실제 출력 스모크(장치 열기, 재생, 위치 이동, 일시정지)
         run: node scripts/smoke-native-audio.mjs a96.flac b96.flac
-      - name: 실제 출력 갭리스(96kHz/24bit 두 곡)
-        run: node scripts/real-device-gapless.mjs a96.flac b96.flac
-      - name: 다른 형식은 이어 붙이지 않음(96kHz → 48kHz)
-        run: node scripts/smoke-native-audio.mjs a96.flac c48.flac
+      - name: 실제 출력 갭리스(96kHz/24bit 두 곡)와 형식 바꾸기(48kHz/16bit)
+        run: node scripts/real-device-gapless.mjs a96.flac b96.flac c48.flac
+        env:
+          # 가상 장치는 독점 출력을 지원하므로, 독점(비트 퍼펙트)으로 열리지 않으면 실패로 봅니다.
+          REQUIRE_EXCLUSIVE: '1'
