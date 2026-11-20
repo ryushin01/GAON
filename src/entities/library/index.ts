@@ -9,6 +9,7 @@ export {
   resolveAudioUri,
   saveLocalFile,
 } from './lib/localStorage';
+export { LOCAL_ID_PREFIX } from './lib/localId';
 export { hasStamp, pruneStamps } from './lib/stamps';
 export type { Stamps } from './lib/stamps';
 export type { LocalFileRef } from './lib/types';

@@ -1,3 +1,5 @@
+import { File } from 'expo-file-system';
+
 import { deleteLocalFile, downloadAudio, releaseAudioUris, resolveAudioUri } from './localStorage';
 
 /** 앱(iOS·Android)의 파일 저장소를 흉내 냅니다. 있는 파일의 경로만 기억합니다. */
@@ -73,5 +75,19 @@ describe('앱의 저장 파일 지우기', () => {
     await downloadAudio('a', 'https://m/a.flac');
     releaseAudioUris([]);
     expect(mockFiles.has(flac('a'))).toBe(true);
+  });
+
+  it('지우기를 미룬 곡을 다시 저장하면 남은 파일을 그대로 써, 받지 못하는 상황에서도 재생 목록의 파일이 남습니다', async () => {
+    await downloadAudio('a', 'https://m/a.flac');
+    releaseAudioUris(['a']);
+    await deleteLocalFile('a', { release: false });
+    const download = jest.spyOn(File, 'downloadFileAsync').mockRejectedValue(new Error('offline'));
+    try {
+      await downloadAudio('a', 'https://m/a.flac');
+      expect(download).not.toHaveBeenCalled();
+      expect(mockFiles.has(flac('a'))).toBe(true);
+    } finally {
+      download.mockRestore();
+    }
   });
 });

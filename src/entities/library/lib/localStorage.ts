@@ -62,9 +62,11 @@ async function download(url: string, target: File): Promise<void> {
  * 앱의 내려받기는 도중에 멈출 수 없어, 취소는 받은 뒤에 부르는 쪽이 지웁니다.
  */
 export async function downloadAudio(id: string, url: string, _signal?: AbortSignal): Promise<void> {
-  // 지우기를 미뤄 둔 같은 곡을 다시 저장하면, 새로 받은 파일을 나중에 지우지 않게 합니다.
-  deferred.delete(id);
-  await download(url, new File(ensureRoot(), `${id}.flac`));
+  const target = new File(ensureRoot(), `${id}.flac`);
+  // 지우기를 미뤄 둔 같은 곡을 다시 저장하면 남은 파일을 그대로 쓰고, 나중에 지우지 않습니다. 같은 자리에 다시 받다
+  // 실패하면 재생 목록이 열 파일까지 지워지기 때문입니다. 미뤄 둔 파일은 끝까지 받은 곡입니다(받다 실패하면 지움).
+  if (deferred.delete(id) && target.exists) return;
+  await download(url, target);
 }
 
 export async function downloadArt(id: string, url: string, _signal?: AbortSignal): Promise<void> {

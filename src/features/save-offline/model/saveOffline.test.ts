@@ -121,6 +121,27 @@ describe('오프라인 저장', () => {
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
+  it('앱을 켤 때 받는 중이거나 받을 차례인 곡의 파일은 지우지 않습니다', async () => {
+    // 지운 곡을 앱을 켜자마자 다시 저장했습니다. a는 받는 중, b는 받을 차례입니다.
+    useLibraryStore.setState({ fileTrash: ['a', 'b', 'c'] });
+    saveOffline([track('a'), track('b')]);
+    await settle();
+    await restoreOffline();
+    expect(mockDelete.mock.calls.map(([id]) => id)).toEqual(['c']);
+    await finish('a');
+    await finish('b');
+    expect(savedIds()).toEqual(['b', 'a']);
+    expect(useLibraryStore.getState().fileTrash).toEqual([]);
+  });
+
+  it('내 FLAC의 id 앞머리를 쓰는 스트리밍 곡은 내 FLAC 파일과 겹치지 않게 저장하지 않습니다', async () => {
+    const clash = track('local-abc-30-96000');
+    saveOffline([clash, track('a')]);
+    expect(useOfflineSave.getState().queue.map((t) => t.id)).toEqual(['a']);
+    expect((await renderHook(() => useOfflineMenuItem(clash))).result.current).toBeNull();
+    await finish('a');
+  });
+
   it('곡 메뉴는 저장 상태를 따라 항목을 바꿉니다(메뉴를 연 동안 저장이 끝나도)', async () => {
     expect((await renderHook(() => useOfflineMenuItem(track('mine', 'local')))).result.current).toBeNull();
     const { result } = await renderHook(() => useOfflineMenuItem(track('a')));

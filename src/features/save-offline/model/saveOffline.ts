@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 
-import { deleteLocalFile, downloadArt, downloadAudio, keepStoredFiles, resolveArtUri, useLibraryStore } from '@/entities/library';
+import { deleteLocalFile, downloadArt, downloadAudio, keepStoredFiles, LOCAL_ID_PREFIX, resolveArtUri, useLibraryStore } from '@/entities/library';
 import type { Track } from '@/entities/music';
 
 /** 받지 못한 까닭입니다. 기기 저장 공간이 모자랐거나(storage), 그 밖에는 받는 길(인터넷)의 문제로 봅니다. */
@@ -30,12 +30,18 @@ function failureOf(error: unknown): SaveFailure {
   return name === 'QuotaExceededError' || /quota|ENOSPC|no space|not enough space|disk full/i.test(message) ? 'storage' : 'network';
 }
 
-/** 스트리밍 곡만 저장합니다. 이미 저장했거나 받을 차례를 기다리는 곡은 건너뜁니다. */
+/**
+ * 오프라인 저장할 수 있는 곡입니다. 내 FLAC은 이미 기기에 있어 스트리밍 곡만 저장합니다. 내 FLAC의 id 앞머리를 쓰는
+ * 스트리밍 곡은 같은 이름의 내 FLAC 파일을 덮어쓰거나 지울 수 있어 저장하지 않습니다.
+ */
+export const canSaveOffline = (track: Track) => track.source === 'stream' && !track.id.startsWith(LOCAL_ID_PREFIX);
+
+/** 저장할 수 있는 곡만 저장합니다. 이미 저장했거나 받을 차례를 기다리는 곡은 건너뜁니다. */
 export function saveOffline(tracks: Track[]) {
   const saved = savedIds();
   const { queue, failed } = useOfflineSave.getState();
   const waiting = new Set(queue.map((t) => t.id));
-  const fresh = tracks.filter((t) => t.source === 'stream' && !saved.has(t.id) && !waiting.has(t.id));
+  const fresh = tracks.filter((t) => canSaveOffline(t) && !saved.has(t.id) && !waiting.has(t.id));
   if (!fresh.length) return;
   const retried = new Set(fresh.map((t) => t.id));
   useOfflineSave.setState({ queue: [...queue, ...fresh], failed: failed.filter((f) => !retried.has(f.id)) });
@@ -108,13 +114,15 @@ export async function restoreOffline(): Promise<void> {
   const { offlineTracks, fileTrash, setLocalArt } = useLibraryStore.getState();
   const entries = await Promise.all(offlineTracks.map(async (t) => [t.id, await resolveArtUri(t.id).catch(() => undefined)] as const));
   setLocalArt(Object.fromEntries(entries.filter((e): e is readonly [string, string] => Boolean(e[1]))));
-  // 그사이 다시 저장한 곡은 지울 목록에서 빠져 지우지 않습니다.
-  const trash = fileTrash.filter((id) => useLibraryStore.getState().fileTrash.includes(id));
+  // 그사이 다시 저장한 곡은 지울 목록에서 빠져 지우지 않습니다. 받는 중이거나 받을 차례인 곡도 새 파일일 수 있어
+  // 지우지 않습니다. 받은 곡은 addOfflineTrack이 지울 목록에서 빼고, 받지 못한 곡은 저장 작업이 지웁니다.
+  const queued = new Set(useOfflineSave.getState().queue.map((t) => t.id));
+  const trash = fileTrash.filter((id) => !queued.has(id) && useLibraryStore.getState().fileTrash.includes(id));
   if (trash.length) await deleteFiles(trash, true);
 }
 
 export type OfflineStatus = {
-  /** 목록의 스트리밍 곡 수입니다. 내 FLAC은 이미 기기에 있어 세지 않습니다. */
+  /** 목록에서 저장할 수 있는 곡(스트리밍 곡) 수입니다. 내 FLAC은 이미 기기에 있어 세지 않습니다. */
   total: number;
   saved: number;
   /** 받을 차례를 기다리거나 받는 중인 곡 수입니다. */
@@ -138,7 +146,7 @@ export function useOfflineStatus(tracks: Track[]): OfflineStatus {
   return useMemo(() => {
     const saved = new Set(offline.map((t) => t.id));
     const waiting = new Set(queue.map((t) => t.id));
-    const stream = tracks.filter((t) => t.source === 'stream');
+    const stream = tracks.filter(canSaveOffline);
     const inList = new Set(stream.map((t) => t.id));
     const failures = failed.filter((f) => inList.has(f.id) && !saved.has(f.id));
     const done = stream.filter((t) => saved.has(t.id));
