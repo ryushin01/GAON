@@ -28,7 +28,7 @@ CD 라벨(`disc/*.webp`)은 `scripts/disc_labels.py`가 실제 CD 구조(테두�
 
 ```bash
 pnpm ios --configuration Release
-pnpm android --variant release   # JDK 21 필요
+pnpm android --variant release   # JDK 21 필요(Android Studio에 들어 있는 JDK 25로도 빌드됨, 2026-11-20 확인)
 ```
 
 Android 에뮬레이터에서 로컬 미디어 서버를 쓰려면 `adb reverse tcp:8787 tcp:8787`을 먼저 실행합니다. Android Release 빌드는 평문 HTTP를 막으므로, 로컬 서버로 검사할 때는 Debug 빌드를 쓰거나 `android/app/src/release/AndroidManifest.xml`에 `usesCleartextTraffic`을 임시로 켭니다. 공개 주소는 HTTPS라 이 설정이 필요 없습니다.
