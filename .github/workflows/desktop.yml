@@ -45,8 +45,8 @@ jobs:
       - run: pip install numpy soundfile pillow
       - run: python scripts/generate-media.py public-media
       - run: pnpm build:native
-      - name: 비트 퍼펙트 재생기 무손실 검사
-        run: pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/album-28-1.flac
+      - name: 비트 퍼펙트 재생기 무손실·갭리스 검사
+        run: pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/glass-city-2.flac public-media/audio/album-28-1.flac
       - name: 검사용 빌드
         shell: bash
         run: |

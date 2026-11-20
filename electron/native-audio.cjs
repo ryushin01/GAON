@@ -12,6 +12,7 @@ const { app, ipcMain } = require('electron');
 const ALLOWED_MEDIA = ['https://ryushin01.github.io/GAON/media/', 'http://localhost:8787/'];
 const CACHE_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 const COMMANDS = new Set(['play', 'pause', 'stop']);
+const CACHE_NAME = /^[0-9a-f]{64}\.flac$/;
 
 function helperPath() {
   const name = process.platform === 'win32' ? 'gaon-audio.exe' : 'gaon-audio';
@@ -33,15 +34,25 @@ function isFlacFile(file) {
 function pruneCache(dir, keep) {
   const files = readdirSync(dir)
     .filter((name) => name.endsWith('.flac'))
-    .map((name) => {
-      const stat = statSync(path.join(dir, name));
-      return { name, size: stat.size, used: stat.mtimeMs };
+    .flatMap((name) => {
+      try {
+        const stat = statSync(path.join(dir, name));
+        return [{ name, size: stat.size, used: stat.mtimeMs }];
+      } catch {
+        // 그사이 지워진 파일은 건너뜁니다.
+        return [];
+      }
     })
     .sort((a, b) => b.used - a.used);
   let total = 0;
   for (const file of files) {
     total += file.size;
-    if (total > CACHE_LIMIT_BYTES && file.name !== keep) rmSync(path.join(dir, file.name), { force: true });
+    if (total <= CACHE_LIMIT_BYTES || file.name === keep) continue;
+    try {
+      rmSync(path.join(dir, file.name), { force: true });
+    } catch {
+      // 재생기가 열고 있는 파일(Windows)은 지우지 못합니다. 다음 정리 때 다시 지웁니다.
+    }
   }
 }
 
@@ -142,8 +153,13 @@ function setupNativeAudio(getWindow) {
     return cached(createHash('sha256').update(data).digest('hex'), async (part) => writeFileSync(part, data));
   });
   ipcMain.on('audio:load', (_event, name) => {
-    if (typeof name !== 'string' || !/^[0-9a-f]{64}\.flac$/.test(name)) return;
+    if (typeof name !== 'string' || !CACHE_NAME.test(name)) return;
     command(`load ${path.join(cacheDir(), name)}`);
+  });
+  // 지금 곡 다음에 이어 재생할 곡입니다. 같은 형식이면 재생기가 끊김 없이 이어 붙입니다. null이면 지웁니다.
+  ipcMain.on('audio:next', (_event, name) => {
+    if (name === null) command('next');
+    else if (typeof name === 'string' && CACHE_NAME.test(name)) command(`next ${path.join(cacheDir(), name)}`);
   });
   ipcMain.on('audio:command', (_event, name) => {
     if (COMMANDS.has(name)) command(name);
