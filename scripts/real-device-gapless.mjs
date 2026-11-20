@@ -53,6 +53,8 @@ await wait(500);
 const afterSeek = underruns();
 const advanced = await until((e) => e.event === 'advanced', 8000);
 await wait(1000);
+// 재생기는 곡을 새로 불러오면 버퍼 부족 횟수를 다시 세므로, 다른 형식 곡을 부르기 전에 읽어 둡니다.
+const afterAdvance = underruns();
 let switched;
 let thirdLoaded;
 if (third) {
@@ -90,7 +92,7 @@ const describe = (o) => `${o.backend}, 독점 ${o.exclusive}, 비트 퍼펙트 $
 const summary = [
   `출력: ${output ? describe(output) : '없음'}`,
   `넘어가기: ${advanced ? `${advanced.file}, 그 전 끝남 알림 ${endedEarly ? '있음' : '없음'}` : '없음'}`,
-  `버퍼 부족(underrun): 위치 이동 직후 ${afterSeek - beforeSeek}번, 그 뒤 이어 넘어가기까지 ${underruns() - afterSeek}번`,
+  `버퍼 부족(underrun): 위치 이동 직후 ${afterSeek - beforeSeek}번, 그 뒤 이어 넘어가기까지 ${afterAdvance - afterSeek}번`,
   ...(third ? [`형식 바꾸기: ${basename(third)} → ${switched ? describe(switched) : '없음'}`] : []),
   failures.length ? `실패: ${failures.join(' / ')}` : '통과',
 ];
