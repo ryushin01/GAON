@@ -1,6 +1,6 @@
 import { createAudioPlaylist, setAudioModeAsync, type AudioPlaylistStatus } from 'expo-audio';
 
-import { releaseAudioUris, resolveAudioUri, useLibraryStore } from '@/entities/library';
+import { isStoredOffline, releaseAudioUris, resolveAudioUri, useLibraryStore } from '@/entities/library';
 import { artistLine, displayTitle, type Track } from '@/entities/music';
 import { onceAsync, shuffled } from '@/shared/lib';
 
@@ -121,17 +121,27 @@ const ensureAudioMode = onceAsync(() =>
   }),
 );
 
+/** 내 FLAC과 오프라인 저장한 곡은 기기에 저장한 파일로 재생합니다. 저장한 파일을 찾지 못하면 스트리밍합니다. */
 async function playableUri(track: Track): Promise<string> {
-  return track.source === 'local' ? resolveAudioUri(track.id) : track.uri;
+  if (track.source === 'local') return resolveAudioUri(track.id);
+  if (isStoredOffline(track.id)) {
+    try {
+      return await resolveAudioUri(track.id);
+    } catch {
+      // 저장한 파일이 지워졌으면 스트리밍합니다.
+    }
+  }
+  return track.uri;
 }
 
 /**
- * 지금 큐에 없는 내 FLAC의 재생 주소를 놓습니다. 웹에서는 파일 데이터를 붙잡는 blob 주소입니다.
+ * 저장소에 지금 큐의 곡을 알리고, 큐에 없는 곡의 저장 파일 재생 주소를 놓습니다. 웹에서는 파일 데이터를 붙잡는 blob 주소입니다.
+ * 큐에 있는 곡은 오프라인 저장을 지웠어도 재생기가 그 주소(앱은 파일)를 쓰고 있을 수 있어, 큐에서 빠질 때 놓고 지웁니다.
  * 작업을 하나씩 실행하므로, 다른 작업이 쓰려고 만든 주소를 놓는 일은 없습니다.
  */
 function releaseUnused() {
   const { queue } = usePlayerStore.getState();
-  releaseAudioUris(queue.filter((t) => t.source === 'local').map((t) => t.id));
+  releaseAudioUris(queue.map((t) => t.id));
 }
 
 /** base가 queue의 원래 순서인지(같은 곡들인지) 봅니다. */
@@ -388,6 +398,8 @@ export function addToQueue(tracks: Track[]): Promise<void> {
     // 재생기가 없으면(복원한 큐) 곡만 더하고, 재생을 누를 때 재생기에 올립니다.
     if (keepBase) baseQueue = [...baseQueue, ...fresh];
     usePlayerStore.setState({ queue: [...usePlayerStore.getState().queue, ...fresh] });
+    // 저장소에 큐의 곡을 알려, 재생기가 쓸 파일을 지우지 않게 합니다.
+    releaseUnused();
   });
 }
 
@@ -426,6 +438,7 @@ function removeNow(trackId: string) {
   const nextIndex = at < index ? index - 1 : Math.min(index, nextQueue.length - 1);
   usePlayerStore.setState({ queue: nextQueue, index: nextIndex });
   if (at === index) syncLockScreen(nextQueue[nextIndex]);
+  releaseUnused();
 }
 
 /** 재생을 멈추고 줄을 선 새 큐 요청과 곡 더하기도 그만두게 합니다(출력 방식을 바꿀 때). */

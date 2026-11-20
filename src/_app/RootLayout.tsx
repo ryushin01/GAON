@@ -11,6 +11,7 @@ import { useLibraryStore } from '@/entities/library';
 import { startSession } from '@/entities/session';
 import { useThemeStore } from '@/features/change-theme';
 import { restoreLocalArt } from '@/features/import-local';
+import { restoreOffline } from '@/features/save-offline';
 import { startLibrarySync } from '@/features/sync-library';
 import { SkipLink, useLiveReducedMotion } from '@/shared/ui';
 
@@ -94,7 +95,10 @@ export function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const restore = () => void restoreLocalArt();
+    const restore = () => {
+      void restoreLocalArt();
+      void restoreOffline();
+    };
     if (useLibraryStore.persist.hasHydrated()) restore();
     return useLibraryStore.persist.onFinishHydration(restore);
   }, []);

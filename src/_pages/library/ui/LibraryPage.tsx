@@ -8,16 +8,26 @@ import type { Track } from '@/entities/music';
 import { usePlaylistNameField } from '@/features/create-playlist';
 import { ImportFlacButton } from '@/features/import-local';
 import { forgetTrack } from '@/features/player';
+import { removeOffline, SaveOfflineButton } from '@/features/save-offline';
+import { formatFileSize } from '@/shared/lib';
 import { AppButton, AppText, Chip, ConfirmDialog, FieldError, IconButton, Screen, ScreenHeader, StateView } from '@/shared/ui';
 import { TrackList, useTrackLookup } from '@/widgets/track-list';
 
-type Tab = 'liked' | 'recent' | 'playlists' | 'local';
+type Tab = 'liked' | 'recent' | 'playlists' | 'local' | 'offline';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'liked', label: '좋아요' },
   { id: 'recent', label: '최근 재생' },
   { id: 'playlists', label: '플레이리스트' },
   { id: 'local', label: '내 FLAC' },
+  { id: 'offline', label: '오프라인' },
 ];
+
+const EMPTY: Record<Exclude<Tab, 'playlists'>, { title: string; description: string }> = {
+  liked: { title: '좋아요한 곡이 없습니다', description: '곡 목록에서 마음에 드는 곡을 찾아보세요.' },
+  recent: { title: '최근 들은 곡이 없습니다', description: '곡 목록에서 마음에 드는 곡을 찾아보세요.' },
+  local: { title: '가져온 FLAC이 없습니다', description: '위 버튼으로 기기에 있는 FLAC 파일을 가져오세요.' },
+  offline: { title: '오프라인으로 저장한 곡이 없습니다', description: '좋아요 탭이나 플레이리스트에서 오프라인 저장을 누르면 인터넷 없이 들을 수 있습니다.' },
+};
 
 function Playlists() {
   const playlists = useLibraryStore((s) => s.playlists);
@@ -58,15 +68,19 @@ export function LibraryPage() {
   const [tab, setTab] = useState<Tab>('liked');
   const likedIds = useLibraryStore((s) => s.likedIds);
   const recentIds = useLibraryStore((s) => s.recentIds);
+  const offlineTracks = useLibraryStore((s) => s.offlineTracks);
   const local = useLocalTracks();
   const { resolve } = useTrackLookup();
   const [deleting, setDeleting] = useState<Track | null>(null);
+  const [clearingOffline, setClearingOffline] = useState(false);
 
   const tracks = useMemo(() => {
     if (tab === 'liked') return resolve(likedIds);
     if (tab === 'recent') return resolve(recentIds);
+    if (tab === 'offline') return resolve(offlineTracks.map((t) => t.id));
     return tab === 'local' ? local : [];
-  }, [tab, likedIds, recentIds, local, resolve]);
+  }, [tab, likedIds, recentIds, offlineTracks, local, resolve]);
+  const offlineBytes = useMemo(() => offlineTracks.reduce((sum, t) => sum + (t.fileSize ?? 0), 0), [offlineTracks]);
 
   const tabs = (
     <View>
@@ -80,6 +94,15 @@ export function LibraryPage() {
         <View style={styles.pane}>
           <ImportFlacButton />
           <AppText variant="caption" tone="muted">가져온 곡은 앱 안에 저장되어 인터넷 없이도 재생할 수 있습니다.</AppText>
+        </View>
+      )}
+      {tab === 'liked' && <SaveOfflineButton tracks={tracks} style={styles.pane} />}
+      {tab === 'offline' && offlineTracks.length > 0 && (
+        <View style={styles.pane}>
+          <AppText variant="caption" tone="muted">{`인터넷 없이 들을 수 있도록 기기에 저장한 곡입니다. ${offlineTracks.length}곡 · ${formatFileSize(offlineBytes)}`}</AppText>
+          <View style={styles.actions}>
+            <AppButton label="모두 삭제" variant="secondary" onPress={() => setClearingOffline(true)} />
+          </View>
         </View>
       )}
     </View>
@@ -98,12 +121,7 @@ export function LibraryPage() {
           tracks={tracks}
           header={tabs}
           extraActions={tab === 'local' ? (t) => [{ label: '보관함에서 삭제', onPress: () => setDeleting(t) }] : undefined}
-          empty={
-            <StateView
-              title={tab === 'liked' ? '좋아요한 곡이 없습니다' : tab === 'recent' ? '최근 들은 곡이 없습니다' : '가져온 FLAC이 없습니다'}
-              description={tab === 'local' ? '위 버튼으로 기기에 있는 FLAC 파일을 가져오세요.' : '곡 목록에서 마음에 드는 곡을 찾아보세요.'}
-            />
-          }
+          empty={<StateView {...EMPTY[tab]} />}
         />
       )}
       <ConfirmDialog
@@ -117,6 +135,17 @@ export function LibraryPage() {
           setDeleting(null);
         }}
       />
+      <ConfirmDialog
+        visible={clearingOffline}
+        title="오프라인 저장 모두 삭제"
+        description="기기에 저장한 곡 파일을 모두 지웁니다. 인터넷에 연결되어 있으면 지운 곡도 계속 스트리밍으로 들을 수 있습니다."
+        confirmLabel="삭제"
+        onCancel={() => setClearingOffline(false)}
+        onConfirm={() => {
+          setClearingOffline(false);
+          void removeOffline(offlineTracks.map((t) => t.id));
+        }}
+      />
     </Screen>
   );
 }
@@ -125,6 +154,7 @@ const styles = StyleSheet.create((theme) => ({
   flex: { flex: 1 },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md },
   pane: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
+  actions: { flexDirection: 'row' },
   form: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   input: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: theme.spacing.md, fontSize: 16, color: theme.colors.text, borderWidth: 1, borderColor: theme.colors.rule, backgroundColor: theme.colors.panel },
   playlist: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, minHeight: 52, borderBottomWidth: 1, borderBottomColor: theme.colors.border },

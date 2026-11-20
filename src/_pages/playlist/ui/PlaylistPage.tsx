@@ -1,7 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { View } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 
 import { useLibraryStore } from '@/entities/library';
+import { SaveOfflineButton } from '@/features/save-offline';
 import { AppButton, ConfirmDialog, Screen, ScreenHeader, StateView } from '@/shared/ui';
 import { TrackList, useTrackLookup } from '@/widgets/track-list';
 
@@ -29,17 +32,20 @@ export function PlaylistPage() {
         tracks={tracks}
         extraActions={(t) => [{ label: '플레이리스트에서 빼기', onPress: () => removeFromPlaylist(playlist.id, t.id) }]}
         header={
-          <ScreenHeader
-            title={playlist.name}
-            back
-            trailing={
-              <AppButton
-                label="삭제"
-                variant="secondary"
-                onPress={() => setConfirming(true)}
-              />
-            }
-          />
+          <View>
+            <ScreenHeader
+              title={playlist.name}
+              back
+              trailing={
+                <AppButton
+                  label="삭제"
+                  variant="secondary"
+                  onPress={() => setConfirming(true)}
+                />
+              }
+            />
+            <SaveOfflineButton tracks={tracks} style={styles.pane} />
+          </View>
         }
         empty={<StateView title="담은 곡이 없습니다" description="곡 메뉴의 '플레이리스트에 담기'로 추가해 보세요." />}
       />
@@ -60,3 +66,7 @@ export function PlaylistPage() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  pane: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
+}));

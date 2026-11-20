@@ -25,6 +25,8 @@ async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStor
 }
 
 const urls = new Map<string, string>();
+/** 재생 목록에 있는 곡입니다. 엔진이 큐를 바꿀 때마다 releaseAudioUris로 알려 줍니다. */
+let inUse = new Set<string>();
 
 async function blobUrl(key: string): Promise<string | undefined> {
   const cached = urls.get(key);
@@ -52,14 +54,42 @@ export async function saveLocalFile(id: string, ref: LocalFileRef, art?: { mime:
   }
 }
 
+async function fetchBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error(`파일을 받지 못했습니다. (${response.status})`);
+  return response.blob();
+}
+
+/** 스트리밍 곡을 받아 IndexedDB에 넣습니다(오프라인 저장). 내 FLAC과 같은 자리에 두어 같은 방법으로 재생합니다. */
+export async function downloadAudio(id: string, url: string, signal?: AbortSignal): Promise<void> {
+  const blob = await fetchBlob(url, signal);
+  const audio = blob.type === 'audio/flac' ? blob : blob.slice(0, blob.size, 'audio/flac');
+  await withStore('readwrite', (s) => s.put(audio, `audio:${id}`));
+}
+
+export async function downloadArt(id: string, url: string, signal?: AbortSignal): Promise<void> {
+  const blob = await fetchBlob(url, signal);
+  await withStore('readwrite', (s) => s.put(blob, `art:${id}`));
+}
+
+/** 저장 공간이 부족할 때 브라우저가 저장한 곡을 지우지 않도록 요청합니다. 허락하지 않아도 저장은 됩니다. */
+export async function keepStoredFiles(): Promise<void> {
+  try {
+    await navigator.storage?.persist?.();
+  } catch {
+    // 허락하지 않아도 저장은 됩니다.
+  }
+}
+
 export async function resolveAudioUri(id: string): Promise<string> {
   const url = await blobUrl(`audio:${id}`);
   if (!url) throw new Error('저장된 파일을 찾을 수 없습니다.');
   return url;
 }
 
-/** keep에 없는 곡의 재생 주소를 놓습니다. 붙잡고 있던 파일 데이터를 브라우저가 치울 수 있습니다. */
+/** keep(재생 목록의 곡)에 없는 곡의 재생 주소를 놓습니다. 붙잡고 있던 파일 데이터를 브라우저가 치울 수 있습니다. */
 export function releaseAudioUris(keep: string[]): void {
+  inUse = new Set(keep);
   const kept = new Set(keep.map((id) => `audio:${id}`));
   for (const [key, url] of urls) {
     if (key.startsWith('audio:') && !kept.has(key)) {
@@ -73,11 +103,18 @@ export async function resolveArtUri(id: string): Promise<string | undefined> {
   return blobUrl(`art:${id}`);
 }
 
-export async function deleteLocalFile(id: string): Promise<void> {
+/**
+ * 저장한 파일을 지우고 true를 돌려줍니다. 앨범 아트 주소는 바로 놓습니다. release가 false면 재생 목록에 있는 곡의
+ * 재생 주소는 놓지 않아 재생이 끊기지 않고(주소가 파일 데이터를 붙잡음), 곡이 큐에서 빠질 때 releaseAudioUris가 놓습니다.
+ */
+export async function deleteLocalFile(id: string, { release = true }: { release?: boolean } = {}): Promise<boolean> {
   for (const key of [`audio:${id}`, `art:${id}`]) {
     const url = urls.get(key);
-    if (url) URL.revokeObjectURL(url);
-    urls.delete(key);
+    if (url && (release || key.startsWith('art:') || !inUse.has(id))) {
+      URL.revokeObjectURL(url);
+      urls.delete(key);
+    }
     await withStore('readwrite', (s) => s.delete(key));
   }
+  return true;
 }

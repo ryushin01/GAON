@@ -1,7 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { Platform } from 'react-native';
 
-import { readHeader, resolveArtUri, saveLocalFile, useLibraryStore, type LocalFileRef } from '@/entities/library';
+import { LOCAL_ID_PREFIX, readHeader, resolveArtUri, saveLocalFile, useLibraryStore, type LocalFileRef } from '@/entities/library';
 import type { Track } from '@/entities/music';
 import { NotFlacError, parseFlac } from '@/shared/lib';
 
@@ -22,7 +22,7 @@ function baseName(name: string) {
 function localId(name: string, durationSec: number, sampleRate: number) {
   let hash = 0;
   for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) | 0;
-  return `local-${(hash >>> 0).toString(36)}-${Math.round(durationSec)}-${sampleRate}`;
+  return `${LOCAL_ID_PREFIX}${(hash >>> 0).toString(36)}-${Math.round(durationSec)}-${sampleRate}`;
 }
 
 export function toLocalTrack(name: string, info: ReturnType<typeof parseFlac>): Track {

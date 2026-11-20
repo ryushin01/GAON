@@ -335,6 +335,42 @@ test('좋아요와 플레이리스트가 새로 고침 뒤에도 남습니다', 
   await expect(page.getByRole('link', { name: '출근길 1곡' })).toBeVisible();
 });
 
+test('좋아요한 곡을 오프라인 저장하면 인터넷 없이도 보관함에서 듣습니다', async ({ page }) => {
+  await openChart(page);
+  await page.getByRole('button', { name: '빛 (The Light) 좋아요', exact: true }).click();
+  await page.goto('/library');
+  await page.getByRole('button', { name: '오프라인 저장', exact: true }).click();
+  // 끝났다는 알림은 화면 낭독기에만 들려주고, 화면에는 요약을 보여 줍니다.
+  await expect(page.getByRole('status').filter({ hasText: '1곡을 모두 오프라인으로 저장했습니다.' })).toBeAttached({ timeout: 20_000 });
+  await expect(page.getByText(/^1곡 모두 오프라인 저장됨/)).toBeVisible();
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);
+
+  // 인터넷이 끊긴 것처럼 카탈로그와 음원, 앨범 아트를 모두 막고 새로 엽니다.
+  await page.route('http://localhost:8787/**', (route) => route.abort());
+  await page.reload();
+  await page.getByRole('button', { name: '오프라인', exact: true }).click();
+  await expect(page.getByText(/인터넷 없이 들을 수 있도록 기기에 저장한 곡입니다. 1곡/)).toBeVisible();
+  await page.getByRole('button', { name: /^빛 \(The Light\) 유신 .*재생$/ }).click();
+  await page.getByRole('button', { name: /플레이어 열기/ }).click();
+  const slider = page.getByRole('slider', { name: '재생 위치' });
+  await expect.poll(async () => Number(await slider.getAttribute('aria-valuenow')), { timeout: 15_000 }).toBeGreaterThan(0);
+  await expectNoOverflow(page);
+});
+
+test('곡 메뉴에서 한 곡씩 오프라인 저장하고 지웁니다', async ({ page }) => {
+  await openChart(page);
+  await page.getByRole('button', { name: '빛 (The Light) 더보기' }).click();
+  await page.getByRole('button', { name: '오프라인 저장', exact: true }).click();
+  // 새로 고치면 받던 곡을 잃으므로 메뉴로 옮깁니다.
+  await page.getByRole('link', { name: '보관함', exact: true }).click();
+  await page.getByRole('button', { name: '오프라인', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^빛 \(The Light\) 유신 .*재생$/ })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: '빛 (The Light) 더보기' }).click();
+  await page.getByRole('button', { name: '오프라인 저장 삭제' }).click();
+  await expect(page.getByText('오프라인으로 저장한 곡이 없습니다')).toBeVisible();
+});
+
 test('검색은 가수, 제목, 크레딧으로 찾고 결과 없음을 알려 줍니다', async ({ page }) => {
   await page.goto('/search');
   const box = page.getByRole('searchbox');
