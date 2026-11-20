@@ -1,0 +1,53 @@
+name: 오디오 장치 검사
+
+# Windows 러너에 가상 오디오 장치(VB-CABLE)를 설치하고, 비트 퍼펙트 재생기를 실제 Windows 오디오 스택에서 돌립니다.
+# WASAPI 독점 출력, 곡 형식에 맞춘 장치 열기, 같은 형식 곡의 갭리스 이어 넘어가기를 봅니다.
+# 하드웨어 DAC에서 듣는 확인을 대신하지는 않습니다. 재생기 코드가 바뀐 PR에서 돌고, 손으로도 돌릴 수 있습니다.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - native/gaon-audio/**
+      - scripts/real-device-gapless.mjs
+      - scripts/smoke-native-audio.mjs
+      - .github/workflows/audio-device.yml
+
+permissions:
+  contents: read
+
+jobs:
+  windows-virtual-device:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: pip install numpy soundfile
+      - name: 시험용 FLAC 생성(같은 형식 두 곡, 다른 형식 한 곡)
+        shell: python
+        run: |
+          import numpy as np, soundfile as sf
+          def tone(name, rate, freq, seconds, subtype):
+              t = np.arange(int(rate * seconds)) / rate
+              wave = 0.25 * np.sin(2 * np.pi * freq * t)
+              sf.write(name, np.stack([wave, wave], axis=1), rate, subtype=subtype, format='FLAC')
+          tone('a96.flac', 96000, 440, 4, 'PCM_24')
+          tone('b96.flac', 96000, 660, 4, 'PCM_24')
+          tone('c48.flac', 48000, 550, 4, 'PCM_16')
+      - name: 가상 오디오 장치 설치(VB-CABLE)
+        uses: LABSN/sound-ci-helpers@e9d6ba52163a3283714a68412036ddf33f78d49c
+      - name: 소리 장치 목록
+        shell: pwsh
+        run: Get-CimInstance Win32_SoundDevice | Format-Table Name, Status, Manufacturer -AutoSize
+      - run: node scripts/build-native.mjs
+      - name: 실제 출력 스모크(장치 열기, 재생, 위치 이동, 일시정지)
+        run: node scripts/smoke-native-audio.mjs a96.flac b96.flac
+      - name: 실제 출력 갭리스(96kHz/24bit 두 곡)
+        run: node scripts/real-device-gapless.mjs a96.flac b96.flac
+      - name: 다른 형식은 이어 붙이지 않음(96kHz → 48kHz)
+        run: node scripts/smoke-native-audio.mjs a96.flac c48.flac
