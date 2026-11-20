@@ -3,3 +3,9 @@ allowBuilds:
   '@parcel/watcher': true
   electron-winstaller: false
   esbuild: false
+# 보안 권고 GHSA-3g3m-2fjr-6pw4(glob), GHSA-g3hv-75wg-m249(minimatch)는 새 메이저에서만 고쳐져,
+# 개발 도구(Jest·커버리지, ESLint, Storybook, electron-builder, Expo CLI)가 쓰는 옛 메이저를 고친 버전으로 올립니다.
+# 앱(웹 번들, PC 설치본)에는 들어가지 않습니다. 각 도구가 고친 버전을 쓰게 되면 지웁니다.
+overrides:
+  'glob@>=9.0.0 <14.0.2': ^14.0.2
+  'minimatch@>=7.0.0 <11.0.1': ^11.0.1
