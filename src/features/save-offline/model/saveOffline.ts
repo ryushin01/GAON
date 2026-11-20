@@ -82,6 +82,9 @@ async function work() {
       const job = new AbortController();
       controller = job;
       useOfflineSave.setState({ current: track.id });
+      // 받는 곡의 파일은 곡 정보를 저장할 때까지 지울 목록에 둡니다. 받는 도중 앱이 꺼지면 곡 정보 없이 파일만
+      // (Android는 반쯤 쓴 파일이) 남는데, 다음에 앱을 켤 때 지웁니다. 다 받으면 addOfflineTrack이 지울 목록에서 뺍니다.
+      useLibraryStore.getState().trashFiles([track.id]);
       try {
         await downloadAudio(track.id, track.uri, job.signal);
         // 앨범 아트는 받지 못해도 곡은 들을 수 있습니다.

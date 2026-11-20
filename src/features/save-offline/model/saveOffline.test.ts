@@ -67,8 +67,8 @@ describe('오프라인 저장', () => {
     await finish('a', new TypeError('Failed to fetch'));
     expect(useOfflineSave.getState().failed).toEqual([{ id: 'a', reason: 'network' }]);
     expect(mockDelete).toHaveBeenCalledWith('a', { release: false });
-    // 지운 파일은 지울 목록에서 뺍니다.
-    expect(useLibraryStore.getState().fileTrash).toEqual([]);
+    // 지운 파일은 지울 목록에서 뺍니다(다음 곡 b는 받는 동안 지울 목록에 있음).
+    expect(useLibraryStore.getState().fileTrash).toEqual(['b']);
     // 저장 공간이 모자라 쓰지 못하면 까닭이 다릅니다.
     const quota = Object.assign(new Error('The quota has been exceeded.'), { name: 'QuotaExceededError' });
     await finish('b', quota);
@@ -132,6 +132,19 @@ describe('오프라인 저장', () => {
     await finish('b');
     expect(savedIds()).toEqual(['b', 'a']);
     expect(useLibraryStore.getState().fileTrash).toEqual([]);
+  });
+
+  it('받는 곡의 파일은 지울 목록에 두어, 받다가 앱이 꺼지면 다음에 켤 때 지웁니다', async () => {
+    saveOffline([track('a')]);
+    await settle();
+    expect(useLibraryStore.getState().fileTrash).toEqual(['a']);
+    // 앱을 다시 켜면 저장 큐는 비고 지울 목록만 남습니다.
+    useOfflineSave.setState({ queue: [], current: null });
+    await restoreOffline();
+    expect(mockDelete).toHaveBeenCalledWith('a', { release: true });
+    expect(useLibraryStore.getState().fileTrash).toEqual([]);
+    // 앞 세션의 받기를 끝냅니다.
+    await finish('a', new Error('cancelled'));
   });
 
   it('내 FLAC의 id 앞머리를 쓰는 스트리밍 곡은 내 FLAC 파일과 겹치지 않게 저장하지 않습니다', async () => {
