@@ -1,6 +1,6 @@
 {
   "name": "gaon",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "private": true,
   "packageManager": "pnpm@12.16.1",
   "description": "고해상도 FLAC 전용 음악 스트리밍 앱",
@@ -12,6 +12,7 @@
     "web": "expo start --web",
     "media:generate": "python3 scripts/generate-media.py public-media",
     "media:serve": "node scripts/serve-media.mjs public-media 8787",
+    "media:snapshot": "node scripts/snapshot-offline-media.mjs public-media public/offline-media",
     "build:web": "expo export --platform web --output-dir dist",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
@@ -21,6 +22,7 @@
     "build:desktop": "pnpm build:web && pnpm build:native && electron-builder --config electron-builder.json",
     "test:e2e": "playwright test --project=phone --project=wide --project=dark",
     "test:desktop": "playwright test --project=desktop-app",
+    "test:offline": "playwright test --project=offline",
     "screenshots": "SCREENSHOTS=1 playwright test --project=screenshots",
     "storybook": "storybook dev -p 6006",
     "build:storybook": "storybook build",

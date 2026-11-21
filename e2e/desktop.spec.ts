@@ -187,3 +187,42 @@ test('비트 퍼펙트 재생기는 같은 형식의 다음 곡을 끊김 없이
   await expect.poll(position).toBeGreaterThan(0);
   await app.close();
 });
+
+test('인터넷이 없어도 PC 앱이 데모 카탈로그로 열리고 앱에 든 곡을 재생합니다', async () => {
+  test.setTimeout(180_000);
+  const dir = mkdtempSync(join(tmpdir(), 'gaon-'));
+  // 닿지 않는 프록시로 화면의 모든 http(s) 요청을 끊고, 남은 요청도 Playwright가 막습니다.
+  const args = [`--user-data-dir=${join(dir, 'data')}`, '--proxy-server=http://127.0.0.1:9', '--proxy-bypass-list=<-loopback>'];
+  const env = { ...process.env, GAON_AUDIO_BACKEND: process.env.GAON_AUDIO_BACKEND ?? 'null' };
+
+  const app = await _electron.launch({ executablePath: executablePath!, args, env });
+  await app.context().route((url) => url.protocol === 'http:' || url.protocol === 'https:', (route) => route.abort('internetdisconnected'));
+  const win = await app.firstWindow();
+  await win.reload();
+  await expect(win.getByRole('heading', { name: '빛 (The Light)', level: 2 })).toBeVisible({ timeout: 30_000 });
+  await expect(win.getByRole('status').filter({ hasText: '오프라인 데모' })).toBeVisible();
+
+  await win.getByRole('link', { name: 'TOP 100', exact: true }).click();
+  await expect(win.getByText('100곡')).toBeVisible();
+  await win.getByRole('button', { name: /^빛 \(The Light\) 유신 .*재생$/ }).click();
+  await win.getByRole('button', { name: /플레이어 열기/ }).click();
+  const slider = win.getByRole('slider', { name: '재생 위치' });
+  const position = async () => Number(await slider.getAttribute('aria-valuenow'));
+  await expect.poll(position, { timeout: 30_000 }).toBeGreaterThan(0);
+  await win.getByRole('button', { name: '플레이어 닫기' }).click();
+
+  // 비트 퍼펙트 재생기도 앱에 든 곡을 받아 재생합니다.
+  await win.getByRole('link', { name: '설정', exact: true }).click();
+  await win.getByRole('button', { name: '비트 퍼펙트 (독점)' }).click();
+  await win.getByRole('link', { name: '검색', exact: true }).click();
+  await win.getByRole('searchbox').fill('빛');
+  await win.getByRole('link', { name: /^빛 \(The Light\) 유신/ }).first().click();
+  await win.getByRole('button', { name: '전체 재생' }).click();
+  await win.getByRole('button', { name: /플레이어 열기/ }).click();
+  await expect(win.getByRole('heading', { level: 1 })).toHaveText('빛 (The Light)');
+  await expect.poll(position, { timeout: 30_000 }).toBeGreaterThan(1);
+  await win.getByRole('button', { name: '다음 곡' }).click();
+  await expect(win.getByRole('heading', { level: 1 })).toHaveText('그림자가 머문 자리');
+  await expect.poll(position, { timeout: 30_000 }).toBeGreaterThan(0);
+  await app.close();
+});

@@ -1,7 +1,7 @@
 # GAON - 고해상도 음악 스트리밍
 
 [![CI](https://github.com/ryushin01/GAON/actions/workflows/ci.yml/badge.svg)](https://github.com/ryushin01/GAON/actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-1.0.2-0A0A0A)
+![version](https://img.shields.io/badge/version-1.1.0-0A0A0A)
 
 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. iOS, Android, Windows, macOS에 설치해 들을 수 있고, 기기에 있는 FLAC 파일도 가져와 재생합니다. 좋아요·플레이리스트 곡은 기기에 저장해 인터넷 없이 듣습니다.
 
@@ -47,6 +47,7 @@
 | 보관함 | 좋아요, 최근 재생, 플레이리스트 (앱을 다시 켜도 유지) |
 | 계정 | 카카오·Google·GitHub 소셜 로그인 구현 (공개 데모는 데모 로그인), 소유자 계정은 비공개 Gist로 보관함 동기화 |
 | 카탈로그 | 곡·앨범·가수 상세, 피처링과 작사·작곡·편곡 크레딧, 통합 검색(띄어쓰기 무시, 초성 검색) |
+| 오프라인 데모 | 공개 미디어 서버에 닿지 못하면(인터넷 끊김, 시간 초과) 앱에 든 데모 카탈로그로 자동 전환, 화면 위에 「오프라인 데모」 안내. 웹·PC 앱은 앨범 아트·디스크 라벨과 「빛 (The Light)」 1·2번 곡까지 앱에 들어 있어 인터넷 없이 재생 |
 | 접근성 | 키보드 조작, 본문 바로가기, 스크린 리더 이름과 알림, 입력 오류 연결, 색과 무관한 순위 변동 표시 |
 
 FLAC은 변환 없이 저장하고 손실 없이 디코딩합니다. PC 앱은 설정에서 비트 퍼펙트 출력을 켜면 운영체제 믹서를 거치지 않고 장치로 보내고, 실제 출력 상태를 플레이어에 표시합니다. 새 버전이 나오면 설정의 앱 정보에서 알려 줍니다. 모바일과 웹의 마지막 출력은 운영체제가 처리합니다. 자세한 내용은 [음질](docs/development.md#음질)을 참고하세요.
@@ -82,6 +83,8 @@ echo 'EXPO_PUBLIC_MEDIA_BASE_URL=http://localhost:8787' > .env.local
 pnpm web                                          # 또는 pnpm ios, pnpm android
 ```
 
+`.env` 없이도 바로 실행됩니다. 미디어를 만들지 않고 `pnpm install` → `pnpm web`(또는 `pnpm build:web` → `node scripts/serve-web.mjs dist 8081`)만 해도, 공개 미디어에 닿으면 공개 카탈로그를, 인터넷이 없으면 앱에 든 데모 카탈로그(`public/offline-media`)를 보여 줍니다. 로그인 키가 없으면 데모 로그인(이 기기에만 저장)으로 동작합니다. 자세한 내용은 [오프라인 데모](docs/development.md#오프라인-데모)를 참고하세요.
+
 | 명령 | 설명 |
 |---|---|
 | `pnpm build:web` / `pnpm desktop` | 웹 빌드 / 그 빌드를 PC 앱으로 실행 |
@@ -91,7 +94,9 @@ pnpm web                                          # 또는 pnpm ios, pnpm androi
 | `pnpm lint` / `typecheck` / `test` | ESLint / 타입 검사 / 단위 테스트 |
 | `pnpm lint:fsd` | Feature-Sliced Design 구조 검사 (Steiger) |
 | `pnpm test:e2e` | 프로덕션 웹 빌드의 화면·접근성 검사 (먼저 `build:web` 필요) |
-| `pnpm test:desktop` | 설치본 실행 검사 (`GAON_EXECUTABLE` 필요) |
+| `pnpm test:offline` | 외부 요청을 모두 막고 데모 카탈로그로 주요 화면·재생이 되는지 검사 (먼저 `build:web` 필요) |
+| `pnpm media:snapshot` | `public-media/`에서 앱에 넣을 데모 미디어(`public/offline-media/`)를 다시 만듦 |
+| `pnpm test:desktop` | 설치본 실행 검사, 네트워크 없이 실행하는 검사 포함 (`GAON_EXECUTABLE` 필요) |
 | `pnpm screenshots` | README 화면 다시 찍기 (가상 음원 생성과 `build:web` 뒤) |
 | `pnpm storybook` | Storybook (`http://localhost:6006`) |
 

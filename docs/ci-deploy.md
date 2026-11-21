@@ -4,13 +4,13 @@
 
 | 파일 | 실행 시점 | 내용 |
 |---|---|---|
-| `ci.yml` | `main` 푸시, PR | lint, 타입 검사, 단위 테스트, 프로덕션 웹 빌드 E2E |
+| `ci.yml` | `main` 푸시, PR | lint, 타입 검사, 단위 테스트, 프로덕션 웹 빌드 E2E, 외부 요청을 막은 오프라인 E2E |
 | `deploy-media.yml` | `main` 푸시(앱·미디어 변경), 수동 | 카탈로그와 FLAC, 웹 데모를 GitHub Pages에 배포 |
 | `desktop.yml` | `v*` 태그, 수동 | Windows·macOS 설치본 빌드, 설치본 실행 검사, 아티팩트 업로드, 태그일 때 GitHub Release 공개 |
 
 ## 공개 미디어
 
-설치한 앱은 `https://ryushin01.github.io/GAON/media`에서 카탈로그와 FLAC을 받습니다. 첫 배포 전에 저장소의 **Settings → Pages → Source**를 **GitHub Actions**로 지정합니다. 이 주소가 열리기 전에는 설치본에서 스트리밍이 동작하지 않고, 내 FLAC만 재생할 수 있습니다.
+설치한 앱은 `https://ryushin01.github.io/GAON/media`에서 카탈로그와 FLAC을 받습니다. 첫 배포 전에 저장소의 **Settings → Pages → Source**를 **GitHub Actions**로 지정합니다. 이 주소에 닿지 못하면 설치본과 웹 데모는 앱에 든 데모 카탈로그로 화면을 보여 주고, 앱에 든 데모 곡과 내 FLAC을 재생합니다([오프라인 데모](development.md#오프라인-데모)).
 
 미디어가 약 630MB라 Pages 동기화가 기본 제한인 10분을 넘기는 일이 잦아, `deploy-pages`의 제한 시간을 30분으로 늘려 두었습니다. 그래도 실패하면 **Re-run failed jobs**보다 워크플로를 새로 실행하는 편이 낫습니다. 시간 초과로 취소된 배포를 같은 커밋으로 다시 실행하면 곧바로 취소되는 경우가 있었습니다. `pnpm-workspace.yaml`처럼 감시 경로 밖의 파일만 바꾸면 자동으로 돌지 않으니, 필요하면 직접 실행합니다.
 

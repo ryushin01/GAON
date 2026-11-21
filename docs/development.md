@@ -6,7 +6,7 @@
 |---|---|
 | `EXPO_PUBLIC_MEDIA_BASE_URL` | 카탈로그와 FLAC을 받을 주소입니다. 비워 두면 공개 주소 `https://ryushin01.github.io/GAON/media`를 씁니다. 빌드할 때 번들에 들어갑니다. |
 
-로컬 미디어 서버를 쓸 때만 `.env.local`에 `http://localhost:8787`을 지정합니다.
+로컬 미디어 서버를 쓸 때만 `.env.local`에 `http://localhost:8787`을 지정합니다. 환경 변수가 하나도 없어도 `pnpm web`, `pnpm build:web`, `pnpm desktop`이 그대로 동작합니다(공개 미디어 또는 [오프라인 데모](#오프라인-데모), 데모 로그인).
 
 ## 데모 미디어
 
@@ -17,6 +17,24 @@ CD 라벨(`disc/*.webp`)은 `scripts/disc_labels.py`가 실제 CD 구조(테두�
 - 곡 102개 중 100개가 TOP 100에 들어갑니다.
 - 차트 1위는 유신의 「빛 (The Light)」로 고정합니다. 유신은 싱어송라이터이므로 곡마다 작사·작곡을 유신으로 표기합니다.
 - `pnpm media:serve`는 재생 위치 이동에 필요한 Range 요청을 지원합니다.
+
+## 오프라인 데모
+
+포트폴리오 화면이 인터넷이나 공개 미디어 서버 상태에 따라 비지 않도록, 카탈로그를 받지 못하면 앱에 든 데모 카탈로그로 넘어갑니다.
+
+| 외부 의존 | 끊겼을 때 |
+|---|---|
+| 공개 미디어(`https://ryushin01.github.io/GAON/media`, 카탈로그·앨범 아트·디스크 라벨·FLAC) | 요청 실패, 오류 응답, 8초 시간 초과, 형식 오류면 `public/offline-media`의 스냅숏을 씁니다. 화면 위 `role="status"` 영역에 「오프라인 데모」를 알립니다. 1분이 지나면 화면을 옮길 때 공개 미디어에 다시 붙어 봅니다. |
+| Supabase 로그인·보관함 동기화 | 키가 없는 빌드(지금 공개 데모, `.env` 없는 로컬)는 데모 로그인으로 이 기기에만 저장합니다. 실제 소셜 로그인은 연결이 필요합니다. |
+| GitHub API(소유자 Gist 동기화, PC 앱 새 버전 확인) | 새 버전 확인은 실패하면 알리지 않고 넘어갑니다. 소유자 동기화는 연결이 필요하며, 보관함은 이 기기에 남습니다. |
+| 글꼴·아이콘 | 모두 `public/fonts`와 앱 번들에 들어 있습니다(CDN 없음). |
+| 분석·오류 수집 | 쓰지 않습니다. |
+
+- 스냅숏: `catalog.json`(곡 102개 전체), `art/`, `disc/`, 그리고 「빛 (The Light)」의 1·2번 곡 FLAC(96kHz/24bit 원본, 합계 약 11MB). 음원 전체(약 630MB)는 넣지 않습니다. 앱에 든 곡은 같은 앨범·같은 형식이라 PC 앱의 갭리스 이어 재생도 오프라인에서 확인할 수 있습니다. 나머지 곡은 공개 미디어 주소를 그대로 써서, 연결이 돌아오면 재생됩니다.
+- 웹·PC 앱은 빌드의 `/offline-media/`(Pages는 `/GAON/offline-media/`)에서 읽습니다. iOS·Android 앱은 카탈로그만 번들에 넣고 그림·음원은 공개 미디어 주소를 씁니다(한 번 본 그림은 캐시에 남음).
+- PC 앱의 비트 퍼펙트 재생기는 앱에 든 곡을 화면이 읽어 넘깁니다(`prepareBytes`). 재생기가 직접 받는 주소 목록(`electron/native-audio.cjs`)은 늘리지 않습니다.
+- 데모 미디어를 다시 만들면(`scripts/generate-media.py`를 바꾼 경우) `pnpm media:generate && pnpm media:snapshot`으로 스냅숏도 다시 만듭니다.
+- 검사: `pnpm test:offline`(Playwright가 `localhost:8081` 밖의 요청을 모두 막은 채 홈·TOP 100·앨범·곡 정보·검색·재생·데모 로그인과 axe를 봄, CI에 포함), `pnpm test:desktop`(설치본을 닿지 않는 프록시로 실행해 데모 카탈로그와 기본·비트 퍼펙트 재생을 봄).
 
 ## 네이티브 빌드
 

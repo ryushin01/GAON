@@ -50,6 +50,8 @@ jobs:
         env:
           EXPO_PUBLIC_MEDIA_BASE_URL: http://localhost:8787
       - run: pnpm exec playwright test --project=phone --project=wide --project=dark
+      # 외부 요청을 모두 막고 앱에 든 데모 카탈로그로 주요 화면과 재생이 되는지 봅니다.
+      - run: pnpm exec playwright test --project=offline
 
   # Windows 코드는 다른 운영체제에서 컴파일되지 않습니다. 러너에 소리 장치가 없어도 충돌하지 않는지 봅니다.
   native-windows:

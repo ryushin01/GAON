@@ -54,4 +54,6 @@ export type Catalog = {
   tracks: Track[];
   tracksById: Map<string, Track>;
   albumsById: Map<string, Album>;
+  /** 공개 미디어에 닿지 못해 앱에 든 데모 카탈로그를 보여 주는 중이면 true입니다. */
+  snapshot?: boolean;
 };

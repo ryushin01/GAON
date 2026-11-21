@@ -13,9 +13,11 @@ export default defineConfig({
     launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
   },
   projects: [
-    { name: 'phone', testIgnore: /desktop\.spec|readme\.screenshots/, use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } } },
-    { name: 'wide', testIgnore: /desktop\.spec|readme\.screenshots/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
-    { name: 'dark', testIgnore: /desktop\.spec|readme\.screenshots/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, colorScheme: 'dark' } },
+    { name: 'phone', testIgnore: /desktop\.spec|offline\.spec|readme\.screenshots/, use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } } },
+    { name: 'wide', testIgnore: /desktop\.spec|offline\.spec|readme\.screenshots/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
+    { name: 'dark', testIgnore: /desktop\.spec|offline\.spec|readme\.screenshots/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, colorScheme: 'dark' } },
+    // 외부 요청을 모두 막고 앱에 든 데모 카탈로그로 화면이 뜨는지 봅니다(pnpm test:offline).
+    { name: 'offline', testMatch: /offline\.spec/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
     { name: 'desktop-app', testMatch: /desktop\.spec/ },
     // README 화면 촬영(pnpm screenshots). 화면 파일을 덮어쓰므로 SCREENSHOTS=1일 때만 넣습니다.
     ...(process.env.SCREENSHOTS === '1'
