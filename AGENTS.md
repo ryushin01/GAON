@@ -5,7 +5,7 @@
 ## 1. 프로젝트 개요
 
 - 손실 압축 없이 Hi-Res FLAC만 스트리밍하는 음악 앱입니다. 백엔드 없이 정적 카탈로그와 FLAC을 받아 동작하고, 가수·앨범·가사·순위는 가상 데이터, 음원·앨범 아트는 코드로 합성합니다.
-- 화면 축 2개: 모바일 앱(iOS·Android, Expo) · PC 앱(Electron, Windows·macOS). 웹 데모는 모바일 앱의 웹 빌드입니다.
+- 화면 축: 모바일 앱(iOS·Android, Expo) · PC 앱(Electron, Windows·macOS). 웹 데모는 모바일 앱의 웹 빌드입니다.
 - 웹 데모: https://ryushin01.github.io/GAON/ · PC 설치본: https://github.com/ryushin01/GAON/releases/latest
 - 공개 미디어(카탈로그·FLAC): `https://ryushin01.github.io/GAON/media`
 
