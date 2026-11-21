@@ -1,4 +1,4 @@
-import { chartTracks, genresOf, latestAlbums, matchesQuery, toCatalog, type RawCatalog } from './catalog';
+import { chartTracks, fetchCatalog, genresOf, latestAlbums, matchesQuery, toCatalog, type RawCatalog } from './catalog';
 
 const raw: RawCatalog = {
   artists: [{ name: '유신', role: '싱어송라이터' }],
@@ -30,5 +30,39 @@ describe('catalog', () => {
     expect(matchesQuery(catalog.tracks[1], '유신')).toBe(true);
     expect(matchesQuery(catalog.tracks[0], 'the light')).toBe(true);
     expect(matchesQuery(catalog.tracks[0], '   ')).toBe(false);
+  });
+});
+
+describe('오프라인 대체', () => {
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  it('공개 미디어에 닿지 못하면 앱에 든 데모 카탈로그를 씁니다', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const catalog = await fetchCatalog();
+    expect(catalog.snapshot).toBe(true);
+    expect(catalog.tracks.find((t) => t.rank === 1)?.title).toBe('빛 (The Light)');
+    expect(catalog.tracks.filter((t) => t.rank != null)).toHaveLength(100);
+  });
+
+  it('서버가 오류로 답해도 데모 카탈로그로 넘어갑니다', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 });
+    expect((await fetchCatalog()).snapshot).toBe(true);
+  });
+
+  it('공개 미디어를 받으면 데모 표시가 없습니다', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => raw });
+    const catalog = await fetchCatalog();
+    expect(catalog.snapshot).toBeUndefined();
+    expect(catalog.tracks[0].uri).toMatch(/\/audio\/t1\.flac$/);
+  });
+
+  it('음원 기준 주소를 곡마다 정할 수 있습니다', () => {
+    const mixed = toCatalog(raw, 'app://offline', (path) => (path === 'audio/t1.flac' ? 'app://offline' : 'https://media.test'));
+    expect(mixed.tracksById.get('t1')?.uri).toBe('app://offline/audio/t1.flac');
+    expect(mixed.tracksById.get('t2')?.uri).toBe('https://media.test/audio/t2.flac');
+    expect(mixed.albums[0].artUri).toBe('app://offline/art/a.jpg');
   });
 });

@@ -11,4 +11,5 @@ export { artistLine, displayTitle, formatKhz, formatQuality, formatQualityShort,
 export type { Album, Artist, AudioFormat, Catalog, LyricLine, Track } from './model/types';
 export { AlbumCard } from './ui/AlbumCard';
 export { QualityBadge } from './ui/QualityBadge';
+export { SnapshotNotice } from './ui/SnapshotNotice';
 export { TrackRow } from './ui/TrackRow';

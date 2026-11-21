@@ -3,6 +3,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { View, useWindowDimensions } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { SnapshotNotice } from '@/entities/music';
 import { WIDE_LAYOUT_MIN_WIDTH } from '@/shared/config';
 
 import { BottomDock } from './BottomDock';
@@ -16,6 +17,7 @@ export function TabsLayout() {
   return (
     <View style={styles.root}>
       {width >= WIDE_LAYOUT_MIN_WIDTH && <TopNav />}
+      <SnapshotNotice />
       <View style={styles.main}>
         <Stack screenOptions={{ headerShown: false, animation: reduceMotion ? 'none' : 'fade', contentStyle: { backgroundColor: theme.colors.bg } }} />
       </View>

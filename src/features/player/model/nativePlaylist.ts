@@ -67,6 +67,13 @@ type LockMetadata = { title?: string; artist?: string; albumTitle?: string; artw
 
 const MEDIA_ACTIONS = ['play', 'pause', 'previoustrack', 'nexttrack', 'seekto'] as const;
 
+/** PC 앱 안에 든 파일(데모 곡)의 주소인지 봅니다. */
+function isBundled(uri: string): boolean {
+  // 앱(iOS·Android)과 테스트 환경에는 window.location이 없을 수 있습니다.
+  const origin = typeof window === 'undefined' ? undefined : window.location?.origin;
+  return Boolean(origin) && uri.startsWith(`${origin}/`);
+}
+
 function mediaSession(): MediaSession | undefined {
   return typeof navigator === 'undefined' ? undefined : navigator.mediaSession;
 }
@@ -129,7 +136,8 @@ export function createNativePlaylist(
   const announceTrack = () => trackListeners.forEach((listener) => listener({ currentIndex: index }));
 
   const prepare = async (uri: string) => {
-    if (uri.startsWith('blob:')) {
+    // 내 FLAC(blob)과 앱에 든 데모 곡(같은 출처)은 화면이 읽어 넘깁니다. 재생기는 공개 미디어 주소만 직접 받습니다.
+    if (uri.startsWith('blob:') || isBundled(uri)) {
       const response = await fetch(uri);
       return bridge.prepareBytes(await response.arrayBuffer());
     }
