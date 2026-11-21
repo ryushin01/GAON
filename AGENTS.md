@@ -56,22 +56,33 @@ pnpm test:e2e        # 프로덕션 웹 빌드, phone·wide·dark, axe
 - CI의 `native-windows` 작업은 Windows에서 재생기를 컴파일·검사합니다. 재생기 코드가 바뀐 PR에서는 `오디오 장치 검사`(`audio-device.yml`, Windows 가상 장치 VB-CABLE)도 돕니다.
 - 그 밖: `pnpm test:desktop`(설치본 실행 검사, `GAON_EXECUTABLE` 필요), `pnpm test:native:device`(실제 출력 장치, 소리가 남), `pnpm fonts`(화면 글자가 바뀌면 다시 실행, 빠진 글자는 단위 테스트가 잡음), `pnpm screenshots`.
 - 새 화면은 `e2e/app.spec.ts`의 axe 검사 목록에 더합니다.
+- **Testing Library 원칙:** 구현 세부가 아니라 사용자가 보는 동작을 검사하고, 요소는 역할·이름(`getByRole`)으로 찾습니다. 단위·컴포넌트는 Jest(`jest-expo`) + `@testing-library/react-native`, 화면 흐름은 Playwright E2E(웹 빌드·PC 설치본), 접근성은 axe(`@axe-core/playwright`)로 검사합니다. 버그를 고치면 고치기 전에 실패하는 테스트를 함께 넣습니다.
 
 ## 5. 코드 스타일
 
-- ESLint(`eslint-config-expo`), TypeScript strict. 색은 `shared/config/theme.ts` 토큰으로만 씁니다. 아이콘은 `shared/ui`의 `Icon`으로 그리고 `@expo/vector-icons`에서 직접 가져오지 않습니다(새 아이콘은 `scripts/subset-icons.py`).
-- 접근성(KWCAG 2.2): 네이티브 요소 먼저, 텍스트 대비 4.5:1 이상, 키보드 조작과 보이는 초점, 조작 크기 24×24px 이상.
+- ESLint(`eslint-config-expo`). 색은 `shared/config/theme.ts` 토큰으로만 씁니다. 아이콘은 `shared/ui`의 `Icon`으로 그리고 `@expo/vector-icons`에서 직접 가져오지 않습니다(새 아이콘은 `scripts/subset-icons.py`).
+- **TypeScript strict:** `tsconfig.json`에 `strict: true`(`expo/tsconfig.base` 확장). `any`·`as` 단언·`@ts-ignore`를 피하고 외부 입력은 검증합니다.
+- **형식:** 표준과 다른 점: `prettier`는 설치돼 있지만 설정 파일과 format 스크립트가 없습니다. 주변 코드 모양을 따르고, 필요하면 `pnpm exec prettier --check <파일>`(기본 설정)로 확인합니다.
+- 접근성(WCAG 2.2·KWCAG 2.2): 네이티브 요소 먼저, 텍스트 대비 4.5:1 이상, 키보드 조작과 보이는 초점, 조작 크기 24×24px 이상.
   - 누를 수 있는 요소의 이름은 보이는 글자에서 나오게 하고, 덧붙일 정보는 `aria-label` 대신 `VisuallyHidden`으로(6.5.3).
   - 상태를 색으로만 나타내지 않습니다(5.4.1). 되돌릴 수 없는 삭제는 `ConfirmDialog`로 한 번 더 묻습니다(7.3.1).
   - 입력 오류는 `FieldError`로 보여 주고 `aria-describedby`·`aria-errormessage`로 연결합니다. 빈 칸에는 `aria-invalid`를 붙이지 않습니다.
   - 알림은 처음부터 있는 `LiveRegion`(`role="status"`·`role="alert"`)의 내용만 바꿉니다. 대화상자는 `Modal`에 `aria-label`을 넘깁니다.
   - axe 통과가 KWCAG 준수는 아닙니다. 키보드·초점·대체 텍스트는 직접 확인합니다.
+- 접근성 기준은 **WCAG 2.2·KWCAG 2.2**입니다. 자동 검사는 Playwright + axe E2E(360px·1280px·다크)입니다. 표준과 다른 점: React Native 코드라 `eslint-plugin-jsx-a11y`와 Storybook axe 애드온은 쓰지 않습니다.
 
 ## 6. Git·PR
 
-- `main`에 직접 커밋·푸시하지 않습니다. 최신 `main`에서 `feat/…`, `fix/…`, `docs/…`, `chore/…`, `test/…` 브랜치를 만들어 PR을 올립니다.
-- 커밋·PR 제목은 한국어 요약 뒤 괄호 버전: `feat: 좋아요·플레이리스트 곡 오프라인 저장 (0.14.0)`, `fix: … (0.11.2)`. 버전 공개 PR은 `chore: 1.0.2 - Expo SDK 58 패키지 권장 버전, …`. 문서·테스트만 바꾸면 버전 없이 `docs: …`, `test: …`.
-- 버전을 올릴 때는 `package.json`과 `app.json`의 `version`, README 배지, `CHANGELOG.md`(`## 1.0.2 - 2026-11-20` 형식 제목과 목록)를 함께 고칩니다.
+- **흐름: GitHub Flow.** `main`에 직접 커밋·푸시하지 않습니다. 최신 `main`에서 브랜치를 만들어 PR로만 병합하고, PR은 목적 하나로 작게 만들어 본문에 무엇·왜·검사 결과를 적습니다.
+- **브랜치 이름:** `feat/…`, `fix/…`, `refactor/…`, `docs/…`, `test/…`, `chore/…`, `release/…`.
+- **커밋 메시지: Conventional Commits**(`feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `style`, `chore`, `ci`, `build`) + 한국어 요약, 버전을 올리면 끝에 `(x.y.z)`. 예: `feat: 좋아요·플레이리스트 곡 오프라인 저장 (0.14.0)`, `fix: Windows PC 앱에서 테마 스크립트의 CSP 해시가 맞지 않던 문제 (0.11.2)`. 표준과 다른 점: 버전 공개 PR은 `chore: 1.0.2 - Expo SDK 58 패키지 권장 버전, …`처럼 버전을 앞에 써 왔습니다. 문서·테스트만 바꾸면 버전 없이 `docs: …`, `test: …`.
+- 커밋 작성자는 ryushin01(`ryushin0 <141554987+ryushin01@users.noreply.github.com>`)입니다. 이 저장소는 백엔드 저장소(공통 규칙의 목록, `supabase/`)라 커밋 끝에 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`만 넣습니다(다른 공동 작성자 줄은 넣지 않음).
+- GitHub Actions가 커밋하는 워크플로를 만들면 커밋 작성자를 ryushin01로 설정합니다(`github-actions[bot]` 금지).
+- Dependabot PR(`.github/dependabot.yml`)은 그대로 병합하지 않고, 같은 변경을 ryushin01 커밋으로 다시 만들어 PR로 병합합니다.
+- **버전: Semantic Versioning(주.부.수).** 호환이 깨지면 주, 기능은 부, 수정·작은 개선은 수를 올립니다.
+  - 버전은 `package.json`과 `app.json`의 `version`, README 버전 배지에서 함께 맞춥니다(태그와 다르면 `desktop.yml`이 멈춤).
+- **변경 기록: Keep a Changelog를 기준으로 하되 실제 형식을 따릅니다.**
+  - 표준과 다른 점: `CHANGELOG.md`는 `## 1.0.2 - 2026-11-20` 제목 아래 목록 하나로 적고 추가·변경·수정·제거로 나누지 않습니다. `[Unreleased]`는 쓰지 않고 버전을 올리는 PR에서 바로 그 버전 절을 더합니다. (`docs/ci-deploy.md`는 제목에 Release 링크를 넣는 형식을 적어 두었지만 실제 기록은 링크 없이 씁니다.)
 - 병합은 squash(`제목 (#번호)`)이고 병합한 브랜치는 저장소 설정이 지웁니다. CI가 통과하면 바로 병합하고 CodeRabbit 리뷰는 기다리지 않습니다.
 
 ## 7. 배포·릴리스
