@@ -51,8 +51,10 @@ pnpm test:native public-media/audio/glass-city-1.flac public-media/audio/glass-c
 SMOKE_SKIP_REAL=1 pnpm test:native:smoke public-media/audio/glass-city-1.flac public-media/audio/glass-city-2.flac
 EXPO_PUBLIC_MEDIA_BASE_URL=http://localhost:8787 pnpm build:web
 pnpm test:e2e        # 프로덕션 웹 빌드, phone·wide·dark, axe
+pnpm test:offline    # 외부 요청을 모두 막고 앱에 든 데모 카탈로그로 화면·재생(e2e/offline.spec.ts)
 ```
 
+- **오프라인 대체:** 카탈로그를 받지 못하면(요청 실패·오류 응답·8초 시간 초과·형식 오류) `public/offline-media/` 스냅숏(카탈로그 전체, 그림, 데모 곡 FLAC 2개)으로 넘어가고 「오프라인 데모」 안내(`role="status"`)를 띄웁니다. iOS·Android는 카탈로그만 번들에 넣습니다. 카탈로그를 바꾸면 `pnpm media:generate` 뒤 `pnpm media:snapshot`으로 스냅숏을 다시 만듭니다. 자세한 내용은 `docs/development.md`.
 - CI의 `native-windows` 작업은 Windows에서 재생기를 컴파일·검사합니다. 재생기 코드가 바뀐 PR에서는 `오디오 장치 검사`(`audio-device.yml`, Windows 가상 장치 VB-CABLE)도 돕니다.
 - 그 밖: `pnpm test:desktop`(설치본 실행 검사, `GAON_EXECUTABLE` 필요), `pnpm test:native:device`(실제 출력 장치, 소리가 남), `pnpm fonts`(화면 글자가 바뀌면 다시 실행, 빠진 글자는 단위 테스트가 잡음), `pnpm screenshots`.
 - 새 화면은 `e2e/app.spec.ts`의 axe 검사 목록에 더합니다.
@@ -63,13 +65,12 @@ pnpm test:e2e        # 프로덕션 웹 빌드, phone·wide·dark, axe
 - ESLint(`eslint-config-expo`). 색은 `shared/config/theme.ts` 토큰으로만 씁니다. 아이콘은 `shared/ui`의 `Icon`으로 그리고 `@expo/vector-icons`에서 직접 가져오지 않습니다(새 아이콘은 `scripts/subset-icons.py`).
 - **TypeScript strict:** `tsconfig.json`에 `strict: true`(`expo/tsconfig.base` 확장). `any`·`as` 단언·`@ts-ignore`를 피하고 외부 입력은 검증합니다.
 - **형식:** 표준과 다른 점: `prettier`는 설치돼 있지만 설정 파일과 format 스크립트가 없습니다. 주변 코드 모양을 따르고, 필요하면 `pnpm exec prettier --check <파일>`(기본 설정)로 확인합니다.
-- 접근성(WCAG 2.2·KWCAG 2.2): 네이티브 요소 먼저, 텍스트 대비 4.5:1 이상, 키보드 조작과 보이는 초점, 조작 크기 24×24px 이상.
+- **접근성(WCAG 2.2·KWCAG 2.2):** 네이티브 요소 먼저, 텍스트 대비 4.5:1 이상, 키보드 조작과 보이는 초점, 조작 크기 24×24px 이상. 자동 검사는 Playwright + axe E2E(360px·1280px·다크)입니다. 표준과 다른 점: React Native 코드라 `eslint-plugin-jsx-a11y`와 Storybook axe 애드온은 쓰지 않습니다.
   - 누를 수 있는 요소의 이름은 보이는 글자에서 나오게 하고, 덧붙일 정보는 `aria-label` 대신 `VisuallyHidden`으로(6.5.3).
   - 상태를 색으로만 나타내지 않습니다(5.4.1). 되돌릴 수 없는 삭제는 `ConfirmDialog`로 한 번 더 묻습니다(7.3.1).
   - 입력 오류는 `FieldError`로 보여 주고 `aria-describedby`·`aria-errormessage`로 연결합니다. 빈 칸에는 `aria-invalid`를 붙이지 않습니다.
   - 알림은 처음부터 있는 `LiveRegion`(`role="status"`·`role="alert"`)의 내용만 바꿉니다. 대화상자는 `Modal`에 `aria-label`을 넘깁니다.
   - axe 통과가 KWCAG 준수는 아닙니다. 키보드·초점·대체 텍스트는 직접 확인합니다.
-- 접근성 기준은 **WCAG 2.2·KWCAG 2.2**입니다. 자동 검사는 Playwright + axe E2E(360px·1280px·다크)입니다. 표준과 다른 점: React Native 코드라 `eslint-plugin-jsx-a11y`와 Storybook axe 애드온은 쓰지 않습니다.
 
 ## 6. Git·PR
 
@@ -97,13 +98,19 @@ pnpm test:e2e        # 프로덕션 웹 빌드, phone·wide·dark, axe
 - 비밀값과 `.env*`는 커밋하지 않습니다. Supabase publishable 키는 공개용이라 저장소 변수(`vars`)로 빌드에 넣습니다. 그 밖의 키를 화면 코드에 넣지 않습니다.
 - 소유자 로그인 토큰은 Gist 권한만 줍니다(`docs/auth.md`). 내 FLAC과 오프라인 저장 곡은 서버에 올리지 않습니다.
 - PC 앱의 CSP(`electron/main.cjs`)와 Electron fuses(`electron-builder.json`)를 느슨하게 바꾸지 않습니다. `pnpm test:desktop`이 정책 위반을 검사합니다.
+- 상태(CI·배포·릴리스·주소)는 명령 결과(`gh run`, `curl` 등)로 확인한 것만 말합니다.
+- 먼저 묻기: 새 런타임 의존성 추가, 빌드·배포 설정(`app.json`, `electron-builder.json`, 워크플로) 변경.
+- 절대 금지: 비밀값을 `EXPO_PUBLIC_*`에 넣기(publishable 키만), `.env*` 커밋, `eslint-disable`·`--no-verify`로 검사 우회, `main`에 직접 푸시.
 - Windows WASAPI 독점은 하드웨어 장치로는 아직 시험하지 못했습니다. 비트 퍼펙트·갭리스를 "확인됨"이라고 쓸 때는 검사 범위(docs/development.md 표)를 따릅니다.
 
 ## 9. 공통 규칙
 
-공통 규칙은 `~/Documents/GitHub/CLAUDE.md`에 있습니다(이 파일과 충돌하면 이 파일이 우선). 요점:
+규칙은 3계층입니다. 1층 전역(`~/.claude/CLAUDE.md`, OpenCode는 `~/.config/opencode/AGENTS.md`로 같은 파일) → 2층 ryushin01 공통(`~/Documents/GitHub/CLAUDE.md`, Claude Code만 읽음) → 3층 이 파일. 충돌하면 이 파일이 우선합니다. 2층을 읽지 못하는 도구를 위해 핵심을 아래에 요약합니다.
 
 - 답변·커밋·PR·문서는 한국어로 씁니다.
-- 허락을 묻지 않고 끝까지 진행한 뒤 결과를 한 번에 보고합니다. 비용·비밀값·디자인 결정·되돌릴 수 없는 공개 행동은 하지 않고 보고합니다.
-- 사용자의 진행 중인 작업을 보호합니다. 로컬 변경이 있으면 `git worktree add /tmp/<이름> -b <브랜치> origin/main`에서 작업하고 끝나면 지웁니다.
-- 다른 세션에 공지할 때는 ryushin01 그룹 세션에만 보냅니다.
+- 허락을 묻지 않고 끝까지 진행한 뒤 결과를 한 번에 보고합니다. 비용·비밀값 생성·디자인 결정·되돌리기 어려운 일·다른 조직 저장소에 공개로 글 올리기는 진행 전에 보고하고 결정을 받습니다.
+- 사용자의 진행 중인 작업을 보호합니다. 로컬에 커밋하지 않은 변경이나 원격에 없는 브랜치가 있으면 `git worktree add`로 따로 작업하고 끝나면 지웁니다.
+- 기여자는 ryushin01만 남깁니다(커밋 작성자·`Co-Authored-By`·Actions·Dependabot 규칙은 6절).
+- 공개 데모에 실제 DB 접속 정보·유료 API 키·로컬 `.env` 값을 넣지 않고, 데모 모드가 꺼지면 원래 동작이 그대로여야 합니다.
+- 병합 뒤 릴리스·백업·보관함 기록·프로필 README 갱신은 7절을 따릅니다.
+- 다른 세션에 보내는 공지는 ryushin01 그룹 세션에만 보냅니다.
